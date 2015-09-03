@@ -281,16 +281,16 @@ static void* server(void*) {
 
 static void load_scripts() {
   scripts[".c"] = [](char p, const char* path, const char* fn, Settings& settings) {
-    if (system("gcc -std=c11 %s -o %s.out", fn, fn)) return CE;
+    if (system("gcc -std=c11 %s -o %s%c", fn, path, p)) return CE;
     bool tle;
-    if (timeout(tle, settings.problems[p-'A'], "./%s.out < problems/%c.in > %sout.txt", fn, p, path)) return RTE;
+    if (timeout(tle, settings.problems[p-'A'], "%s%c < problems/%c.in > %sout.txt", path, p, p, path)) return RTE;
     if (tle) return TLE;
     return AC;
   };
   scripts[".cpp"] = [](char p, const char* path, const char* fn, Settings& settings) {
-    if (system("g++ -std=c++1y %s -o %s.out", fn, fn)) return CE;
+    if (system("g++ -std=c++1y %s -o %s%c", fn, path, p)) return CE;
     bool tle;
-    if (timeout(tle, settings.problems[p-'A'], "./%s.out < problems/%c.in > %sout.txt", fn, p, path)) return RTE;
+    if (timeout(tle, settings.problems[p-'A'], "%s%c < problems/%c.in > %sout.txt", path, p, p, path)) return RTE;
     if (tle) return TLE;
     return AC;
   };
