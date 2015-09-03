@@ -21,7 +21,8 @@ struct Attempt {
   time_t when;
 };
 
-template <typename NewType, typename T> NewType to(const T& x) {
+template <typename NewType, typename T>
+NewType to(const T& x) {
   std::stringstream ss; ss << x;
   NewType ret; ss >> ret;
   return ret;
