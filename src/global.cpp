@@ -61,9 +61,7 @@ int timeout(bool& tle, int s, const char* cmd) {
   pid_t proc = fork();
   if (!proc) {
     setpgid(0, 0);
-    const char* path = Global::arg[0].c_str();
-    execl(path, path, "run", cmd, nullptr);
-    exit(-1);
+    exit(system(cmd));
   }
   
   int status;
@@ -113,7 +111,7 @@ struct rejudgemsg {
 static bool quit = false;
 static list<pthread_t> threads;
 static pthread_mutex_t attfile_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t attcntl_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t nextidfile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int msqid;
 
 static key_t msgqueue() {
@@ -126,9 +124,9 @@ static void term(int) {
   msgctl(msqid, IPC_RMID, nullptr);
   remove("contest.bin");
   pthread_mutex_lock(&attfile_mutex);
-  pthread_mutex_lock(&attcntl_mutex);
+  pthread_mutex_lock(&nextidfile_mutex);
   quit = true;
-  pthread_mutex_unlock(&attcntl_mutex);
+  pthread_mutex_unlock(&nextidfile_mutex);
   pthread_mutex_unlock(&attfile_mutex);
   for (pthread_t& thread : threads) pthread_join(thread, nullptr);
   exit(0);
@@ -233,12 +231,12 @@ void unlock_att_file() {
   pthread_mutex_unlock(&attfile_mutex);
 }
 
-void lock_attcntl_file() {
-  pthread_mutex_lock(&attcntl_mutex);
+void lock_nextid_file() {
+  pthread_mutex_lock(&nextidfile_mutex);
 }
 
-void unlock_attcntl_file() {
-  pthread_mutex_unlock(&attcntl_mutex);
+void unlock_nextid_file() {
+  pthread_mutex_unlock(&nextidfile_mutex);
 }
 
 } // namespace Global

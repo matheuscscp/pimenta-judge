@@ -36,9 +36,6 @@ int main(int argc, char** argv) {
     if (argc < 4) { usagemode(); return 0; }
     Global::rejudge(to<int>(argv[2]), (char)to<int>(argv[3]));
   }
-  else if (mode == "run") {
-    return system(argv[2]);
-  }
   else usagemode();
   return 0;
 }

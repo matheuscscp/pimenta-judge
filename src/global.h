@@ -57,8 +57,8 @@ void fire(void* (*)(void*));
 
 void lock_att_file();
 void unlock_att_file();
-void lock_attcntl_file();
-void unlock_attcntl_file();
+void lock_nextid_file();
+void unlock_nextid_file();
 
 } // namespace Global
 

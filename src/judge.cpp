@@ -77,7 +77,22 @@ static string judge(
   ;
 }
 
-static void handle_attempt(int sd, int id, char* buf, Settings& settings) {
+static int genid() {
+  FILE* fp = fopen("nextid.bin", "rb");
+  int current, next;
+  if (!fp) current = 1, next = 2;
+  else {
+    fread(&current, sizeof current, 1, fp);
+    fclose(fp);
+    next = current + 1;
+  }
+  fp = fopen("nextid.bin", "wb");
+  fwrite(&next, sizeof next, 1, fp);
+  fclose(fp);
+  return current;
+}
+
+static void handle_attempt(int sd, char* buf, Settings& settings) {
   // parse headers
   set<string> what_headers;
   what_headers.insert("Team:");
@@ -118,6 +133,15 @@ static void handle_attempt(int sd, int id, char* buf, Settings& settings) {
     return;
   }
   btmp += 4;
+  
+  // generate id
+  Global::lock_nextid_file();
+  if (!Global::alive()) {
+    Global::unlock_nextid_file();
+    return;
+  }
+  int id = genid();
+  Global::unlock_nextid_file();
   
   // save file
   string fn = "attempts/";
@@ -201,40 +225,30 @@ static void send_form(int sd) {
 
 static void* client(void* ptr) {
   // fetch socket
-  pair<int, int>* sdptr = (pair<int, int>*)ptr;
-  pair<int, int> sd = *sdptr;
+  int* sdptr = (int*)ptr;
+  int sd = *sdptr;
   delete sdptr;
   
   // read data
   char* buf = new char[BSIZ];
-  int bsiz = read(sd.first, buf, BSIZ);
+  int bsiz = read(sd, buf, BSIZ);
   
   // handle
-  Settings settings;
-  if (time(nullptr) < settings.end && bsiz < BSIZ) {
-    if (buf[0] != 'G')  handle_attempt(sd.first, sd.second, buf, settings);
-    else                send_form(sd.first);
+  if (bsiz == BSIZ) write(sd, "Too much data!", 14);
+  else if (buf[0] == 'G') send_form(sd);
+  else { // post with attempt
+    Settings settings;
+    time_t now = time(nullptr);
+    if (settings.begin <= now && now < settings.end) {
+      handle_attempt(sd, buf, settings);
+    }
+    else write(sd, "The contest is not running.", 27);
   }
   
   // close
   delete[] buf;
-  close(sd.first);
+  close(sd);
   return nullptr;
-}
-
-static int genid() {
-  FILE* fp = fopen("nextid.bin", "rb");
-  int current, next;
-  if (!fp) current = 1, next = 2;
-  else {
-    fread(&current, sizeof current, 1, fp);
-    fclose(fp);
-    next = current + 1;
-  }
-  fp = fopen("nextid.bin", "wb");
-  fwrite(&next, sizeof next, 1, fp);
-  fclose(fp);
-  return current;
 }
 
 static void* server(void*) {
@@ -257,15 +271,9 @@ static void* server(void*) {
   while (Global::alive()) {
     int csd = accept(sd, nullptr, nullptr);
     if (csd < 0) { usleep(25000); continue; }
-    Global::lock_attcntl_file();
-    if (!Global::alive()) close(csd);
-    else {
-      int id = genid();
-      pthread_t thread;
-      pthread_create(&thread, nullptr, client, new pair<int, int>(csd, id));
-      pthread_detach(thread);
-    }
-    Global::unlock_attcntl_file();
+    pthread_t thread;
+    pthread_create(&thread, nullptr, client, new int(csd));
+    pthread_detach(thread);
   }
   close(sd);
   return nullptr;
