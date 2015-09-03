@@ -1,0 +1,318 @@
+#include <cstring>
+#include <fstream>
+#include <set>
+#include <map>
+#include <functional>
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/stat.h>
+
+#include "judge.h"
+
+#include "global.h"
+
+#define BSIZ (1 << 18)
+
+using namespace std;
+
+typedef function<char(char, const char*, const char*, Settings&)> Script;
+static map<string, Script> scripts;
+
+static string password(const string& team) {
+  fstream f("teams.txt");
+  if (!f.is_open()) return "";
+  string tmp, pass;
+  while (f >> tmp >> pass) if (tmp == team) return pass;
+  return "";
+}
+
+static bool valid_filename(Settings& settings, const string& fn) {
+  return
+    ('A' <= fn[0]) && (fn[0] <= ('A' + int(settings.problems.size())-1)) &&
+    (scripts.find(fn.substr(1, fn.size())) != scripts.end())
+  ;
+}
+
+static string judge(
+  int id, const string& team, const string& fno,
+  const string& path, const string& fn, Settings& settings
+) {
+  // build attempt
+  Attempt att;
+  att.id = id;
+  strcpy(att.team, team.c_str());
+  att.problem = fno[0]-'A';
+  char run = scripts[fno.substr(1, fno.size())](
+    fno[0], path.c_str(), fn.c_str(), settings
+  );
+  if (run != AC) {
+    att.veredict = run;
+  }
+  else if (system("diff -wB %sout.txt problems/%c.sol", path.c_str(), fno[0])) {
+    att.veredict = WA;
+  }
+  else if (system("diff     %sout.txt problems/%c.sol", path.c_str(), fno[0])) {
+    att.veredict = PE;
+  }
+  att.when = time(nullptr);
+  
+  // save attempt info
+  Global::lock_att_file();
+  if (Global::alive()) {
+    FILE* fp = fopen("attempts.bin", "ab");
+    fwrite(&att, sizeof att, 1, fp);
+    fclose(fp);
+  }
+  Global::unlock_att_file();
+  
+  // return veredict
+  static string veredict[] = {"AC", "CE", "RTE", "TLE", "WA", "PE"};
+  return
+    att.when < settings.noveredict ?
+    veredict[int(att.veredict)] :
+    "The judge is hiding veredicts!"
+  ;
+}
+
+static void handle_attempt(int sd, int id, char* buf, Settings& settings) {
+  // parse headers
+  set<string> what_headers;
+  what_headers.insert("Team:");
+  what_headers.insert("Password:");
+  what_headers.insert("File-name:");
+  what_headers.insert("File-size:");
+  map<string, string> headers;
+  stringstream ss; ss << buf;
+  string tmp;
+  while (ss >> tmp) {
+    if (what_headers.find(tmp) != what_headers.end()) {
+      string t2;
+      ss >> t2;
+      headers[tmp] = t2;
+      if (headers.size() == 4) break;
+    }
+  }
+  string pass = password(headers["Team:"]);
+  if (pass == "" || pass != headers["Password:"]) {
+    write(sd, "Invalid team/password!", 22);
+    return;
+  }
+  if (!valid_filename(settings, headers["File-name:"])) {
+    write(sd, "Invalid file name!", 18);
+    return;
+  }
+  
+  // seek data
+  char* btmp = strstr(buf, "\r\n\r\n");
+  if (!btmp) {
+    write(sd, "Error! Please, submit again.", 28);
+    return;
+  }
+  btmp += 4;
+  btmp = strstr(btmp, "\r\n\r\n");
+  if (!btmp) {
+    write(sd, "Error! Please, submit again.", 28);
+    return;
+  }
+  btmp += 4;
+  
+  // save file
+  string fn = "attempts/";
+  mkdir(fn.c_str(), 0777);
+  fn += (headers["Team:"]+"/");
+  mkdir(fn.c_str(), 0777);
+  fn += headers["File-name:"][0]; fn += "/";
+  mkdir(fn.c_str(), 0777);
+  fn += (to<string>(id)+"/");
+  mkdir(fn.c_str(), 0777);
+  string path = "./"+fn;
+  fn += headers["File-name:"];
+  FILE* fp = fopen(fn.c_str(), "wb");
+  fwrite(btmp, to<int>(headers["File-size:"]), 1, fp);
+  fclose(fp);
+  
+  // respond
+  string response = "Attempt "+to<string>(id)+": ";
+  response += judge(
+    id, headers["Team:"], headers["File-name:"], path, fn, settings
+  );
+  write(sd, response.c_str(), response.size());
+}
+
+static void send_form(int sd) {
+  string form =
+    "HTTP/1.1 200 OK\r\n"
+    "Connection: close\r\r"
+    "Content-Type: text/html\r\n"
+    "\r\n"
+    "<html>\n"
+    "  <head>\n"
+    "    <script>\n"
+    "      function sendform() {\n"
+    "        team = document.getElementById(\"team\");\n"
+    "        pass = document.getElementById(\"pass\");\n"
+    "        file = document.getElementById(\"file\");\n"
+    "        form = new FormData();\n"
+    "        form.append(\"file\", file.files[0]);\n"
+    "        if (window.XMLHttpRequest)\n"
+    "          xmlhttp = new XMLHttpRequest();\n"
+    "        else\n"
+    "          xmlhttp = new ActiveXObject(\"Microsoft.XMLHTTP\");\n"
+    "        xmlhttp.open(\"POST\", \"\", false);\n"
+    "        xmlhttp.setRequestHeader(\"Team\", team.value);\n"
+    "        xmlhttp.setRequestHeader(\"Password\", pass.value);\n"
+    "        xmlhttp.setRequestHeader(\"File-name\", file.files[0].name);\n"
+    "        xmlhttp.setRequestHeader(\"File-size\", file.files[0].size);\n"
+    "        xmlhttp.send(form);\n"
+    "        response = document.getElementById(\"response\");\n"
+    "        response.innerHTML = xmlhttp.responseText;\n"
+    "        team.value = \"\";\n"
+    "        pass.value = \"\";\n"
+    "        file.value = \"\";\n"
+    "      }\n"
+    "    </script>\n"
+    "  </head>\n"
+    "  <body>\n"
+    "    <h1>Pimenta Judgezzz~*~*</h1>\n"
+    "    <h4 id=\"response\"></h4>\n"
+    "    <table>\n"
+    "      <tr>\n"
+    "        <td>Team:</td>\n"
+    "        <td><input type=\"text\" id=\"team\" autofocus/></td>\n"
+    "      </tr>\n"
+    "      <tr>\n"
+    "        <td>Password:</td>\n"
+    "        <td><input type=\"password\" id=\"pass\" /></td>\n"
+    "      </tr>\n"
+    "      <tr>\n"
+    "        <td>File:</td>\n"
+    "        <td><input type=\"file\" id=\"file\" /></td>\n"
+    "      </tr>\n"
+    "    </table>\n"
+    "    <button onclick=\"sendform()\">Send</button>\n"
+    "  </body>\n"
+    "</html>\n"
+  ;
+  write(sd, form.c_str(), form.size());
+}
+
+static void* client(void* ptr) {
+  // fetch socket
+  pair<int, int>* sdptr = (pair<int, int>*)ptr;
+  pair<int, int> sd = *sdptr;
+  delete sdptr;
+  
+  // read data
+  char* buf = new char[BSIZ];
+  int bsiz = read(sd.first, buf, BSIZ);
+  
+  // handle
+  Settings settings;
+  if (time(nullptr) < settings.end && bsiz < BSIZ) {
+    if (buf[0] != 'G')  handle_attempt(sd.first, sd.second, buf, settings);
+    else                send_form(sd.first);
+  }
+  
+  // close
+  delete[] buf;
+  close(sd.first);
+  return nullptr;
+}
+
+static int genid() {
+  FILE* fp = fopen("nextid.bin", "rb");
+  int current, next;
+  if (!fp) current = 1, next = 2;
+  else {
+    fread(&current, sizeof current, 1, fp);
+    fclose(fp);
+    next = current + 1;
+  }
+  fp = fopen("nextid.bin", "wb");
+  fwrite(&next, sizeof next, 1, fp);
+  fclose(fp);
+  return current;
+}
+
+static void* server(void*) {
+  // create socket
+  int sd = socket(AF_INET, SOCK_STREAM, 0);
+  int opt = 1;
+  setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof opt);
+  fcntl(sd, F_SETFL, FNDELAY);
+  
+  // set addr
+  sockaddr_in addr;
+  memset(&addr, 0, sizeof addr);
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(to<uint16_t>(Global::arg[2]));
+  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  bind(sd, (sockaddr*)&addr, sizeof addr);
+  
+  // listen
+  listen(sd, SOMAXCONN);
+  while (Global::alive()) {
+    int csd = accept(sd, nullptr, nullptr);
+    if (csd < 0) { usleep(25000); continue; }
+    Global::lock_attcntl_file();
+    if (!Global::alive()) close(csd);
+    else {
+      int id = genid();
+      pthread_t thread;
+      pthread_create(&thread, nullptr, client, new pair<int, int>(csd, id));
+      pthread_detach(thread);
+    }
+    Global::unlock_attcntl_file();
+  }
+  close(sd);
+  return nullptr;
+}
+
+static void load_scripts() {
+  scripts[".c"] = [](char p, const char* path, const char* fn, Settings& settings) {
+    if (system("gcc -std=c11 %s -o %s.out", fn, fn)) return CE;
+    bool tle;
+    if (timeout(tle, settings.problems[p-'A'], "./%s.out < problems/%c.in > %sout.txt", fn, p, path)) return RTE;
+    if (tle) return TLE;
+    return AC;
+  };
+  scripts[".cpp"] = [](char p, const char* path, const char* fn, Settings& settings) {
+    if (system("g++ -std=c++1y %s -o %s.out", fn, fn)) return CE;
+    bool tle;
+    if (timeout(tle, settings.problems[p-'A'], "./%s.out < problems/%c.in > %sout.txt", fn, p, path)) return RTE;
+    if (tle) return TLE;
+    return AC;
+  };
+  scripts[".java"] = [](char p, const char* path, const char* fn, Settings& settings) {
+    if (system("javac %s", fn)) return CE;
+    bool tle;
+    if (timeout(tle, settings.problems[p-'A'], "java -cp %s %c < problems/%c.in > %sout.txt", path, p, p, path)) return RTE;
+    if (tle) return TLE;
+    return AC;
+  };
+  scripts[".py"] = [](char p, const char* path, const char* fn, Settings& settings) {
+    bool tle;
+    if (timeout(tle, settings.problems[p-'A'], "python %s < problems/%c.in > %sout.txt", fn, p, path)) return RTE;
+    if (tle) return TLE;
+    return AC;
+  };
+  scripts[".cs"] = [](char p, const char* path, const char* fn, Settings& settings) {
+    if (system("mcs %s", fn)) return CE;
+    bool tle;
+    if (timeout(tle, settings.problems[p-'A'], "%s%c.exe < problems/%c.in > %sout.txt", path, p, p, path)) return RTE;
+    if (tle) return TLE;
+    return AC;
+  };
+}
+
+namespace Judge {
+
+void fire() {
+  load_scripts();
+  Global::fire(server);
+}
+
+} // namespace Judge
