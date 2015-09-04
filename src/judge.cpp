@@ -176,6 +176,8 @@ static void send_form(int sd) {
     "  <head>\n"
     "    <script>\n"
     "      function sendform() {\n"
+    "        response = document.getElementById(\"response\");\n"
+    "        response.innerHTML = \"Wait for the veredict.\";\n"
     "        team = document.getElementById(\"team\");\n"
     "        pass = document.getElementById(\"pass\");\n"
     "        file = document.getElementById(\"file\");\n"
