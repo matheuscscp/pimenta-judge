@@ -3,6 +3,7 @@
 #include <set>
 #include <map>
 #include <functional>
+#include <queue>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -19,22 +20,11 @@
 using namespace std;
 
 typedef function<char(char, const char*, const char*, Settings&)> Script;
+struct QueueData;
+
 static map<string, Script> scripts;
-
-static string password(const string& team) {
-  fstream f("teams.txt");
-  if (!f.is_open()) return "";
-  string tmp, pass;
-  while (f >> tmp >> pass) if (tmp == team) return pass;
-  return "";
-}
-
-static bool valid_filename(Settings& settings, const string& fn) {
-  return
-    ('A' <= fn[0]) && (fn[0] <= ('A' + int(settings.problems.size())-1)) &&
-    (scripts.find(fn.substr(1, fn.size())) != scripts.end())
-  ;
-}
+static queue<QueueData*> jqueue;
+static pthread_mutex_t judger_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static string judge(
   int id, const string& team, const string& fno,
@@ -57,6 +47,9 @@ static string judge(
   else if (system("diff     %sout.txt problems/%c.sol", path.c_str(), fno[0])) {
     att.veredict = PE;
   }
+  else {
+    att.veredict = AC;
+  }
   att.when = time(nullptr);
   
   // save attempt info
@@ -74,6 +67,43 @@ static string judge(
     att.when < settings.noveredict ?
     veredict[int(att.veredict)] :
     "The judge is hiding veredicts!"
+  ;
+}
+
+struct QueueData {
+  int id;
+  string team;
+  string fno;
+  string path;
+  string fn;
+  Settings settings;
+  string veredict;
+  bool done;
+  QueueData() : done(false) {}
+  void push() {
+    pthread_mutex_lock(&judger_mutex);
+    jqueue.push(this);
+    pthread_mutex_unlock(&judger_mutex);
+    while (Global::alive() && !done) usleep(25000);
+  }
+  void judge() {
+    veredict = ::judge(id, team, fno, path, fn, settings);
+    done = true;
+  }
+};
+
+static string password(const string& team) {
+  fstream f("teams.txt");
+  if (!f.is_open()) return "";
+  string tmp, pass;
+  while (f >> tmp >> pass) if (tmp == team) return pass;
+  return "";
+}
+
+static bool valid_filename(Settings& settings, const string& fn) {
+  return
+    ('A' <= fn[0]) && (fn[0] <= ('A' + int(settings.problems.size())-1)) &&
+    (scripts.find(fn.substr(1, fn.size())) != scripts.end())
   ;
 }
 
@@ -160,9 +190,15 @@ static void handle_attempt(int sd, char* buf, Settings& settings) {
   
   // respond
   string response = "Attempt "+to<string>(id)+": ";
-  response += judge(
-    id, headers["Team:"], headers["File-name:"], path, fn, settings
-  );
+  QueueData qd;
+  qd.id = id;
+  qd.team = headers["Team:"];
+  qd.fno = headers["File-name:"];
+  qd.path = path;
+  qd.fn = fn;
+  qd.settings = settings;
+  qd.push();
+  response += qd.veredict;
   write(sd, response.c_str(), response.size());
 }
 
@@ -285,6 +321,21 @@ static void* server(void*) {
   return nullptr;
 }
 
+static void* judger(void*) {
+  while (Global::alive()) {
+    pthread_mutex_lock(&judger_mutex);
+    if (jqueue.empty()) {
+      pthread_mutex_unlock(&judger_mutex);
+      usleep(25000);
+      continue;
+    }
+    QueueData* qd = jqueue.front(); jqueue.pop();
+    pthread_mutex_unlock(&judger_mutex);
+    qd->judge();
+  }
+  return nullptr;
+}
+
 static void load_scripts() {
   scripts[".c"] = [](char p, const char* path, const char* fn, Settings& settings) {
     if (system("gcc -std=c11 %s -o %s%c", fn, path, p)) return CE;
@@ -327,6 +378,7 @@ namespace Judge {
 void fire() {
   load_scripts();
   Global::fire(server);
+  Global::fire(judger);
 }
 
 } // namespace Judge
