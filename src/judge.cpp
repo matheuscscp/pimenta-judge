@@ -152,16 +152,6 @@ static void handle_attempt(int sd, char* buf, Settings& settings) {
   
   // seek data
   char* btmp = strstr(buf, "\r\n\r\n");
-  if (!btmp) {
-    write(sd, "Error! Please, submit again.", 28);
-    return;
-  }
-  btmp += 4;
-  btmp = strstr(btmp, "\r\n\r\n");
-  if (!btmp) {
-    write(sd, "Error! Please, submit again.", 28);
-    return;
-  }
   btmp += 4;
   
   // generate id
@@ -217,8 +207,6 @@ static void send_form(int sd) {
     "        team = document.getElementById(\"team\");\n"
     "        pass = document.getElementById(\"pass\");\n"
     "        file = document.getElementById(\"file\");\n"
-    "        form = new FormData();\n"
-    "        form.append(\"file\", file.files[0]);\n"
     "        if (window.XMLHttpRequest)\n"
     "          xmlhttp = new XMLHttpRequest();\n"
     "        else\n"
@@ -234,7 +222,7 @@ static void send_form(int sd) {
     "        xmlhttp.setRequestHeader(\"Password\", pass.value);\n"
     "        xmlhttp.setRequestHeader(\"File-name\", file.files[0].name);\n"
     "        xmlhttp.setRequestHeader(\"File-size\", file.files[0].size);\n"
-    "        xmlhttp.send(form);\n"
+    "        xmlhttp.send(file.files[0]);\n"
     "        team.value = \"\";\n"
     "        pass.value = \"\";\n"
     "        file.value = \"\";\n"
