@@ -317,6 +317,8 @@ static void* server(void*) {
     pthread_create(&thread, nullptr, client, new int(csd));
     pthread_detach(thread);
   }
+  
+  // close
   close(sd);
   return nullptr;
 }
