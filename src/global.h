@@ -8,7 +8,7 @@
 enum {AC = 0, CE, RTE, TLE, WA, PE};
 
 struct Settings {
-  time_t begin, end, freeze, noveredict;
+  time_t begin, end, freeze, noverdict;
   std::vector<int> problems;
   Settings();
 };
@@ -17,7 +17,7 @@ struct Attempt {
   int id;
   char team[128];
   char problem;
-  char veredict;
+  char verdict;
   time_t when;
 };
 

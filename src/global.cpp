@@ -46,7 +46,7 @@ Settings::Settings() {
   func(begin);
   func(end);
   func(freeze);
-  func(noveredict);
+  func(noverdict);
   int problems;
   f >> tmp >> problems;
   this->problems = vector<int>(problems);
@@ -105,9 +105,9 @@ struct Contest {
 struct rejudgemsg {
   long mtype;
   int id;
-  char veredict;
-  rejudgemsg(int id = 0, char veredict = 0)
-  : mtype(1), id(id), veredict(veredict) {}
+  char verdict;
+  rejudgemsg(int id = 0, char verdict = 0)
+  : mtype(1), id(id), verdict(verdict) {}
   size_t size() const { return sizeof(rejudgemsg)-sizeof(long); }
 };
 
@@ -135,14 +135,14 @@ static void term(int) {
   exit(0);
 }
 
-static void rejudge(int id, char veredict) {
+static void rejudge(int id, char verdict) {
   pthread_mutex_lock(&attfile_mutex);
   FILE* fp = fopen("attempts.bin", "r+b");
   if (fp) {
     Attempt att;
     while (fread(&att, sizeof att, 1, fp) == 1) {
       if (att.id == id) {
-        att.veredict = veredict;
+        att.verdict = verdict;
         fseek(fp, -(sizeof att), SEEK_CUR);
         fwrite(&att, sizeof att, 1, fp);
         break;
@@ -159,7 +159,7 @@ static void* rejudger(void*) {
     if (msgrcv(msqid, &msg, msg.size(), 0, IPC_NOWAIT) < 0) {
       usleep(25000); continue;
     }
-    ::rejudge(msg.id, msg.veredict);
+    ::rejudge(msg.id, msg.verdict);
   }
   return nullptr;
 }
@@ -246,7 +246,7 @@ void install(const string& dir) {
     "Begin:        2015 09 01 19 00\n"
     "End:          2015 12 25 23 50\n"
     "Freeze:       2015 12 25 23 50\n"
-    "No-veredict:  2015 12 25 23 50\n"
+    "No-verdict:  2015 12 25 23 50\n"
     "Problems: 1\n"
     "A-timelimit: 1\n"
   );
@@ -280,11 +280,11 @@ void stop() {
   if (c.pid) kill(c.pid, SIGTERM);
 }
 
-void rejudge(int id, char veredict) {
+void rejudge(int id, char verdict) {
   Contest c;
-  if (!c.pid) ::rejudge(id, veredict);
+  if (!c.pid) ::rejudge(id, verdict);
   else {
-    rejudgemsg msg(id, veredict);
+    rejudgemsg msg(id, verdict);
     msgsnd(msgget(c.key, 0), &msg, msg.size(), 0);
   }
 }

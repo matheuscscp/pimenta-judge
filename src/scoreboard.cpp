@@ -146,7 +146,7 @@ static void update() {
       entry.problems = vector<problem_t>(
         settings.problems.size(), make_pair(0, 0)
       );
-      if (att.veredict != AC) entry.problems[att.problem].first = -1;
+      if (att.verdict != AC) entry.problems[att.problem].first = -1;
       else {
         entry.problems[att.problem].first = 1;
         entry.problems[att.problem].second = att.when;
@@ -155,7 +155,7 @@ static void update() {
     else {
       problem_t& p = it->second.problems[att.problem];
       if (p.first > 0) continue;
-      if (att.veredict != AC) p.first--;
+      if (att.verdict != AC) p.first--;
       else {
         p.first  = 1 - p.first;
         p.second = att.when;

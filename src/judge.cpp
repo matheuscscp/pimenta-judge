@@ -39,16 +39,16 @@ static string judge(
     fno[0], path.c_str(), fn.c_str(), settings
   );
   if (run != AC) {
-    att.veredict = run;
+    att.verdict = run;
   }
   else if (system("diff -wB %sout.txt problems/%c.sol", path.c_str(), fno[0])) {
-    att.veredict = WA;
+    att.verdict = WA;
   }
   else if (system("diff     %sout.txt problems/%c.sol", path.c_str(), fno[0])) {
-    att.veredict = PE;
+    att.verdict = PE;
   }
   else {
-    att.veredict = AC;
+    att.verdict = AC;
   }
   att.when = time(nullptr);
   
@@ -61,12 +61,12 @@ static string judge(
   }
   Global::unlock_att_file();
   
-  // return veredict
-  static string veredict[] = {"AC", "CE", "RTE", "TLE", "WA", "PE"};
+  // return verdict
+  static string verdict[] = {"AC", "CE", "RTE", "TLE", "WA", "PE"};
   return
-    att.when < settings.noveredict ?
-    veredict[int(att.veredict)] :
-    "The judge is hiding veredicts!"
+    att.when < settings.noverdict ?
+    verdict[int(att.verdict)] :
+    "The judge is hiding verdicts!"
   ;
 }
 
@@ -77,7 +77,7 @@ struct QueueData {
   string path;
   string fn;
   Settings settings;
-  string veredict;
+  string verdict;
   bool done;
   QueueData() : done(false) {}
   void push() {
@@ -87,7 +87,7 @@ struct QueueData {
     while (Global::alive() && !done) usleep(25000);
   }
   void judge() {
-    veredict = ::judge(id, team, fno, path, fn, settings);
+    verdict = ::judge(id, team, fno, path, fn, settings);
     done = true;
   }
 };
@@ -188,7 +188,7 @@ static void handle_attempt(int sd, char* buf, Settings& settings) {
   qd.fn = fn;
   qd.settings = settings;
   qd.push();
-  response += qd.veredict;
+  response += qd.verdict;
   write(sd, response.c_str(), response.size());
 }
 
@@ -203,7 +203,7 @@ static void send_form(int sd) {
     "    <script>\n"
     "      function sendform() {\n"
     "        response = document.getElementById(\"response\");\n"
-    "        response.innerHTML = \"Wait for the veredict.\";\n"
+    "        response.innerHTML = \"Wait for the verdict.\";\n"
     "        team = document.getElementById(\"team\");\n"
     "        pass = document.getElementById(\"pass\");\n"
     "        file = document.getElementById(\"file\");\n"
