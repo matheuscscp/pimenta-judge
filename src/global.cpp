@@ -187,6 +187,7 @@ static void* client(void* ptr) {
     "HTTP/1.1 200 OK\r\n"
     "Connection: close\r\r"
     "Content-Type: application/octet-stream\r\n"
+    "Content-Disposition: attachment; filename=\"contest.pdf\"\r\n"
     "\r\n"
   ;
   write(sd, response.c_str(), response.size());
