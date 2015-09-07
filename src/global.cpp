@@ -14,9 +14,9 @@
 
 #include "judge.h"
 #include "scoreboard.h"
-#include "rejudger.h"
-#include "statement.h"
 #include "clarification.h"
+#include "statement.h"
+#include "rejudger.h"
 
 using namespace std;
 
@@ -169,9 +169,9 @@ void start(int argc, char** argv) {
   signal(SIGPIPE, SIG_IGN);
   Judge::fire();
   Scoreboard::fire();
-  Rejudger::fire(msqid);
-  Statement::fire();
   Clarification::fire();
+  Statement::fire();
+  Rejudger::fire(msqid);
   for (pthread_t& thread : threads) pthread_join(thread, nullptr);
 }
 

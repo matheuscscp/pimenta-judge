@@ -4,7 +4,7 @@ static void usagemode() {
   printf(
     "Usage mode:\n"
     "  install <new directory name without trailing slash>\n"
-    "  start <judge port> <score port> <statement port> <clarification port>\n"
+    "  start <judge port> <score port> <clarification port> <statement port>\n"
     "  stop\n"
     "  rejudge <attempt id> <verdict number>\n"
     "Verdict numbers:\n"
