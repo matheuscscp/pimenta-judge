@@ -87,6 +87,12 @@ static void send_page(int sd, Settings& settings) {
     "          response.innerHTML = \"Write something!\";\n"
     "          return;\n"
     "        }\n"
+    "        if (ques.value.length > 512) {\n"
+    "          response = document.getElementById(\"response\");\n"
+    "          response.innerHTML = \"Questions with more then 512 characters"
+               " are not allowed!\";\n"
+    "          return;\n"
+    "        }\n"
     "        response = document.getElementById(\"response\");\n"
     "        response.innerHTML = \"Question sent. Wait and refresh.\";\n"
     "        if (window.XMLHttpRequest)\n"
@@ -101,8 +107,7 @@ static void send_page(int sd, Settings& settings) {
     "        }\n"
     "        xmlhttp.open(\"POST\", \"\", true);\n"
     "        xmlhttp.setRequestHeader(\"Problem\", prob.value);\n"
-    "        xmlhttp.setRequestHeader(\"Question\", ques.value);\n"
-    "        xmlhttp.send();\n"
+    "        xmlhttp.send(ques.value);\n"
     "        prob.value = \"\";\n"
     "        ques.value = \"\";\n"
     "      }\n"
@@ -136,21 +141,32 @@ static void send_page(int sd, Settings& settings) {
   write(sd, response.c_str(), response.size());
 }
 
-static void create_question(int sd, char* buf) {
+static void create_question(int sd, char* buf, Settings& settings) {
   // assemble question
-  char* problem = strstr(buf, "Problem: ")+9;
-  if (strlen(problem) == 0) {
+  char* problem = strstr(buf, "Problem: ");
+  if (
+    problem == nullptr ||
+    problem[9] < 'A' || problem[9] > char('A' + settings.problems.size() - 1)
+  ) {
     write(sd, "Choose a problem!", 17);
     return;
   }
-  char* question = strstr(buf, "Question: ")+10;
-  while (question[0] != '\r') question++;
-  question[0] = 0;
-  question = strstr(buf, "Question: ")+10;
-  if (strlen(question) == 0) {
+  problem += 9;
+  int tmp = read(sd, buf, (1 << 9) + 1);
+  if (tmp <= 0) {
     write(sd, "Write something!", 16);
     return;
   }
+  if (tmp > (1 << 9)) {
+    string resp =
+      "Questions with more than "+
+      to<string>(1 << 9)+
+      " characters are not allowed!"
+    ;
+    write(sd, resp.c_str(), resp.size());
+    return;
+  }
+  buf[tmp] = 0;
   write(sd, "Question sent. Wait and refresh.", 32);
   
   // save
@@ -166,7 +182,7 @@ static void create_question(int sd, char* buf) {
   close(fd);
   remove(fn);
   FILE* fp = fopen(fn, "w");
-  fprintf(fp, "Problem: %c\nQuestion: %s\n", problem[0], question);
+  fprintf(fp, "Problem: %c\nQuestion: %s\n", problem[0], buf);
   fclose(fp);
   Global::unlock_question_file();
   system("gedit %s &", fn);
@@ -190,7 +206,7 @@ static void* client(void* ptr) {
   
        if (!read_headers(sd, buf))        write(sd, "Incomplete request!", 19);
   else if (buf[0] == 'G')                 send_page(sd, settings);
-  else if (time(nullptr) < settings.end)  create_question(sd, buf);
+  else if (time(nullptr) < settings.end)  create_question(sd, buf, settings);
   else                                    write(sd, "Contest is over!", 16);
   
   // close
