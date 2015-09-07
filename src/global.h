@@ -68,6 +68,8 @@ void lock_att_file();
 void unlock_att_file();
 void lock_nextid_file();
 void unlock_nextid_file();
+void lock_question_file();
+void unlock_question_file();
 
 } // namespace Global
 

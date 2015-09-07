@@ -16,6 +16,7 @@
 #include "scoreboard.h"
 #include "rejudger.h"
 #include "statement.h"
+#include "clarification.h"
 
 using namespace std;
 
@@ -109,6 +110,7 @@ static bool quit = false;
 static list<pthread_t> threads;
 static pthread_mutex_t attfile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t nextidfile_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t questionfile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int msqid;
 
 static key_t msgqueue() {
@@ -122,7 +124,9 @@ static void term(int) {
   remove("contest.bin");
   pthread_mutex_lock(&attfile_mutex);
   pthread_mutex_lock(&nextidfile_mutex);
+  pthread_mutex_lock(&questionfile_mutex);
   quit = true;
+  pthread_mutex_unlock(&questionfile_mutex);
   pthread_mutex_unlock(&nextidfile_mutex);
   pthread_mutex_unlock(&attfile_mutex);
   for (pthread_t& thread : threads) pthread_join(thread, nullptr);
@@ -167,6 +171,7 @@ void start(int argc, char** argv) {
   Scoreboard::fire();
   Rejudger::fire(msqid);
   Statement::fire();
+  Clarification::fire();
   for (pthread_t& thread : threads) pthread_join(thread, nullptr);
 }
 
@@ -207,6 +212,14 @@ void lock_nextid_file() {
 
 void unlock_nextid_file() {
   pthread_mutex_unlock(&nextidfile_mutex);
+}
+
+void lock_question_file() {
+  pthread_mutex_lock(&questionfile_mutex);
+}
+
+void unlock_question_file() {
+  pthread_mutex_unlock(&questionfile_mutex);
 }
 
 } // namespace Global

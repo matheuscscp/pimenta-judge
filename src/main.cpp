@@ -7,8 +7,6 @@ static void usagemode() {
     "  start <judge port> <score port> <statement port> <clarification port>\n"
     "  stop\n"
     "  rejudge <attempt id> <verdict number>\n"
-    "  clarifications\n"
-    "  clarify <clarification id> <answer>\n"
     "Verdict numbers:\n"
     "  AC  = %d\n"
     "  CE  = %d\n"
