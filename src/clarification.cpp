@@ -149,6 +149,7 @@ static void create_question(int sd, char* buf, Settings& settings) {
     problem == nullptr ||
     problem[9] < 'A' || problem[9] > char('A' + settings.problems.size() - 1)
   ) {
+    ignoresd(sd);
     write(sd, "Choose a problem!", 17);
     return;
   }

@@ -142,10 +142,12 @@ static void handle_attempt(int sd, char* buf, Settings& settings) {
   }
   string pass = password(headers["Team:"]);
   if (pass == "" || pass != headers["Password:"]) {
+    ignoresd(sd);
     write(sd, "Invalid team/password!", 22);
     return;
   }
   if (!valid_filename(settings, headers["File-name:"])) {
+    ignoresd(sd);
     write(sd, "Invalid file name!", 18);
     return;
   }
@@ -154,6 +156,7 @@ static void handle_attempt(int sd, char* buf, Settings& settings) {
     string resp =
       "Files with more than "+to<string>(BSIZ)+" bytes are not allowed!"
     ;
+    ignoresd(sd);
     write(sd, resp.c_str(), resp.size());
     return;
   }
