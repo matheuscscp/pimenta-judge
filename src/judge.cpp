@@ -149,10 +149,25 @@ static void handle_attempt(int sd, char* buf, Settings& settings) {
     write(sd, "Invalid file name!", 18);
     return;
   }
+  int file_size = to<int>(headers["File-size:"]);
+  if (file_size > BSIZ) {
+    string resp =
+      "Files with more than "+to<string>(BSIZ)+" bytes are not allowed!"
+    ;
+    write(sd, resp.c_str(), resp.size());
+    return;
+  }
   
-  // seek data
-  char* btmp = strstr(buf, "\r\n\r\n");
-  btmp += 4;
+  // read data
+  for (int i = 0; file_size > 0;) {
+    int rb = read(sd, &buf[i], file_size);
+    if (rb < 0) {
+      write(sd, "Incomplete request!", 19);
+      return;
+    }
+    file_size -= rb;
+    i += rb;
+  }
   
   // generate id
   Global::lock_nextid_file();
@@ -175,7 +190,7 @@ static void handle_attempt(int sd, char* buf, Settings& settings) {
   string path = "./"+fn;
   fn += headers["File-name:"];
   FILE* fp = fopen(fn.c_str(), "wb");
-  fwrite(btmp, to<int>(headers["File-size:"]), 1, fp);
+  fwrite(buf, to<int>(headers["File-size:"]), 1, fp);
   fclose(fp);
   
   // respond
@@ -253,18 +268,43 @@ static void send_form(int sd) {
   write(sd, form.c_str(), form.size());
 }
 
+static bool read_headers(int sd, char* buf) {
+  for (int i = 0, state = 0; read(sd, &buf[i], 1) == 1; i++) {
+    switch (state) {
+      case 0: {
+        state = buf[i] == '\r' ? 1 : 0;
+        break;
+      }
+      case 1: {
+        if (buf[i] == '\r') break;
+        state = buf[i] == '\n' ? 2 : 0;
+        break;
+      }
+      case 2: {
+        state = buf[i] == '\r' ? 3 : 0;
+        break;
+      }
+      case 3: {
+             if (buf[i] == '\r') state = 1;
+        else if (buf[i] == '\n') {
+          buf[i+1] = 0;
+          return true;
+        }
+        else                     state = 0;
+      }
+    }
+  }
+  return false;
+}
+
 static void* client(void* ptr) {
   // fetch socket
   int* sdptr = (int*)ptr;
   int sd = *sdptr;
   delete sdptr;
   
-  // read data
   char* buf = new char[BSIZ];
-  int bsiz = read(sd, buf, BSIZ);
-  
-  // handle
-  if (bsiz == BSIZ) write(sd, "Too much data!", 14);
+  if (!read_headers(sd, buf)) write(sd, "Incomplete request!", 19);
   else if (buf[0] == 'G') send_form(sd);
   else { // post with attempt
     Settings settings;
