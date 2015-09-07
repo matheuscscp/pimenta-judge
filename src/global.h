@@ -21,6 +21,8 @@ struct Attempt {
   time_t when;
 };
 
+int timeout(bool&, int, const char*);
+
 template <typename NewType, typename T>
 NewType to(const T& x) {
   std::stringstream ss; ss << x;
@@ -35,7 +37,6 @@ int system(const char* fmt, Args... args) {
   return ::system(cmd);
 }
 
-int timeout(bool&, int, const char*);
 template <typename... Args>
 int timeout(bool& tle, int s, const char* fmt, Args... args) {
   char cmd[256];
