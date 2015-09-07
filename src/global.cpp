@@ -162,6 +162,7 @@ void start(int argc, char** argv) {
   daemon(1, 0);
   Contest(getpid(), msgqueue());
   signal(SIGTERM, term);
+  signal(SIGPIPE, SIG_IGN);
   Judge::fire();
   Scoreboard::fire();
   Rejudger::fire(msqid);
