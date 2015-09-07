@@ -27,8 +27,8 @@ static void* client(void* ptr) {
   delete sdptr;
   
   // ignore data
-  char* buf = new char[1024];
-  while (read(sd, buf, 1024) == 1024);
+  char* buf = new char[1 << 10];
+  while (read(sd, buf, 1 << 10) == 1 << 10);
   delete[] buf;
   
   // make local copy of scoreboard
