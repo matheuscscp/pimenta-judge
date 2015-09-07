@@ -249,6 +249,7 @@ static void send_form(int sd) {
     "  </head>\n"
     "  <body>\n"
     "    <h1 align=\"center\">Pimenta Judgezzz~*~*</h1>\n"
+    "    <h2 align=\"center\">Submission</h2>\n"
     "    <h4 align=\"center\" id=\"response\"></h4>\n"
     "    <table align=\"center\">\n"
     "      <tr>\n"
