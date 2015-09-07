@@ -18,6 +18,7 @@
 
 #include "judge.h"
 #include "scoreboard.h"
+#include "rejudger.h"
 
 using namespace std;
 
@@ -54,6 +55,11 @@ Settings::Settings() {
     f >> tmp >> this->problems[i];
   }
 }
+
+rejudgemsg::rejudgemsg(int id, char verdict)
+: mtype(1), id(id), verdict(verdict) {}
+
+size_t rejudgemsg::size() const { return sizeof(rejudgemsg)-sizeof(long); }
 
 int timeout(bool& tle, int s, const char* cmd) {
   tle = false;
@@ -102,15 +108,6 @@ struct Contest {
   }
 };
 
-struct rejudgemsg {
-  long mtype;
-  int id;
-  char verdict;
-  rejudgemsg(int id = 0, char verdict = 0)
-  : mtype(1), id(id), verdict(verdict) {}
-  size_t size() const { return sizeof(rejudgemsg)-sizeof(long); }
-};
-
 static bool quit = false;
 static list<pthread_t> threads;
 static pthread_mutex_t attfile_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -133,35 +130,6 @@ static void term(int) {
   pthread_mutex_unlock(&attfile_mutex);
   for (pthread_t& thread : threads) pthread_join(thread, nullptr);
   exit(0);
-}
-
-static void rejudge(int id, char verdict) {
-  pthread_mutex_lock(&attfile_mutex);
-  FILE* fp = fopen("attempts.bin", "r+b");
-  if (fp) {
-    Attempt att;
-    while (fread(&att, sizeof att, 1, fp) == 1) {
-      if (att.id == id) {
-        att.verdict = verdict;
-        fseek(fp, -(sizeof att), SEEK_CUR);
-        fwrite(&att, sizeof att, 1, fp);
-        break;
-      }
-    }
-    fclose(fp);
-  }
-  pthread_mutex_unlock(&attfile_mutex);
-}
-
-static void* rejudger(void*) {
-  rejudgemsg msg;
-  while (!quit) {
-    if (msgrcv(msqid, &msg, msg.size(), 0, IPC_NOWAIT) < 0) {
-      usleep(25000); continue;
-    }
-    ::rejudge(msg.id, msg.verdict);
-  }
-  return nullptr;
 }
 
 static void* client(void* ptr) {
@@ -270,7 +238,7 @@ void start(int argc, char** argv) {
   signal(SIGTERM, term);
   Judge::fire();
   Scoreboard::fire();
-  fire(rejudger);
+  Rejudger::fire(msqid);
   fire(contestfile);
   for (pthread_t& thread : threads) pthread_join(thread, nullptr);
 }
@@ -282,7 +250,7 @@ void stop() {
 
 void rejudge(int id, char verdict) {
   Contest c;
-  if (!c.pid) ::rejudge(id, verdict);
+  if (!c.pid) Rejudger::rejudge(id, verdict);
   else {
     rejudgemsg msg(id, verdict);
     msgsnd(msgget(c.key, 0), &msg, msg.size(), 0);

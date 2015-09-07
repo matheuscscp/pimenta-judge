@@ -21,6 +21,14 @@ struct Attempt {
   time_t when;
 };
 
+struct rejudgemsg {
+  long mtype;
+  int id;
+  char verdict;
+  rejudgemsg(int, char);
+  size_t size() const;
+};
+
 int timeout(bool&, int, const char*);
 
 template <typename NewType, typename T>
