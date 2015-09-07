@@ -30,6 +30,7 @@ struct rejudgemsg {
 };
 
 int timeout(bool&, int, const char*);
+void ignoresd(int);
 
 template <typename NewType, typename T>
 NewType to(const T& x) {

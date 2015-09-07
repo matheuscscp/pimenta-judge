@@ -90,6 +90,12 @@ int timeout(bool& tle, int s, const char* cmd) {
   return -1;
 }
 
+void ignoresd(int sd) {
+  char* buf = new char[1 << 10];
+  while (read(sd, buf, 1 << 10) == (1 << 10));
+  delete[] buf;
+}
+
 struct Contest {
   pid_t pid;
   key_t key;

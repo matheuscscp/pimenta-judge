@@ -201,8 +201,10 @@ static void* client(void* ptr) {
     send_page(sd, settings);
   else if (settings.begin <= now && now < settings.end)
     create_question(sd, buf, settings);
-  else
+  else {
+    ignoresd(sd);
     write(sd, "The contest is not running.", 27);
+  }
   
   // close
   delete[] buf;

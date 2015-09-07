@@ -245,9 +245,9 @@ static void send_form(int sd) {
     "    </script>\n"
     "  </head>\n"
     "  <body>\n"
-    "    <h1>Pimenta Judgezzz~*~*</h1>\n"
-    "    <h4 id=\"response\"></h4>\n"
-    "    <table>\n"
+    "    <h1 align=\"center\">Pimenta Judgezzz~*~*</h1>\n"
+    "    <h4 align=\"center\" id=\"response\"></h4>\n"
+    "    <table align=\"center\">\n"
     "      <tr>\n"
     "        <td>Team:</td>\n"
     "        <td><input type=\"text\" id=\"team\" autofocus/></td>\n"
@@ -260,8 +260,8 @@ static void send_form(int sd) {
     "        <td>File:</td>\n"
     "        <td><input type=\"file\" id=\"file\" /></td>\n"
     "      </tr>\n"
+    "      <tr><td><button onclick=\"sendform()\">Send</button></td></tr>\n"
     "    </table>\n"
-    "    <button onclick=\"sendform()\">Send</button>\n"
     "  </body>\n"
     "</html>\n"
   ;
@@ -312,7 +312,10 @@ static void* client(void* ptr) {
     if (settings.begin <= now && now < settings.end) {
       handle_attempt(sd, buf, settings);
     }
-    else write(sd, "The contest is not running.", 27);
+    else {
+      ignoresd(sd);
+      write(sd, "The contest is not running.", 27);
+    }
   }
   
   // close
