@@ -72,6 +72,7 @@ static void send_page(int sd, Settings& settings) {
     "Content-Type: text/html\r\n"
     "\r\n"
     "<html>\n"
+    "  <meta charset=\"UTF-8\">\n"
     "  <head>\n"
     "    <script>\n"
     "      function sendform() {\n"
@@ -179,11 +180,8 @@ static void create_question(int sd, char* buf, Settings& settings) {
     return;
   }
   int fd = mkstemp(fn);
+  dprintf(fd, "Problem: %c\nQuestion: %s\n", problem[0], buf);
   close(fd);
-  remove(fn);
-  FILE* fp = fopen(fn, "w");
-  fprintf(fp, "Problem: %c\nQuestion: %s\n", problem[0], buf);
-  fclose(fp);
   Global::unlock_question_file();
   system("gedit %s &", fn);
 }
@@ -246,10 +244,32 @@ static void* server(void*) {
 }
 
 static void update() {
-  //TODO
+  struct clarification {
+    string str;
+    bool read(FILE* fp) {
+      char problem;
+      if (fscanf(fp, "%c", &problem) != 1) return false;
+      str  = "<tr>";
+      str += ("<td>"+to<string>(problem)+"</td><td>");
+      fgetc(fp);
+      fgetc(fp);
+      for (char c = fgetc(fp); c != '"'; str += c, c = fgetc(fp));
+      fgetc(fp);
+      fgetc(fp);
+      str += "</td><td>";
+      for (char c = fgetc(fp); c != '"'; str += c, c = fgetc(fp));
+      fgetc(fp);
+      str += "</td></tr>";
+      return true;
+    }
+  };
   
   // update back buffer
-  (*backbuf) = "<tr><td>A</td><td>vei</td><td>kkk</td></tr>";
+  FILE* fp = fopen("clarifications.txt", "r");
+  if (!fp) return;
+  (*backbuf) = "";
+  for (clarification c; c.read(fp); (*backbuf) += c.str);
+  fclose(fp);
   
   // swap buffers
   string* tmp = backbuf;
