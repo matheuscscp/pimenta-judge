@@ -42,11 +42,11 @@ static void* client(void* ptr) {
     "Connection: close\r\r"
     "Content-Type: text/html\r\n"
     "\r\n"
-    "<html><head><meta http-equiv=\"refresh\" content=\"10\" /></head>"
-    "<body><table align=\"center\" border=\"3\">"+
-    scoreboard+
+    "<html><head><meta http-equiv=\"refresh\" content=\"10\" /></head><body>"
     "<h1 align=\"center\">Pimenta Judgezzz~*~*</h1>"
     "<h2 align=\"center\">Scoreboard</h2>"
+    "<table align=\"center\" border=\"3\">"+
+    scoreboard+
     "</table></body></html>"
   ;
   write(sd, response.c_str(), response.size());

@@ -4,10 +4,12 @@ static void usagemode() {
   printf(
     "Usage mode:\n"
     "  install <new directory name without trailing slash>\n"
-    "  start <judge port> <scoreboard port> <statement port>\n"
+    "  start <judge port> <score port> <statement port> <clarification port>\n"
     "  stop\n"
     "  rejudge <attempt id> <verdict number>\n"
-    "Verdicts:\n"
+    "  clarifications\n"
+    "  clarify <clarification id> <answer>\n"
+    "Verdict numbers:\n"
     "  AC  = %d\n"
     "  CE  = %d\n"
     "  RTE = %d\n"
@@ -26,7 +28,7 @@ int main(int argc, char** argv) {
     Global::install(argv[2]);
   }
   else if (mode == "start") {
-    if (argc < 5) { usagemode(); return 0; }
+    if (argc < 6) { usagemode(); return 0; }
     Global::start(argc, argv);
   }
   else if (mode == "stop") {
