@@ -253,11 +253,11 @@ static void update() {
       str += ("<td>"+to<string>(problem)+"</td><td>");
       fgetc(fp);
       fgetc(fp);
-      for (char c = fgetc(fp); c != '"'; str += c, c = fgetc(fp));
+      for (char c = fgetc(fp); c != '"' && c != EOF; str += c, c = fgetc(fp));
       fgetc(fp);
       fgetc(fp);
       str += "</td><td>";
-      for (char c = fgetc(fp); c != '"'; str += c, c = fgetc(fp));
+      for (char c = fgetc(fp); c != '"' && c != EOF; str += c, c = fgetc(fp));
       fgetc(fp);
       str += "</td></tr>";
       return true;
