@@ -193,19 +193,16 @@ static void* client(void* ptr) {
   delete sdptr;
   
   char* buf = new char[1 << 10];
-  
-  // check contest time
   Settings settings;
-  if (time(nullptr) < settings.begin) {
-    delete[] buf;
-    close(sd);
-    return nullptr;
-  }
-  
-       if (!read_headers(sd, buf))        write(sd, "Incomplete request!", 19);
-  else if (buf[0] == 'G')                 send_page(sd, settings);
-  else if (time(nullptr) < settings.end)  create_question(sd, buf, settings);
-  else                                    write(sd, "Contest is over!", 16);
+  time_t now = time(nullptr);
+  if (!read_headers(sd, buf))
+    write(sd, "Incomplete request!", 19);
+  else if (buf[0] == 'G')
+    send_page(sd, settings);
+  else if (settings.begin <= now && now < settings.end)
+    create_question(sd, buf, settings);
+  else
+    write(sd, "The contest is not running.", 27);
   
   // close
   delete[] buf;

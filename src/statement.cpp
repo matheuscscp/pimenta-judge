@@ -24,6 +24,7 @@ static void* client(void* ptr) {
   // check contest time
   Settings settings;
   if (time(nullptr) < settings.begin) {
+    write(sd, "The contest is not running.", 27);
     delete[] buf;
     close(sd);
     return nullptr;
