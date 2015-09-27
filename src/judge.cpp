@@ -401,6 +401,12 @@ static void load_scripts() {
     if (tle) return TLE;
     return AC;
   };
+  scripts[".py3"] = [](char p, const char* path, const char* fn, Settings& settings) {
+    bool tle;
+    if (timeout(tle, settings.problems[p-'A'], "python3 %s < problems/%c.in > %sout.txt", fn, p, path)) return RTE;
+    if (tle) return TLE;
+    return AC;
+  };
   scripts[".cs"] = [](char p, const char* path, const char* fn, Settings& settings) {
     if (system("mcs %s", fn)) return CE;
     bool tle;

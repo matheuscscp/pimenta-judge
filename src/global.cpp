@@ -150,7 +150,7 @@ void install(const string& dir) {
     "Begin:        2015 09 01 19 00\n"
     "End:          2015 12 25 23 50\n"
     "Freeze:       2015 12 25 23 50\n"
-    "No-verdict:  2015 12 25 23 50\n"
+    "No-verdict:   2015 12 25 23 50\n"
     "Problems: 1\n"
     "A-timelimit: 1\n"
   );
