@@ -1,5 +1,4 @@
 #include <cstring>
-#include <fstream>
 #include <set>
 #include <map>
 #include <functional>
@@ -92,12 +91,22 @@ struct QueueData {
   }
 };
 
-static string password(const string& team) {
-  fstream f("teams.txt");
-  if (!f.is_open()) return "";
-  string tmp, pass;
-  while (f >> tmp >> pass) if (tmp == team) return pass;
-  return "";
+static string login(const string& team, const string& password) {
+  FILE* fp = fopen("teams.txt", "r");
+  if (!fp) return "";
+  string name;
+  for (fgetc(fp); name == "" && !feof(fp); fgetc(fp)) {
+    string ntmp;
+    for (char c = fgetc(fp); c != '"'; c = fgetc(fp)) ntmp += c;
+    fgetc(fp);
+    string tmp;
+    for (char c = fgetc(fp); c != ' '; c = fgetc(fp)) tmp += c;
+    string pass;
+    for (char c = fgetc(fp); c != '\n'; c = fgetc(fp)) pass += c;
+    if (team == tmp && password == pass) name = ntmp;
+  }
+  fclose(fp);
+  return name;
 }
 
 static bool valid_filename(Settings& settings, const string& fn) {
@@ -140,8 +149,8 @@ static void handle_attempt(int sd, char* buf, Settings& settings) {
       if (headers.size() == 4) break;
     }
   }
-  string pass = password(headers["Team:"]);
-  if (pass == "" || pass != headers["Password:"]) {
+  string teamname = login(headers["Team:"], headers["Password:"]);
+  if (teamname == "") {
     ignoresd(sd);
     write(sd, "Invalid team/password!", 22);
     return;
@@ -200,7 +209,7 @@ static void handle_attempt(int sd, char* buf, Settings& settings) {
   string response = "Attempt "+to<string>(id)+": ";
   QueueData qd;
   qd.id = id;
-  qd.team = headers["Team:"];
+  qd.team = teamname;
   qd.fno = headers["File-name:"];
   qd.path = path;
   qd.fn = fn;

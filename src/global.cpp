@@ -156,10 +156,10 @@ void install(const string& dir) {
   );
   fclose(fp);
   fp = fopen((dir+"/teams.txt").c_str(), "w");
-  fprintf(fp, "Team1 Team1Password\n");
+  fprintf(fp, "\"Team 1\" Team1 Team1Password\n");
   fclose(fp);
   fp = fopen((dir+"/clarifications.txt").c_str(), "w");
-  fprintf(fp, "A \"Question must be between quotes\" \"The answer too\"\n");
+  fprintf(fp, "A \"The question must be between quotes\" \"The answer too\"\n");
   fclose(fp);
   mkdir((dir+"/problems").c_str(), 0777);
   fp = fopen((dir+"/problems/A.in").c_str(), "w");
