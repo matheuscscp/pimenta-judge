@@ -49,7 +49,7 @@ static void update() {
       ret += ("<td>"+team+"</td>");
       char i = 'A';
       for (const problem_t& p : problems) {
-        ret += "<td align=\"center\" width=\"70px\">";
+        ret += "<td class=\"problem\">";
         if (p.first == 0)     ret += '-';
         else if (p.first > 0) ret += img(i) + " (" + to<string>(p.first) + ")";
         else                  ret +=    "(" + to<string>(-p.first) + ")";
@@ -155,7 +155,7 @@ void send(int sd) {
     "Content-Type: text/html\r\n"
     "\r\n"
     "<h2>Scoreboard</h2>\n"
-    "<table border=\"3\">"+
+    "<table class=\"data\">"+
     scoreboard+
     "</table>"
   ;

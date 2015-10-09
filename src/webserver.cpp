@@ -18,7 +18,7 @@
 using namespace std;
 
 struct Request {
-  string line;
+  string line, uri;
   map<string, string> headers;
   Request(int sd) {
     // read socket
@@ -38,6 +38,12 @@ struct Request {
     // parse request line
     for (; buf[i] != '\r'; i++) line += buf[i];
     i += 2;
+    
+    // fetch uri
+    stringstream ss;
+    ss << line;
+    ss >> uri;
+    ss >> uri;
     
     // parse headers
     while (true) {
@@ -64,59 +70,6 @@ static pthread_mutex_t login_mutex = PTHREAD_MUTEX_INITIALIZER;
 static map<in_addr_t, pair<string, string>> teambyip;
 static map<string, set<in_addr_t>> teambylogin;
 
-static void showlogin(int sd) {
-  string form =
-    "HTTP/1.1 200 OK\r\n"
-    "Connection: close\r\r"
-    "Content-Type: text/html\r\n"
-    "\r\n"
-    "<html id=\"root\">\n"
-    "  <head>\n"
-    "    <title>Pimenta Judge</title>\n"
-    "    <script>\n"
-    "      function sendform() {\n"
-    "        team = document.getElementById(\"team\").value;\n"
-    "        pass = document.getElementById(\"pass\").value;\n"
-    "        if (window.XMLHttpRequest)\n"
-    "          xmlhttp = new XMLHttpRequest();\n"
-    "        else\n"
-    "          xmlhttp = new ActiveXObject(\"Microsoft.XMLHTTP\");\n"
-    "        xmlhttp.onreadystatechange = function() {\n"
-    "          if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {\n"
-    "            if (xmlhttp.responseText[0] == 'I') {\n"
-    "              response = document.getElementById(\"response\");\n"
-    "              response.innerHTML = xmlhttp.responseText;\n"
-    "            } else window.location = \"/\";\n"
-    "          }\n"
-    "        }\n"
-    "        xmlhttp.open(\"POST\", \"login\", true);\n"
-    "        xmlhttp.setRequestHeader(\"Team\", team);\n"
-    "        xmlhttp.setRequestHeader(\"Password\", pass);\n"
-    "        xmlhttp.send();\n"
-    "      }\n"
-    "    </script>\n"
-    "  </head>\n"
-    "  <body>\n"
-    "    <h1 align=\"center\">Pimenta Judgezzz~*~*</h1>\n"
-    "    <h2 align=\"center\">Login</h2>\n"
-    "    <h4 align=\"center\" id=\"response\"></h4>\n"
-    "    <table align=\"center\">\n"
-    "      <tr>\n"
-    "        <td>Team:</td>\n"
-    "        <td><input type=\"text\" id=\"team\" autofocus/></td>\n"
-    "      </tr>\n"
-    "      <tr>\n"
-    "        <td>Password:</td>\n"
-    "        <td><input type=\"password\" id=\"pass\" /></td>\n"
-    "      </tr>\n"
-    "      <tr><td><button onclick=\"sendform()\">Login</button></td></tr>\n"
-    "    </table>\n"
-    "  </body>\n"
-    "</html>\n"
-  ;
-  write(sd, form.c_str(), form.size());
-}
-
 static string login(const string& team, const string& password) {
   FILE* fp = fopen("teams.txt", "r");
   if (!fp) return "";
@@ -133,6 +86,51 @@ static string login(const string& team, const string& password) {
   }
   fclose(fp);
   return name;
+}
+
+static void file(int sd, string uri, const string& def) {
+  string notfound =
+    "<html>\n"
+      "<body>\n"
+        "<h1>Not Found</h1>\n"
+      "</body>\n"
+    "</html>\n"
+  ;
+  string ctype;
+  if (uri.find(".html") != string::npos) {
+    ctype = "text/html";
+  }
+  else if (uri.find(".css") != string::npos) {
+    ctype = "text/css";
+  }
+  else if (uri.find(".js") != string::npos) {
+    ctype = "application/javascript";
+  }
+  else if (uri.find(".gif") != string::npos) {
+    ctype = "application/octet-stream";
+  }
+  else {
+    uri = def;
+    ctype = "text/html";
+  }
+  FILE* fp = fopen(("www"+uri).c_str(), "rb");
+  if (!fp) ctype = "text/html";
+  string header =
+    "HTTP/1.1 200 OK\r\n"
+    "Connection: close\r\r"
+    "Content-Type: "+ctype+"\r\n"
+    "\r\n"
+  ;
+  write(sd, header.c_str(), header.size());
+  if (!fp) {
+    write(sd, notfound.c_str(), notfound.size());
+    return;
+  }
+  char* buf = new char[1<<10];
+  int sz;
+  while ((sz = fread(buf, 1, 1<<10, fp)) > 0) write(sd, buf, sz);
+  delete[] buf;
+  fclose(fp);
 }
 
 static void* zenity(void* ptr) {
@@ -202,91 +200,52 @@ static void* client(void* ptr) {
         write(cptr->sd, "k", 1);
       }
     }
-    else showlogin(cptr->sd);
+    else file(cptr->sd, req.uri, "/login.html");
     pthread_mutex_unlock(&login_mutex);
   }
   // logout
   else if (req.line.find("logout") != string::npos) {
     teambyip.erase(cptr->addr.sin_addr.s_addr);
     pthread_mutex_unlock(&login_mutex);
-    showlogin(cptr->sd);
+    file(cptr->sd, req.uri, "/login.html");
   }
   else {
     // fetch team info
     auto& team = teambyip[cptr->addr.sin_addr.s_addr];
     pthread_mutex_unlock(&login_mutex);
     
-    // fetch uri
-    stringstream ss;
-    ss << req.line;
-    string uri;
-    ss >> uri;
-    ss >> uri;
-    
     // post
     if (req.line[0] == 'P') {
-      if (uri.find("attempt") != string::npos) {
+      if (req.uri.find("attempt") != string::npos) {
         Judge::attempt(
           cptr->sd,
           team.first, team.second,
           req.headers["File-name"], to<int>(req.headers["File-size"])
         );
       }
-      else if (uri.find("question") != string::npos) {
+      else if (req.uri.find("question") != string::npos) {
         Clarification::question(
           cptr->sd, req.headers["Problem"], req.headers["Question"]
         );
       }
     }
     // data request
-    else if (uri.find("?") != string::npos) {
-      if (uri.find("teamname") != string::npos) {
+    else if (req.uri.find("?") != string::npos) {
+      if (req.uri.find("teamname") != string::npos) {
         write(cptr->sd, team.first.c_str(), team.first.size());
       }
-      else if (uri.find("scoreboard") != string::npos) {
+      else if (req.uri.find("scoreboard") != string::npos) {
         Scoreboard::send(cptr->sd);
       }
-      else if (uri.find("statement") != string::npos) {
-        statement(cptr->sd);
-      }
-      else if (uri.find("clarifications") != string::npos) {
+      else if (req.uri.find("clarifications") != string::npos) {
         Clarification::send(cptr->sd);
+      }
+      else if (req.uri.find("statement") != string::npos) {
+        statement(cptr->sd);
       }
     }
     // file request
-    else {
-      string ctype;
-      if (uri.find(".css") != string::npos) {
-        ctype = "text/css";
-      }
-      else if (uri.find(".js") != string::npos) {
-        ctype = "application/javascript";
-      }
-      else if (uri.find(".gif") != string::npos) {
-        ctype = "application/octet-stream";
-      }
-      else {
-        ctype = "text/html";
-        uri = "/index.html";
-      }
-      if (ctype != "") {
-        string header =
-          "HTTP/1.1 200 OK\r\n"
-          "Connection: close\r\r"
-          "Content-Type: "+ctype+"\r\n"
-          "\r\n"
-        ;
-        FILE* fp = fopen(("www"+uri).c_str(), "rb");
-        if (fp) {
-          char* buf = new char[1<<10];
-          int sz;
-          write(cptr->sd, header.c_str(), header.size());
-          while ((sz = fread(buf, 1, 1<<10, fp)) > 0) write(cptr->sd, buf, sz);
-          delete[] buf;
-          fclose(fp);
-        }
-      }
-    }
+    else file(cptr->sd, req.uri, "/index.html");
   }
   
   close(cptr->sd);
