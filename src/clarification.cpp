@@ -45,44 +45,12 @@ static string clarifications(const string& team) {
 namespace Clarification {
 
 void send(int sd, const string& team) {
-  Settings settings;
-  
-  // create select
-  string opts;
-  for (int i = 0; i < int(settings.problems.size()); i++) {
-    string prob = to<string>(char('A'+i));
-    opts += ("<option value=\""+prob+"\">"+prob+"</option>\n");
-  }
-  string select =
-    "<select id=\"problem\" autofocus>\n"
-    "  <option></option>\n"+
-       opts+
-    "</select>\n"
-  ;
-  
-  // respond
   string response =
     "HTTP/1.1 200 OK\r\n"
     "Connection: close\r\r"
     "Content-Type: text/html\r\n"
     "\r\n"
-    "<h2>Clarifications</h2>\n"
-    "<h4 id=\"response\"></h4>\n"
-    "<table>\n"
-      "<tr>\n"
-        "<td>Problem:</td>\n"
-        "<td>"+select+"</td>\n"
-      "</tr>\n"
-      "<tr>\n"
-        "<td>Question:</td>\n"
-        "<td><textarea "
-             "id=\"question\""
-             "rows=\"4\" cols=\"50\""
-            "></textarea></td>\n"
-      "</tr>\n"
-      "<tr><td><button onclick=\"question()\">Send</button></td></tr>\n"
-    "</table>\n"
-    "<table border=\"3\">\n"
+    "<table class=\"data\">\n"
       "<tr><th>Problem</th><th>Question</th><th>Answer</th></tr>\n"+
        clarifications(team)+
     "</table>\n"

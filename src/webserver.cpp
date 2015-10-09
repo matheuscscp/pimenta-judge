@@ -234,6 +234,11 @@ static void* client(void* ptr) {
       if (req.uri.find("teamname") != string::npos) {
         write(cptr->sd, team.first.c_str(), team.first.size());
       }
+      else if (req.uri.find("problems") != string::npos) {
+        Settings settings;
+        string ans = to<string>(settings.problems.size());
+        write(cptr->sd, ans.c_str(), ans.size());
+      }
       else if (req.uri.find("scoreboard") != string::npos) {
         Scoreboard::send(cptr->sd);
       }
