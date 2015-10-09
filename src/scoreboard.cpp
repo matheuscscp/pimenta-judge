@@ -16,6 +16,12 @@ static string* frontbuf = &buf1;
 static string* backbuf = &buf2;
 static pthread_mutex_t frontbuf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static string img(char p) {
+  string ret = "<img class=\"balloon\" src=\"";
+  ret += p;
+  return ret + ".gif\">";
+}
+
 static void update() {
   typedef pair<int, time_t> problem_t;
   struct Entry {
@@ -41,12 +47,14 @@ static void update() {
     string str() const {
       string ret = "<tr>";
       ret += ("<td>"+team+"</td>");
+      char i = 'A';
       for (const problem_t& p : problems) {
         ret += "<td align=\"center\" width=\"70px\">";
         if (p.first == 0)     ret += '-';
-        else if (p.first > 0) ret += "OK (" + to<string>( p.first) + ")";
+        else if (p.first > 0) ret += img(i) + " (" + to<string>(p.first) + ")";
         else                  ret +=    "(" + to<string>(-p.first) + ")";
         ret += "</td>";
+        i++;
       }
       ret += ("<td>"+to<string>(solved)+" ("+to<string>(penalty)+")"+"</td>");
       return ret+"</tr>";
