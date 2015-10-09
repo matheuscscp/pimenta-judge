@@ -110,81 +110,6 @@ static int genid() {
   return current;
 }
 
-static void handle_attempt(
-  int sd, Settings& settings,
-  const string& teamname, const string& team,
-  const string& file_name, int file_size
-) {
-  // check file name
-  if (!valid_filename(settings, file_name)) {
-    ignoresd(sd);
-    write(sd, "Invalid file name!", 18);
-    return;
-  }
-  
-  // check file size
-  if (file_size > BSIZ) {
-    string resp =
-      "Files with more than "+to<string>(BSIZ)+" bytes are not allowed!"
-    ;
-    ignoresd(sd);
-    write(sd, resp.c_str(), resp.size());
-    return;
-  }
-  
-  // read data
-  char* buf = new char[BSIZ];
-  for (int i = 0, fs = file_size; fs > 0;) {
-    int rb = read(sd, &buf[i], fs);
-    if (rb < 0) {
-      write(sd, "Incomplete request!", 19);
-      delete[] buf;
-      return;
-    }
-    fs -= rb;
-    i += rb;
-  }
-  
-  // generate id
-  Global::lock_nextid_file();
-  if (!Global::alive()) {
-    Global::unlock_nextid_file();
-    delete[] buf;
-    return;
-  }
-  int id = genid();
-  Global::unlock_nextid_file();
-  
-  // save file
-  string fn = "attempts/";
-  mkdir(fn.c_str(), 0777);
-  fn += (team+"/");
-  mkdir(fn.c_str(), 0777);
-  fn += file_name[0]; fn += "/";
-  mkdir(fn.c_str(), 0777);
-  fn += (to<string>(id)+"/");
-  mkdir(fn.c_str(), 0777);
-  string path = "./"+fn;
-  fn += file_name;
-  FILE* fp = fopen(fn.c_str(), "wb");
-  fwrite(buf, file_size, 1, fp);
-  fclose(fp);
-  delete[] buf;
-  
-  // respond
-  string response = "Attempt "+to<string>(id)+": ";
-  QueueData qd;
-  qd.id = id;
-  qd.team = teamname;
-  qd.fno = file_name;
-  qd.path = path;
-  qd.fn = fn;
-  qd.settings = settings;
-  qd.push();
-  response += qd.verdict;
-  write(sd, response.c_str(), response.size());
-}
-
 static void load_scripts() {
   scripts[".c"] = [](char p, const char* path, const char* fn, Settings& settings) {
     if (system("gcc -std=c11 %s -o %s%c", fn, path, p)) return CE;
@@ -251,12 +176,81 @@ void fire() {
 }
 
 void attempt(
-  int sd, const string& tn, const string& team, const string& fn, int fsize
+  int sd,
+  const string& teamname, const string& team,
+  const string& file_name, int file_size
 ) {
   Settings settings;
   time_t now = time(nullptr);
   if (settings.begin <= now && now < settings.end) {
-    handle_attempt(sd, settings, tn, team, fn, fsize);
+    // check file name
+    if (!valid_filename(settings, file_name)) {
+      ignoresd(sd);
+      write(sd, "Invalid file name!", 18);
+      return;
+    }
+    
+    // check file size
+    if (file_size > BSIZ) {
+      string resp =
+        "Files with more than "+to<string>(BSIZ)+" bytes are not allowed!"
+      ;
+      ignoresd(sd);
+      write(sd, resp.c_str(), resp.size());
+      return;
+    }
+    
+    // read data
+    char* buf = new char[BSIZ];
+    for (int i = 0, fs = file_size; fs > 0;) {
+      int rb = read(sd, &buf[i], fs);
+      if (rb < 0) {
+        write(sd, "Incomplete request!", 19);
+        delete[] buf;
+        return;
+      }
+      fs -= rb;
+      i += rb;
+    }
+    
+    // generate id
+    Global::lock_nextid_file();
+    if (!Global::alive()) {
+      Global::unlock_nextid_file();
+      delete[] buf;
+      return;
+    }
+    int id = genid();
+    Global::unlock_nextid_file();
+    
+    // save file
+    string fn = "attempts/";
+    mkdir(fn.c_str(), 0777);
+    fn += (team+"/");
+    mkdir(fn.c_str(), 0777);
+    fn += file_name[0]; fn += "/";
+    mkdir(fn.c_str(), 0777);
+    fn += (to<string>(id)+"/");
+    mkdir(fn.c_str(), 0777);
+    string path = "./"+fn;
+    fn += file_name;
+    FILE* fp = fopen(fn.c_str(), "wb");
+    fwrite(buf, file_size, 1, fp);
+    fclose(fp);
+    delete[] buf;
+    
+    // respond
+    string response = "Attempt "+to<string>(id)+": ";
+    QueueData qd;
+    qd.id = id;
+    qd.team = teamname;
+    qd.fno = file_name;
+    qd.path = path;
+    qd.fn = fn;
+    qd.settings = settings;
+    qd.push();
+    response += qd.verdict;
+    write(sd, response.c_str(), response.size());
   }
   else {
     ignoresd(sd);

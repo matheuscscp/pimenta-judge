@@ -225,7 +225,7 @@ static void* client(void* ptr) {
       }
       else if (req.uri.find("question") != string::npos) {
         Clarification::question(
-          cptr->sd, req.headers["Problem"], req.headers["Question"]
+          cptr->sd, team.second, req.headers["Problem"], req.headers["Question"]
         );
       }
     }
@@ -238,7 +238,7 @@ static void* client(void* ptr) {
         Scoreboard::send(cptr->sd);
       }
       else if (req.uri.find("clarifications") != string::npos) {
-        Clarification::send(cptr->sd);
+        Clarification::send(cptr->sd, team.second);
       }
       else if (req.uri.find("statement") != string::npos) {
         statement(cptr->sd);
