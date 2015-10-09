@@ -1,5 +1,5 @@
 # pimenta-judge
-Very simple contest system with automatic judging and ACM ICPC format.
+ACM ICPC contest system.
 
 TODO:
 - support multiple input files per problem
