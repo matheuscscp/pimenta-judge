@@ -156,14 +156,14 @@ static void statement(int sd) {
       "HTTP/1.1 200 OK\r\n"
       "Connection: close\r\r"
       "Content-Type: application/octet-stream\r\n"
-      "Content-Disposition: attachment; filename=\"contest.pdf\"\r\n"
+      "Content-Disposition: attachment; filename=\"statement.pdf\"\r\n"
       "\r\n"
     ;
     send = true;
   }
   write(sd, response.c_str(), response.size());
   if (!send) return;
-  FILE* fp = fopen("contest.pdf", "rb");
+  FILE* fp = fopen("statement.pdf", "rb");
   if (!fp) return;
   char* buf = new char[1<<20];
   for (size_t rd = 0; (rd = fread(buf, 1, 1 << 20, fp)) > 0;) {
