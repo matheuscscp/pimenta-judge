@@ -15,8 +15,8 @@
 #include "judge.h"
 #include "scoreboard.h"
 #include "clarification.h"
-#include "statement.h"
 #include "rejudger.h"
+#include "webserver.h"
 
 using namespace std;
 
@@ -94,6 +94,14 @@ void ignoresd(int sd) {
   char* buf = new char[1 << 10];
   while (read(sd, buf, 1 << 10) == (1 << 10));
   delete[] buf;
+}
+
+template <>
+string to<string, in_addr_t>(const in_addr_t& x) {
+  char* ptr = (char*)&x;
+  string ret = to<string>(int(ptr[0])&0x0ff);
+  for (int i = 1; i < 4; i++) ret += ("."+to<string>(int(ptr[i])&0x0ff));
+  return ret;
 }
 
 struct Contest {
@@ -179,8 +187,8 @@ void start(int argc, char** argv) {
   Judge::fire();
   Scoreboard::fire();
   Clarification::fire();
-  Statement::fire();
   Rejudger::fire(msqid);
+  WebServer::fire();
   for (pthread_t& thread : threads) pthread_join(thread, nullptr);
 }
 

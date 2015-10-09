@@ -4,6 +4,9 @@
 namespace Judge {
 
 void fire();
+void attempt(
+  int, const std::string&, const std::string&, const std::string&, int
+);
 
 } // namespace Judge
 

@@ -224,7 +224,7 @@ static void* server(void*) {
   sockaddr_in addr;
   memset(&addr, 0, sizeof addr);
   addr.sin_family = AF_INET;
-  addr.sin_port = htons(to<uint16_t>(Global::arg[4]));
+  addr.sin_port = htons(to<uint16_t>(Global::arg[3]));
   addr.sin_addr.s_addr = htonl(INADDR_ANY);
   bind(sd, (sockaddr*)&addr, sizeof addr);
   

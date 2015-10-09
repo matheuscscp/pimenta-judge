@@ -5,6 +5,8 @@
 #include <string>
 #include <sstream>
 
+#include <netinet/in.h>
+
 enum {AC = 0, CE, RTE, TLE, WA, PE};
 
 struct Settings {
@@ -38,6 +40,8 @@ NewType to(const T& x) {
   NewType ret; ss >> ret;
   return ret;
 }
+template <>
+std::string to<std::string, in_addr_t>(const in_addr_t&);
 
 template <typename... Args>
 int system(const char* fmt, Args... args) {

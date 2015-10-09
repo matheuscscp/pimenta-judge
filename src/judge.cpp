@@ -5,9 +5,6 @@
 #include <queue>
 
 #include <unistd.h>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <sys/stat.h>
 
 #include "judge.h"
@@ -91,24 +88,6 @@ struct QueueData {
   }
 };
 
-static string login(const string& team, const string& password) {
-  FILE* fp = fopen("teams.txt", "r");
-  if (!fp) return "";
-  string name;
-  for (fgetc(fp); name == "" && !feof(fp); fgetc(fp)) {
-    string ntmp;
-    for (char c = fgetc(fp); c != '"'; c = fgetc(fp)) ntmp += c;
-    fgetc(fp);
-    string tmp;
-    for (char c = fgetc(fp); c != ' '; c = fgetc(fp)) tmp += c;
-    string pass;
-    for (char c = fgetc(fp); c != '\n'; c = fgetc(fp)) pass += c;
-    if (team == tmp && password == pass) name = ntmp;
-  }
-  fclose(fp);
-  return name;
-}
-
 static bool valid_filename(Settings& settings, const string& fn) {
   return
     ('A' <= fn[0]) && (fn[0] <= ('A' + int(settings.problems.size())-1)) &&
@@ -131,36 +110,19 @@ static int genid() {
   return current;
 }
 
-static void handle_attempt(int sd, char* buf, Settings& settings) {
-  // parse headers
-  set<string> what_headers;
-  what_headers.insert("Team:");
-  what_headers.insert("Password:");
-  what_headers.insert("File-name:");
-  what_headers.insert("File-size:");
-  map<string, string> headers;
-  stringstream ss; ss << buf;
-  string tmp;
-  while (ss >> tmp) {
-    if (what_headers.find(tmp) != what_headers.end()) {
-      string t2;
-      ss >> t2;
-      headers[tmp] = t2;
-      if (headers.size() == 4) break;
-    }
-  }
-  string teamname = login(headers["Team:"], headers["Password:"]);
-  if (teamname == "") {
-    ignoresd(sd);
-    write(sd, "Invalid team/password!", 22);
-    return;
-  }
-  if (!valid_filename(settings, headers["File-name:"])) {
+static void handle_attempt(
+  int sd, Settings& settings,
+  const string& teamname, const string& team,
+  const string& file_name, int file_size
+) {
+  // check file name
+  if (!valid_filename(settings, file_name)) {
     ignoresd(sd);
     write(sd, "Invalid file name!", 18);
     return;
   }
-  int file_size = to<int>(headers["File-size:"]);
+  
+  // check file size
   if (file_size > BSIZ) {
     string resp =
       "Files with more than "+to<string>(BSIZ)+" bytes are not allowed!"
@@ -171,13 +133,15 @@ static void handle_attempt(int sd, char* buf, Settings& settings) {
   }
   
   // read data
-  for (int i = 0; file_size > 0;) {
-    int rb = read(sd, &buf[i], file_size);
+  char* buf = new char[BSIZ];
+  for (int i = 0, fs = file_size; fs > 0;) {
+    int rb = read(sd, &buf[i], fs);
     if (rb < 0) {
       write(sd, "Incomplete request!", 19);
+      delete[] buf;
       return;
     }
-    file_size -= rb;
+    fs -= rb;
     i += rb;
   }
   
@@ -185,6 +149,7 @@ static void handle_attempt(int sd, char* buf, Settings& settings) {
   Global::lock_nextid_file();
   if (!Global::alive()) {
     Global::unlock_nextid_file();
+    delete[] buf;
     return;
   }
   int id = genid();
@@ -193,193 +158,31 @@ static void handle_attempt(int sd, char* buf, Settings& settings) {
   // save file
   string fn = "attempts/";
   mkdir(fn.c_str(), 0777);
-  fn += (headers["Team:"]+"/");
+  fn += (team+"/");
   mkdir(fn.c_str(), 0777);
-  fn += headers["File-name:"][0]; fn += "/";
+  fn += file_name[0]; fn += "/";
   mkdir(fn.c_str(), 0777);
   fn += (to<string>(id)+"/");
   mkdir(fn.c_str(), 0777);
   string path = "./"+fn;
-  fn += headers["File-name:"];
+  fn += file_name;
   FILE* fp = fopen(fn.c_str(), "wb");
-  fwrite(buf, to<int>(headers["File-size:"]), 1, fp);
+  fwrite(buf, file_size, 1, fp);
   fclose(fp);
+  delete[] buf;
   
   // respond
   string response = "Attempt "+to<string>(id)+": ";
   QueueData qd;
   qd.id = id;
   qd.team = teamname;
-  qd.fno = headers["File-name:"];
+  qd.fno = file_name;
   qd.path = path;
   qd.fn = fn;
   qd.settings = settings;
   qd.push();
   response += qd.verdict;
   write(sd, response.c_str(), response.size());
-}
-
-static void send_form(int sd) {
-  string form =
-    "HTTP/1.1 200 OK\r\n"
-    "Connection: close\r\r"
-    "Content-Type: text/html\r\n"
-    "\r\n"
-    "<html>\n"
-    "  <head>\n"
-    "    <script>\n"
-    "      function sendform() {\n"
-    "        response = document.getElementById(\"response\");\n"
-    "        response.innerHTML = \"Wait for the verdict.\";\n"
-    "        team = document.getElementById(\"team\");\n"
-    "        pass = document.getElementById(\"pass\");\n"
-    "        file = document.getElementById(\"file\");\n"
-    "        if (window.XMLHttpRequest)\n"
-    "          xmlhttp = new XMLHttpRequest();\n"
-    "        else\n"
-    "          xmlhttp = new ActiveXObject(\"Microsoft.XMLHTTP\");\n"
-    "        xmlhttp.onreadystatechange = function() {\n"
-    "          if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {\n"
-    "            response = document.getElementById(\"response\");\n"
-    "            response.innerHTML = xmlhttp.responseText;\n"
-    "          }\n"
-    "        }\n"
-    "        xmlhttp.open(\"POST\", \"\", true);\n"
-    "        xmlhttp.setRequestHeader(\"Team\", team.value);\n"
-    "        xmlhttp.setRequestHeader(\"Password\", pass.value);\n"
-    "        xmlhttp.setRequestHeader(\"File-name\", file.files[0].name);\n"
-    "        xmlhttp.setRequestHeader(\"File-size\", file.files[0].size);\n"
-    "        xmlhttp.send(file.files[0]);\n"
-    "        team.value = \"\";\n"
-    "        pass.value = \"\";\n"
-    "        file.value = \"\";\n"
-    "      }\n"
-    "    </script>\n"
-    "  </head>\n"
-    "  <body>\n"
-    "    <h1 align=\"center\">Pimenta Judgezzz~*~*</h1>\n"
-    "    <h2 align=\"center\">Submission</h2>\n"
-    "    <h4 align=\"center\" id=\"response\"></h4>\n"
-    "    <table align=\"center\">\n"
-    "      <tr>\n"
-    "        <td>Team:</td>\n"
-    "        <td><input type=\"text\" id=\"team\" autofocus/></td>\n"
-    "      </tr>\n"
-    "      <tr>\n"
-    "        <td>Password:</td>\n"
-    "        <td><input type=\"password\" id=\"pass\" /></td>\n"
-    "      </tr>\n"
-    "      <tr>\n"
-    "        <td>File:</td>\n"
-    "        <td><input type=\"file\" id=\"file\" /></td>\n"
-    "      </tr>\n"
-    "      <tr><td><button onclick=\"sendform()\">Send</button></td></tr>\n"
-    "    </table>\n"
-    "  </body>\n"
-    "</html>\n"
-  ;
-  write(sd, form.c_str(), form.size());
-}
-
-static bool read_headers(int sd, char* buf) {
-  for (int i = 0, state = 0; read(sd, &buf[i], 1) == 1; i++) {
-    switch (state) {
-      case 0: {
-        state = buf[i] == '\r' ? 1 : 0;
-        break;
-      }
-      case 1: {
-        if (buf[i] == '\r') break;
-        state = buf[i] == '\n' ? 2 : 0;
-        break;
-      }
-      case 2: {
-        state = buf[i] == '\r' ? 3 : 0;
-        break;
-      }
-      case 3: {
-             if (buf[i] == '\r') state = 1;
-        else if (buf[i] == '\n') {
-          buf[i+1] = 0;
-          return true;
-        }
-        else                     state = 0;
-      }
-    }
-  }
-  return false;
-}
-
-static void* client(void* ptr) {
-  // fetch socket
-  int* sdptr = (int*)ptr;
-  int sd = *sdptr;
-  delete sdptr;
-  
-  char* buf = new char[BSIZ];
-  if (!read_headers(sd, buf)) write(sd, "Incomplete request!", 19);
-  else if (buf[0] == 'G') send_form(sd);
-  else { // post with attempt
-    Settings settings;
-    time_t now = time(nullptr);
-    if (settings.begin <= now && now < settings.end) {
-      handle_attempt(sd, buf, settings);
-    }
-    else {
-      ignoresd(sd);
-      write(sd, "The contest is not running.", 27);
-    }
-  }
-  
-  // close
-  delete[] buf;
-  close(sd);
-  return nullptr;
-}
-
-static void* server(void*) {
-  // create socket
-  int sd = socket(AF_INET, SOCK_STREAM, 0);
-  int opt = 1;
-  setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof opt);
-  fcntl(sd, F_SETFL, FNDELAY);
-  
-  // set addr
-  sockaddr_in addr;
-  memset(&addr, 0, sizeof addr);
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons(to<uint16_t>(Global::arg[2]));
-  addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  bind(sd, (sockaddr*)&addr, sizeof addr);
-  
-  // listen
-  listen(sd, SOMAXCONN);
-  while (Global::alive()) {
-    int csd = accept(sd, nullptr, nullptr);
-    if (csd < 0) { usleep(25000); continue; }
-    pthread_t thread;
-    pthread_create(&thread, nullptr, client, new int(csd));
-    pthread_detach(thread);
-  }
-  
-  // close
-  close(sd);
-  return nullptr;
-}
-
-static void* judger(void*) {
-  while (Global::alive()) {
-    pthread_mutex_lock(&judger_mutex);
-    if (jqueue.empty()) {
-      pthread_mutex_unlock(&judger_mutex);
-      usleep(25000);
-      continue;
-    }
-    QueueData* qd = jqueue.front(); jqueue.pop();
-    pthread_mutex_unlock(&judger_mutex);
-    qd->judge();
-  }
-  return nullptr;
 }
 
 static void load_scripts() {
@@ -425,12 +228,40 @@ static void load_scripts() {
   };
 }
 
+static void* judger(void*) {
+  while (Global::alive()) {
+    pthread_mutex_lock(&judger_mutex);
+    if (jqueue.empty()) {
+      pthread_mutex_unlock(&judger_mutex);
+      usleep(25000);
+      continue;
+    }
+    QueueData* qd = jqueue.front(); jqueue.pop();
+    pthread_mutex_unlock(&judger_mutex);
+    qd->judge();
+  }
+  return nullptr;
+}
+
 namespace Judge {
 
 void fire() {
   load_scripts();
-  Global::fire(server);
   Global::fire(judger);
+}
+
+void attempt(
+  int sd, const string& tn, const string& team, const string& fn, int fsize
+) {
+  Settings settings;
+  time_t now = time(nullptr);
+  if (settings.begin <= now && now < settings.end) {
+    handle_attempt(sd, settings, tn, team, fn, fsize);
+  }
+  else {
+    ignoresd(sd);
+    write(sd, "The contest is not running.", 27);
+  }
 }
 
 } // namespace Judge

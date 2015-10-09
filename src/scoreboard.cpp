@@ -1,13 +1,9 @@
-#include <cstdio>
-#include <cstring>
+#include <cmath>
 #include <list>
 #include <map>
 #include <algorithm>
 
 #include <unistd.h>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 
 #include "scoreboard.h"
 
@@ -19,73 +15,6 @@ static string buf1, buf2;
 static string* frontbuf = &buf1;
 static string* backbuf = &buf2;
 static pthread_mutex_t frontbuf_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static void* client(void* ptr) {
-  // fetch socket
-  int* sdptr = (int*)ptr;
-  int sd = *sdptr;
-  delete sdptr;
-  
-  // ignore data
-  char* buf = new char[1 << 10];
-  while (read(sd, buf, 1 << 10) == 1 << 10);
-  delete[] buf;
-  
-  // make local copy of scoreboard
-  pthread_mutex_lock(&frontbuf_mutex);
-  string scoreboard(*frontbuf);
-  pthread_mutex_unlock(&frontbuf_mutex);
-  
-  // respond
-  string response =
-    "HTTP/1.1 200 OK\r\n"
-    "Connection: close\r\r"
-    "Content-Type: text/html\r\n"
-    "\r\n"
-    "<html><head><meta charset=\"UTF-8\">"
-    "<meta http-equiv=\"refresh\" content=\"10\" /></head><body>"
-    "<h1 align=\"center\">Pimenta Judgezzz~*~*</h1>"
-    "<h2 align=\"center\">Scoreboard</h2>"
-    "<table align=\"center\" border=\"3\">"+
-    scoreboard+
-    "</table></body></html>"
-  ;
-  write(sd, response.c_str(), response.size());
-  
-  // close
-  close(sd);
-  return nullptr;
-}
-
-static void* server(void*) {
-  // create socket
-  int sd = socket(AF_INET, SOCK_STREAM, 0);
-  int opt = 1;
-  setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof opt);
-  fcntl(sd, F_SETFL, FNDELAY);
-  
-  // set addr
-  sockaddr_in addr;
-  memset(&addr, 0, sizeof addr);
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons(to<uint16_t>(Global::arg[3]));
-  addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  bind(sd, (sockaddr*)&addr, sizeof addr);
-  
-  // listen
-  listen(sd, SOMAXCONN);
-  while (Global::alive()) {
-    int csd = accept(sd, nullptr, nullptr);
-    if (csd < 0) { usleep(25000); continue; }
-    pthread_t thread;
-    pthread_create(&thread, nullptr, client, new int(csd));
-    pthread_detach(thread);
-  }
-  
-  // close
-  close(sd);
-  return nullptr;
-}
 
 static void update() {
   typedef pair<int, time_t> problem_t;
@@ -202,8 +131,27 @@ static void* poller(void*) {
 namespace Scoreboard {
 
 void fire() {
-  Global::fire(server);
   Global::fire(poller);
+}
+
+void send(int sd) {
+  // make local copy of scoreboard
+  pthread_mutex_lock(&frontbuf_mutex);
+  string scoreboard(*frontbuf);
+  pthread_mutex_unlock(&frontbuf_mutex);
+  
+  // respond
+  string response =
+    "HTTP/1.1 200 OK\r\n"
+    "Connection: close\r\r"
+    "Content-Type: text/html\r\n"
+    "\r\n"
+    "<h2>Scoreboard</h2>\n"
+    "<table border=\"3\">"+
+    scoreboard+
+    "</table>"
+  ;
+  write(sd, response.c_str(), response.size());
 }
 
 } // namespace Scoreboard
