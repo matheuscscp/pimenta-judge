@@ -13,6 +13,7 @@
 #include "global.h"
 #include "judge.h"
 #include "scoreboard.h"
+#include "clarification.h"
 
 using namespace std;
 
@@ -71,6 +72,7 @@ static void showlogin(int sd) {
     "\r\n"
     "<html id=\"root\">\n"
     "  <head>\n"
+    "    <title>Pimenta Judge</title>\n"
     "    <script>\n"
     "      function sendform() {\n"
     "        team = document.getElementById(\"team\").value;\n"
@@ -210,6 +212,7 @@ static void* client(void* ptr) {
     showlogin(cptr->sd);
   }
   else {
+    // fetch team info
     auto& team = teambyip[cptr->addr.sin_addr.s_addr];
     pthread_mutex_unlock(&login_mutex);
     
@@ -222,15 +225,17 @@ static void* client(void* ptr) {
     
     // post
     if (req.line[0] == 'P') {
-      if (uri.find("submission") != string::npos) {
+      if (uri.find("attempt") != string::npos) {
         Judge::attempt(
           cptr->sd,
           team.first, team.second,
           req.headers["File-name"], to<int>(req.headers["File-size"])
         );
       }
-      else {
-        //TODO clarifs.
+      else if (uri.find("question") != string::npos) {
+        Clarification::question(
+          cptr->sd, req.headers["Problem"], req.headers["Question"]
+        );
       }
     }
     // data request
@@ -243,6 +248,9 @@ static void* client(void* ptr) {
       }
       else if (uri.find("statement") != string::npos) {
         statement(cptr->sd);
+      }
+      else if (uri.find("clarifications") != string::npos) {
+        Clarification::send(cptr->sd);
       }
     }
     // file request
