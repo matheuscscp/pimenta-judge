@@ -207,7 +207,7 @@ static void* client(void* ptr) {
   else if (req.line.find("logout") != string::npos) {
     teambyip.erase(cptr->addr.sin_addr.s_addr);
     pthread_mutex_unlock(&login_mutex);
-    write(cptr->sd, "Logged out.", 11);
+    showlogin(cptr->sd);
   }
   else {
     auto& team = teambyip[cptr->addr.sin_addr.s_addr];
