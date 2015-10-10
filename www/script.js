@@ -69,12 +69,21 @@ function data(key, tagid, before, after, cb) {
   xmlhttp.send();
 }
 
+var interval;
 function submission() {
+  clearInterval(interval);
   document.getElementById("content").innerHTML = document.getElementById("submission").innerHTML;
   document.getElementById("file").focus();
 }
-
+function scoreboard() {
+  clearInterval(interval);
+  data("scoreboard", "content", "", "", function(){});
+  interval = setInterval(function() {
+    data("scoreboard", "content", "", "", function(){});
+  }, 10000);
+}
 function clarifications() {
+  clearInterval(interval);
   data("clarifications", "content", document.getElementById("clarifications").innerHTML, "", function() {
     document.getElementById("problem").focus();
   });
