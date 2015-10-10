@@ -1,0 +1,81 @@
+
+h1,h2,h4 {
+  text-align: center;
+}
+
+a:link, a:visited, a:active {
+  color: black;
+}
+
+a:hover {
+  color: blue;
+}
+
+table {
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+
+.left {
+  float: left;
+}
+
+.right {
+  float: right;
+}
+
+.clear {
+  clear: both;
+}
+
+table.data {
+  border-collapse: collapse;
+}
+
+table.data, table.data th, table.data td {
+  border: 2px solid black;
+  padding: 2px;
+}
+
+table.data td.problem {
+  text-align: center;
+  width: 70px;
+}
+
+.balloon {
+  width: 25%;
+}
+
+#site {
+  width: 100%;
+  margin: 0 auto;
+}
+
+#header, #content {
+  border: 1px solid black;
+  margin: 5px;
+}
+
+#header {
+  padding: 5px;
+}
+
+#menu ul {
+  list-style-type: none;
+  margin: 0;
+  display: inline;
+}
+
+#menu li {
+  display: inline;
+}
+
+#content {
+  padding: 5px;
+  padding-bottom: 25px;
+}
+
+#question {
+  width: 500px;
+}
