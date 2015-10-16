@@ -2,7 +2,6 @@
 ACM ICPC contest system.
 
 TODO:
-- cookie login
-- web login by ip
+- list ip by username web page
 - fully web clarification system
 - web rejudger

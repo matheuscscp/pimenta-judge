@@ -17,8 +17,26 @@
 
 using namespace std;
 
+static string findname(const string& team) {
+  FILE* fp = fopen("teams.txt", "r");
+  if (!fp) return "";
+  string name;
+  for (fgetc(fp); name == "" && !feof(fp); fgetc(fp)) {
+    string ntmp;
+    for (char c = fgetc(fp); c != '"'; c = fgetc(fp)) ntmp += c;
+    fgetc(fp);
+    string tmp;
+    for (char c = fgetc(fp); c != ' '; c = fgetc(fp)) tmp += c;
+    string pass;
+    for (char c = fgetc(fp); c != '\n'; c = fgetc(fp)) pass += c;
+    if (team == tmp) name = ntmp;
+  }
+  fclose(fp);
+  return name;
+}
+
 struct Request {
-  string line, uri;
+  string line, uri, login, teamname;
   map<string, string> headers;
   Request(int sd) {
     // read socket
@@ -58,6 +76,17 @@ struct Request {
       for (j += 2; j < int(line.size()); j++) content += line[j];
       headers[header] = content;
     }
+    
+    // session cookie
+    string cookie = headers["Cookie"];
+    auto f = cookie.find("sessionToken=");
+    if (f != string::npos) {
+      stringstream ss;
+      ss << cookie.substr(cookie.find("sessionToken=")+13, cookie.size());
+      ss >> login;
+      if (login[login.size()-1] == ';') login = login.substr(0, login.size()-1);
+      teamname = findname(login);
+    }
   }
 };
 
@@ -65,10 +94,6 @@ struct Client {
   sockaddr_in addr;
   int sd;
 };
-
-static pthread_mutex_t login_mutex = PTHREAD_MUTEX_INITIALIZER;
-static map<in_addr_t, pair<string, string>> teambyip;
-static map<string, set<in_addr_t>> teambylogin;
 
 static string login(const string& team, const string& password) {
   FILE* fp = fopen("teams.txt", "r");
@@ -133,13 +158,6 @@ static void file(int sd, string uri, const string& def) {
   fclose(fp);
 }
 
-static void* zenity(void* ptr) {
-  string* sptr = (string*)ptr;
-  system("zenity --warning --text=\"%s\"", sptr->c_str());
-  delete sptr;
-  return nullptr;
-}
-
 static void statement(int sd) {
   Settings settings;
   string response;
@@ -178,61 +196,59 @@ static void* client(void* ptr) {
   Request req(cptr->sd);
   
   // login
-  pthread_mutex_lock(&login_mutex);
-  if (teambyip.find(cptr->addr.sin_addr.s_addr) == teambyip.end()) {
+  if (req.teamname == "") {
     if (req.line[0] == 'P' && req.line.find("login") != string::npos) {
-      string teamname = login(req.headers["Team"], req.headers["Password"]);
-      if (teamname == "") write(cptr->sd, "Invalid team/password!", 22);
+      string team = req.headers["Team"];
+      if (login(team, req.headers["Password"]) == "") {
+        write(cptr->sd, "Invalid team/password!", 22);
+      }
       else {
-        auto& ips = teambylogin[req.headers["Team"]];
-        ips.insert(cptr->addr.sin_addr.s_addr);
-        if (ips.size() > 1) {
-          string msg =
-            "team "+req.headers["Team"]+" logging with multiple ips:\n"
-          ;
-          for (in_addr_t x : ips) msg += (to<string>(x)+"\n");
-          pthread_t thread;
-          pthread_create(&thread, nullptr, zenity, new string(msg));
-          pthread_detach(thread);
-        }
-        teambyip[cptr->addr.sin_addr.s_addr].first = teamname;
-        teambyip[cptr->addr.sin_addr.s_addr].second = req.headers["Team"];
-        write(cptr->sd, "k", 1);
+        //log(team, cptr->addr.sin_addr.s_addr);//TODO
+        string response =
+          "HTTP/1.1 200 OK\r\n"
+          "Connection: close\r\r"
+          "Set-Cookie: sessionToken="+team+"; Max-Age=2592000\r\n"
+          "\r\n"
+          "k"
+        ;
+        write(cptr->sd, response.c_str(), response.size());
       }
     }
-    else file(cptr->sd, req.uri, "/login.html");
-    pthread_mutex_unlock(&login_mutex);
+    else {
+      file(cptr->sd, req.uri, "/login.html");
+    }
   }
   // logout
   else if (req.line.find("logout") != string::npos) {
-    teambyip.erase(cptr->addr.sin_addr.s_addr);
-    pthread_mutex_unlock(&login_mutex);
-    file(cptr->sd, req.uri, "/login.html");
+    string response =
+      "HTTP/1.1 303 See Other\r\n"
+      "Connection: close\r\r"
+      "Location: /\r\n"
+      "Set-Cookie: sessionToken=deleted; Max-Age=0\r\n"
+      "\r\n"
+    ;
+    write(cptr->sd, response.c_str(), response.size());
   }
   else {
-    // fetch team info
-    auto& team = teambyip[cptr->addr.sin_addr.s_addr];
-    pthread_mutex_unlock(&login_mutex);
-    
     // post
     if (req.line[0] == 'P') {
       if (req.uri.find("attempt") != string::npos) {
         Judge::attempt(
           cptr->sd,
-          team.first, team.second,
+          req.teamname, req.login,
           req.headers["File-name"], to<int>(req.headers["File-size"])
         );
       }
       else if (req.uri.find("question") != string::npos) {
         Clarification::question(
-          cptr->sd, team.second, req.headers["Problem"], req.headers["Question"]
+          cptr->sd, req.login, req.headers["Problem"], req.headers["Question"]
         );
       }
     }
     // data request
     else if (req.uri.find("?") != string::npos) {
       if (req.uri.find("teamname") != string::npos) {
-        write(cptr->sd, team.first.c_str(), team.first.size());
+        write(cptr->sd, req.teamname.c_str(), req.teamname.size());
       }
       else if (req.uri.find("problems") != string::npos) {
         Settings settings;
@@ -243,7 +259,7 @@ static void* client(void* ptr) {
         Scoreboard::send(cptr->sd);
       }
       else if (req.uri.find("clarifications") != string::npos) {
-        Clarification::send(cptr->sd, team.second);
+        Clarification::send(cptr->sd, req.login);
       }
       else if (req.uri.find("statement") != string::npos) {
         statement(cptr->sd);
