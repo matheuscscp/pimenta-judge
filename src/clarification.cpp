@@ -94,7 +94,6 @@ void question(
     dprintf(fd, "Question: %s\n", text.c_str());
     close(fd);
     Global::unlock_question_file();
-    system("gedit %s &", fn);
   }
   else write(sd, "The contest is not running.", 27);
 }

@@ -113,6 +113,15 @@ static string login(const string& team, const string& password) {
   return name;
 }
 
+static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+static void log(const string& team, in_addr_t ip) {
+  pthread_mutex_lock(&log_mutex);
+  FILE* fp = fopen("log.txt", "a");
+  fprintf(fp, "%s: %s\n", team.c_str(), to<string>(ip).c_str());
+  fclose(fp);
+  pthread_mutex_unlock(&log_mutex);
+}
+
 static void file(int sd, string uri, const string& def) {
   string notfound =
     "<html>\n"
@@ -203,7 +212,7 @@ static void* client(void* ptr) {
         write(cptr->sd, "Invalid team/password!", 22);
       }
       else {
-        //log(team, cptr->addr.sin_addr.s_addr);//TODO
+        log(team, cptr->addr.sin_addr.s_addr);
         string response =
           "HTTP/1.1 200 OK\r\n"
           "Connection: close\r\r"
