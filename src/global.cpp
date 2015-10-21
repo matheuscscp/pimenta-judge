@@ -174,6 +174,7 @@ void install(const string& dir) {
   fclose(fp);
   fp = fopen((dir+"/problems/A.sol").c_str(), "w");
   fclose(fp);
+  system("cp -rf /usr/local/share/pjudge/www %s/www", dir.c_str());
 }
 
 void start(int argc, char** argv) {

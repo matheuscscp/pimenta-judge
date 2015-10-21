@@ -116,7 +116,7 @@ static string login(const string& team, const string& password) {
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 static void log(const string& team, in_addr_t ip) {
   pthread_mutex_lock(&log_mutex);
-  FILE* fp = fopen("log.txt", "a");
+  FILE* fp = fopen("ip_by_login.txt", "a");
   fprintf(fp, "%s: %s\n", team.c_str(), to<string>(ip).c_str());
   fclose(fp);
   pthread_mutex_unlock(&log_mutex);
