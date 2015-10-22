@@ -17,9 +17,9 @@ static string* backbuf = &buf2;
 static pthread_mutex_t frontbuf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static string img(char p) {
-  string ret = "<img class=\"balloon\" src=\"";
+  string ret = "<img src=\"balloon.svg\" class=\"svg balloon ";
   ret += p;
-  return ret + ".gif\">";
+  return ret + "\" />";
 }
 
 static void update() {

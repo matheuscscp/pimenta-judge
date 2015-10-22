@@ -141,7 +141,10 @@ static void file(int sd, string uri, const string& def) {
     ctype = "application/javascript";
   }
   else if (uri.find(".gif") != string::npos) {
-    ctype = "application/octet-stream";
+    ctype = "image/gif";
+  }
+  else if (uri.find(".svg") != string::npos) {
+    ctype = "image/svg+xml";
   }
   else {
     uri = def;

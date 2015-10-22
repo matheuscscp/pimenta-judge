@@ -1,4 +1,17 @@
 
+var problems = [];
+problems["A"] = "#FF0000";
+problems["B"] = "#00FF00";
+problems["C"] = "#0000FF";
+problems["D"] = "#FF6600";
+problems["E"] = "#006600";
+problems["F"] = "#003399";
+problems["G"] = "#FFCC00";
+problems["H"] = "#FFFFFF";
+problems["I"] = "#000000";
+problems["J"] = "#FFFF00";
+problems["K"] = "#663300";
+
 function login() {
   team = document.getElementById("team");
   pass = document.getElementById("pass");
@@ -35,23 +48,14 @@ function init() {
 }
 
 function init_problems() {
-  if (window.XMLHttpRequest)
-    xmlhttp = new XMLHttpRequest();
-  else
-    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-  xmlhttp.onreadystatechange = function() {
-    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-      problems = parseInt(xmlhttp.responseText);
-      opts = "<option></option>";
-      for (i = 0; i < problems; i++) {
-        prob = String.fromCharCode(65+i);
-        opts += ("<option value=\""+prob+"\">"+prob+"</option>");
-      }
-      document.getElementById("problem").innerHTML = opts;
-    }
+  totalproblems = 0;
+  for (p in problems) totalproblems++;
+  opts = "<option></option>";
+  for (i = 0; i < totalproblems; i++) {
+    prob = String.fromCharCode(65+i);
+    opts += ("<option value=\""+prob+"\">"+prob+"</option>");
   }
-  xmlhttp.open("GET", "?problems", false);
-  xmlhttp.send();
+  document.getElementById("problem").innerHTML = opts;
 }
 
 function data(key, tagid, before, after, cb) {
@@ -75,11 +79,39 @@ function submission() {
   document.getElementById("content").innerHTML = document.getElementById("submission").innerHTML;
   document.getElementById("file").focus();
 }
+function fixballoons() {
+  jQuery('img.svg').each(function(){
+    var $img = jQuery(this);
+    var imgID = $img.attr('id');
+    var imgClass = $img.attr('class');
+    var imgURL = $img.attr('src');
+    jQuery.get(imgURL, function(data) {
+      // Get the SVG tag, ignore the rest
+      var $svg = jQuery(data).find('svg');
+      // Add replaced image's ID to the new SVG
+      if(typeof imgID !== 'undefined') {
+          $svg = $svg.attr('id', imgID);
+      }
+      // Add replaced image's classes to the new SVG
+      if(typeof imgClass !== 'undefined') {
+          $svg = $svg.attr('class', imgClass+' replaced-svg');
+      }
+      // Remove any invalid XML tags as per http://validator.w3.org
+      $svg = $svg.removeAttr('xmlns:a');
+      // Replace image with new SVG
+      $img.replaceWith($svg);
+      // set color
+      for (p in problems) {
+        $(".balloon."+p+" > path.balloonfill").css("fill", problems[p]);
+      }
+    }, 'xml');
+  });
+}
 function scoreboard() {
   clearInterval(interval);
-  data("scoreboard", "content", "", "", function(){});
+  data("scoreboard", "content", "", "", fixballoons);
   interval = setInterval(function() {
-    data("scoreboard", "content", "", "", function(){});
+    data("scoreboard", "content", "", "", fixballoons);
   }, 10000);
 }
 function clarifications() {
