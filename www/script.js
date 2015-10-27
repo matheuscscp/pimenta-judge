@@ -10,7 +10,6 @@ problems["G"] = "#FFCC00";
 problems["H"] = "#FFFFFF";
 problems["I"] = "#000000";
 problems["J"] = "#FFFF00";
-problems["K"] = "#663300";
 
 function login() {
   team = document.getElementById("team");
@@ -73,49 +72,41 @@ function data(key, tagid, before, after, cb) {
   xmlhttp.send();
 }
 
-var interval;
 function submission() {
-  clearInterval(interval);
   document.getElementById("content").innerHTML = document.getElementById("submission").innerHTML;
   document.getElementById("file").focus();
 }
-function fixballoons() {
-  jQuery('img.svg').each(function(){
-    var $img = jQuery(this);
-    var imgID = $img.attr('id');
-    var imgClass = $img.attr('class');
-    var imgURL = $img.attr('src');
-    jQuery.get(imgURL, function(data) {
-      // Get the SVG tag, ignore the rest
-      var $svg = jQuery(data).find('svg');
-      // Add replaced image's ID to the new SVG
-      if(typeof imgID !== 'undefined') {
+function scoreboard() {
+  data("scoreboard", "content", "", "", function() {
+    jQuery('img.svg').each(function(){
+      var $img = jQuery(this);
+      var imgID = $img.attr('id');
+      var imgClass = $img.attr('class');
+      var imgURL = $img.attr('src');
+      jQuery.get(imgURL, function(data) {
+        // Get the SVG tag, ignore the rest
+        var $svg = jQuery(data).find('svg');
+        // Add replaced image's ID to the new SVG
+        if(typeof imgID !== 'undefined') {
           $svg = $svg.attr('id', imgID);
-      }
-      // Add replaced image's classes to the new SVG
-      if(typeof imgClass !== 'undefined') {
+        }
+        // Add replaced image's classes to the new SVG
+        if(typeof imgClass !== 'undefined') {
           $svg = $svg.attr('class', imgClass+' replaced-svg');
-      }
-      // Remove any invalid XML tags as per http://validator.w3.org
-      $svg = $svg.removeAttr('xmlns:a');
-      // Replace image with new SVG
-      $img.replaceWith($svg);
-      // set color
-      for (p in problems) {
-        $(".balloon."+p+" > path.balloonfill").css("fill", problems[p]);
-      }
-    }, 'xml');
+        }
+        // Remove any invalid XML tags as per http://validator.w3.org
+        $svg = $svg.removeAttr('xmlns:a');
+        // Replace image with new SVG
+        $img.replaceWith($svg);
+        // set color
+        for (p in problems) {
+          $(".balloon."+p+" > path.balloonfill").css("fill", problems[p]);
+        }
+      }, 'xml');
+    });
   });
 }
-function scoreboard() {
-  clearInterval(interval);
-  data("scoreboard", "content", "", "", fixballoons);
-  interval = setInterval(function() {
-    data("scoreboard", "content", "", "", fixballoons);
-  }, 10000);
-}
 function clarifications() {
-  clearInterval(interval);
   data("clarifications", "content", document.getElementById("clarifications").innerHTML, "", function() {
     document.getElementById("problem").focus();
   });
