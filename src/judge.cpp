@@ -112,7 +112,7 @@ static int genid() {
 
 static void load_scripts() {
   scripts[".c"] = [](char p, const char* path, const char* fn, Settings& settings) {
-    if (system("gcc -std=c11 %s -o %s%c", fn, path, p)) return CE;
+    if (system("gcc -std=c11 %s -o %s%c -lm", fn, path, p)) return CE;
     bool tle;
     if (timeout(tle, settings.problems[p-'A'], "%s%c < problems/%c.in > %sout.txt", path, p, p, path)) return RTE;
     if (tle) return TLE;
