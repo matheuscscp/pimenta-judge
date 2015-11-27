@@ -41,14 +41,17 @@ struct Request {
   Request(int sd) {
     // read socket
     vector<char> buf; {
-      char c;
-      for (bool done = false; !done;) {
-        while (!done && read(sd, &c, 1) == 1) {
-          buf.push_back(c);
-          if (c == '\n' && buf.size() >= 4 && buf[buf.size()-4] == '\r') {
-            done = true;
-          }
+      bool done = false;
+      usleep(100000);
+      for (char c; !done && read(sd,&c,1) == 1;) {
+        buf.push_back(c);
+        if (c == '\n' && buf.size() >= 4 && buf[buf.size()-4] == '\r') {
+          done = true;
         }
+      }
+      if (!done) {
+        line = "badrequest";
+        return;
       }
     }
     int i = 0;
@@ -113,8 +116,8 @@ static string login(const string& team, const string& password) {
   return name;
 }
 
-static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 static void log(const string& team, in_addr_t ip) {
+  static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
   pthread_mutex_lock(&log_mutex);
   FILE* fp = fopen("ip_by_login.txt", "a");
   fprintf(fp, "%s: %s\n", team.c_str(), to<string>(ip).c_str());
@@ -206,6 +209,11 @@ static void statement(int sd) {
 static void* client(void* ptr) {
   Client* cptr = (Client*)ptr;
   Request req(cptr->sd);
+  if (req.line == "badrequest") {
+    close(cptr->sd);
+    delete cptr;
+    return nullptr;
+  }
   
   // login
   if (req.teamname == "") {
