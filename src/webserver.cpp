@@ -42,7 +42,6 @@ struct Request {
     // read socket
     vector<char> buf; {
       bool done = false;
-      usleep(100000);
       for (char c; !done && read(sd,&c,1) == 1;) {
         buf.push_back(c);
         if (c == '\n' && buf.size() >= 4 && buf[buf.size()-4] == '\r') {
@@ -299,7 +298,7 @@ static void* server(void*) {
   int sd = socket(AF_INET, SOCK_STREAM, 0);
   int opt = 1;
   setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof opt);
-  fcntl(sd, F_SETFL, FNDELAY);
+  fcntl(sd, F_SETFL, O_NONBLOCK);
   
   // set addr
   sockaddr_in addr;
