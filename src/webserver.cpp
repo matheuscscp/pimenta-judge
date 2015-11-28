@@ -15,6 +15,10 @@
 #include "scoreboard.h"
 #include "clarification.h"
 
+#define P3P \
+"P3P: CP=\"CURa ADMa DEVa PSAo PSDo OUR BUS UNI PUR INT" \
+"DEM STA PRE COM NAV OTC NOI DSP COR\"\r\n"
+
 using namespace std;
 
 static string findname(const string& team) {
@@ -226,9 +230,10 @@ static void* client(void* ptr) {
         string response =
           "HTTP/1.1 200 OK\r\n"
           "Connection: close\r\r"
+          P3P
           "Set-Cookie: sessionToken="+team+"; Max-Age=2592000\r\n"
           "\r\n"
-          "k"
+          "ok"
         ;
         write(cptr->sd, response.c_str(), response.size());
       }
@@ -240,11 +245,12 @@ static void* client(void* ptr) {
   // logout
   else if (req.line.find("logout") != string::npos) {
     string response =
-      "HTTP/1.1 303 See Other\r\n"
+      "HTTP/1.1 200 OK\r\n"
       "Connection: close\r\r"
-      "Location: /\r\n"
+      P3P
       "Set-Cookie: sessionToken=deleted; Max-Age=0\r\n"
       "\r\n"
+      "ok"
     ;
     write(cptr->sd, response.c_str(), response.size());
   }

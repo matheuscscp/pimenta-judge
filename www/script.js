@@ -24,11 +24,11 @@ function login() {
     xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
   xmlhttp.onreadystatechange = function() {
     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-      if (xmlhttp.responseText[0] == 'I') {
-        document.getElementById("response").innerHTML = xmlhttp.responseText;
+      if (xmlhttp.responseText == "ok") {
+        window.location = "/";
       }
       else {
-        window.location = "/";
+        document.getElementById("response").innerHTML = xmlhttp.responseText;
       }
     }
   }
@@ -96,6 +96,19 @@ function clarifications() {
   data("clarifications", "content", document.getElementById("clarifications").innerHTML, "", function() {
     document.getElementById("problem").focus();
   });
+}
+function logout() {
+  if (window.XMLHttpRequest)
+    xmlhttp = new XMLHttpRequest();
+  else
+    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+  xmlhttp.onreadystatechange = function() {
+    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+      window.location = "/";
+    }
+  }
+  xmlhttp.open("GET", "logout", true);
+  xmlhttp.send();
 }
 
 function attempt() {
