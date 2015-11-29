@@ -114,41 +114,47 @@ static void load_scripts() {
   scripts[".c"] = [](char p, const char* path, const char* fn, Settings& settings) {
     if (system("gcc -std=c11 %s -o %s%c -lm", fn, path, p)) return CE;
     bool tle;
-    if (timeout(tle, settings.problems[p-'A'], "%s%c < problems/%c.in > %sout.txt", path, p, p, path)) return RTE;
+    int status = timeout(tle, settings.problems[p-'A'], "%s%c < problems/%c.in > %sout.txt", path, p, p, path);
     if (tle) return TLE;
+    if (status) return RTE;
     return AC;
   };
   scripts[".cpp"] = [](char p, const char* path, const char* fn, Settings& settings) {
     if (system("g++ -std=c++1y %s -o %s%c", fn, path, p)) return CE;
     bool tle;
-    if (timeout(tle, settings.problems[p-'A'], "%s%c < problems/%c.in > %sout.txt", path, p, p, path)) return RTE;
+    int status = timeout(tle, settings.problems[p-'A'], "%s%c < problems/%c.in > %sout.txt", path, p, p, path);
     if (tle) return TLE;
+    if (status) return RTE;
     return AC;
   };
   scripts[".java"] = [](char p, const char* path, const char* fn, Settings& settings) {
     if (system("javac %s", fn)) return CE;
     bool tle;
-    if (timeout(tle, settings.problems[p-'A'], "java -cp %s %c < problems/%c.in > %sout.txt", path, p, p, path)) return RTE;
+    int status = timeout(tle, settings.problems[p-'A'], "java -cp %s %c < problems/%c.in > %sout.txt", path, p, p, path);
     if (tle) return TLE;
+    if (status) return RTE;
     return AC;
   };
   scripts[".py"] = [](char p, const char* path, const char* fn, Settings& settings) {
     bool tle;
-    if (timeout(tle, settings.problems[p-'A'], "python %s < problems/%c.in > %sout.txt", fn, p, path)) return RTE;
+    int status = timeout(tle, settings.problems[p-'A'], "python %s < problems/%c.in > %sout.txt", fn, p, path);
     if (tle) return TLE;
+    if (status) return RTE;
     return AC;
   };
   scripts[".py3"] = [](char p, const char* path, const char* fn, Settings& settings) {
     bool tle;
-    if (timeout(tle, settings.problems[p-'A'], "python3 %s < problems/%c.in > %sout.txt", fn, p, path)) return RTE;
+    int status = timeout(tle, settings.problems[p-'A'], "python3 %s < problems/%c.in > %sout.txt", fn, p, path);
     if (tle) return TLE;
+    if (status) return RTE;
     return AC;
   };
   scripts[".cs"] = [](char p, const char* path, const char* fn, Settings& settings) {
     if (system("mcs %s", fn)) return CE;
     bool tle;
-    if (timeout(tle, settings.problems[p-'A'], "%s%c.exe < problems/%c.in > %sout.txt", path, p, p, path)) return RTE;
+    int status = timeout(tle, settings.problems[p-'A'], "%s%c.exe < problems/%c.in > %sout.txt", path, p, p, path);
     if (tle) return TLE;
+    if (status) return RTE;
     return AC;
   };
 }

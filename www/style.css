@@ -31,6 +31,7 @@ table {
 
 table.data {
   border-collapse: collapse;
+  font-family: 'Courier New', Courier, mono;
 }
 
 table.data, table.data th, table.data td {
@@ -40,7 +41,8 @@ table.data, table.data th, table.data td {
 
 table.data td.problem {
   text-align: center;
-  width: 70px;
+  min-width: 80px;
+  font-size: 11px;
 }
 
 #site {

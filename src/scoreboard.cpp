@@ -44,20 +44,22 @@ static void update() {
         (solved == other.solved && penalty < other.penalty)
       ;
     }
-    string str() const {
-      string ret = "<tr>";
+    string str(time_t begin) const {
+      string ret;
       ret += ("<td>"+team+"</td>");
       char i = 'A';
       for (const problem_t& p : problems) {
         ret += "<td class=\"problem\">";
-        if (p.first == 0)     ret += '-';
-        else if (p.first > 0) ret += img(i) + " (" + to<string>(p.first) + ")";
-        else                  ret +=    "(" + to<string>(-p.first) + ")";
+        if (p.first > 0) {
+          ret += img(i) + to<string>(p.first)+"/";
+          ret += to<string>(int(round((p.second - begin)/60.0)));
+        }
+        else if (p.first < 0) ret += to<string>(-p.first)+"/-";
         ret += "</td>";
         i++;
       }
       ret += ("<td>"+to<string>(solved)+" ("+to<string>(penalty)+")"+"</td>");
-      return ret+"</tr>";
+      return ret;
     }
   };
   
@@ -110,14 +112,19 @@ static void update() {
   sort(entries.begin(), entries.end());
   
   // update back buffer
-  (*backbuf) = "<tr><th>Team</th>";
+  (*backbuf) = "<tr><th>#</th><th>Team</th>";
   for (int i = 0; i < int(settings.problems.size()); i++) {
     (*backbuf) += "<th>";
     (*backbuf) += char(i+'A');
     (*backbuf) += "</th>";
   }
   (*backbuf) += "<th>Score</th></tr>";
-  for (Entry& x : entries) (*backbuf) += x.str();
+  int place = 1;
+  for (Entry& x : entries) {
+    (*backbuf) += ("<tr><td>"+to<string>(place++)+"</td>");
+    (*backbuf) += x.str(settings.begin);
+    (*backbuf) += "</tr>";
+  }
   
   // swap buffers
   string* tmp = backbuf;

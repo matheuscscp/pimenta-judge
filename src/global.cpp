@@ -58,35 +58,39 @@ rejudgemsg::rejudgemsg(int id, char verdict)
 
 size_t rejudgemsg::size() const { return sizeof(rejudgemsg)-sizeof(long); }
 
+static __suseconds_t dt(const timeval& start) {
+  timeval end;
+  gettimeofday(&end, nullptr);
+  return
+    (end.tv_sec*1000000 + end.tv_usec)-
+    (start.tv_sec*1000000 + start.tv_usec)
+  ;
+}
 int timeout(bool& tle, int s, const char* cmd) {
   tle = false;
+  __suseconds_t us = s*1000000;
   
-  timeval start, end;
+  timeval start;
   gettimeofday(&start, nullptr);
   
   pid_t proc = fork();
   if (!proc) {
-    setpgid(0, 0);
-    exit(system(cmd));
+    setpgid(0, 0); // create new process group rooted at proc
+    int status = system(cmd);
+    exit(WEXITSTATUS(status));
   }
   
   int status;
   while (waitpid(proc, &status, WNOHANG) != proc) {
-    gettimeofday(&end, nullptr);
-    __suseconds_t dt =
-      (end.tv_sec*1000000 + end.tv_usec)-
-      (start.tv_sec*1000000 + start.tv_usec)
-    ;
-    if (dt >= s*1000000) {
+    if (dt(start) > us) {
       tle = true;
-      kill(-proc, SIGKILL); //the minus kills the whole tree rooted at proc
-      return 0;
+      kill(-proc, SIGKILL); //the minus kills the whole group rooted at proc
+      waitpid(proc, &status, 0);
+      break;
     }
     usleep(10000);
   }
-  
-  if (WIFEXITED(status)) return WEXITSTATUS(status);
-  return -1;
+  return status;
 }
 
 void ignoresd(int sd) {
