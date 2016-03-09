@@ -45,12 +45,8 @@ Settings::Settings() {
   func(end);
   func(freeze);
   func(noverdict);
-  int problems;
-  f >> tmp >> problems;
-  this->problems = vector<int>(problems);
-  for (int i = 0; i < problems; i++) {
-    f >> tmp >> this->problems[i];
-  }
+  int timelimit;
+  while (f >> tmp >> timelimit) problems.push_back(timelimit);
 }
 
 rejudgemsg::rejudgemsg(int id, char verdict)
@@ -158,12 +154,13 @@ void install(const string& dir) {
   mkdir(dir.c_str(), 0777);
   FILE* fp = fopen((dir+"/settings.txt").c_str(), "w");
   fprintf(fp, 
-    "Begin:        2015 09 01 19 00\n"
-    "End:          2015 12 25 23 50\n"
-    "Freeze:       2015 12 25 23 50\n"
-    "No-verdict:   2015 12 25 23 50\n"
-    "Problems: 1\n"
-    "A-timelimit: 1\n"
+    "Begin:  2015 09 01 19 00\n"
+    "End:    2015 12 25 23 50\n"
+    "Freeze: 2015 12 25 23 50\n"
+    "Blind:  2015 12 25 23 50\n"
+    "A(time-limit-in-seconds): 4\n"
+    "B(these-comments-are-useless-and-can-be-removed): 3\n"
+    "C: 5\n"
   );
   fclose(fp);
   fp = fopen((dir+"/teams.txt").c_str(), "w");
@@ -177,6 +174,14 @@ void install(const string& dir) {
   fp = fopen((dir+"/problems/A.in").c_str(), "w");
   fclose(fp);
   fp = fopen((dir+"/problems/A.sol").c_str(), "w");
+  fclose(fp);
+  fp = fopen((dir+"/problems/B.in").c_str(), "w");
+  fclose(fp);
+  fp = fopen((dir+"/problems/B.sol").c_str(), "w");
+  fclose(fp);
+  fp = fopen((dir+"/problems/C.in").c_str(), "w");
+  fclose(fp);
+  fp = fopen((dir+"/problems/C.sol").c_str(), "w");
   fclose(fp);
   system("cp -rf /usr/local/share/pjudge/www %s/www", dir.c_str());
 }
