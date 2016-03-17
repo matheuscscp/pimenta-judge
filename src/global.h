@@ -32,6 +32,8 @@ struct rejudgemsg {
 };
 
 int timeout(bool&, int, const char*);
+bool instance_exists(char problem, int i);
+int timeout2(bool& tle, int s, const std::string& cmd, char problem, const std::string& outpref);
 void ignoresd(int);
 
 template <typename NewType, typename T>

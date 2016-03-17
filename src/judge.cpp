@@ -37,14 +37,19 @@ static string judge(
   if (run != AC) {
     att.verdict = run;
   }
-  else if (system("diff -wB %sout.txt problems/%c.sol", path.c_str(), fno[0])) {
-    att.verdict = WA;
-  }
-  else if (system("diff     %sout.txt problems/%c.sol", path.c_str(), fno[0])) {
-    att.verdict = PE;
-  }
   else {
-    att.verdict = AC;
+    bool found = false;
+    for (int i = 1; instance_exists(fno[0], i) && !found; i++) {
+           if (system("diff -wB %s%c.out%d problems/%c.sol%d", path.c_str(), fno[0], i, fno[0], i)) {
+        found = true;
+        att.verdict = WA;
+      }
+      else if (system("diff     %s%c.out%d problems/%c.sol%d", path.c_str(), fno[0], i, fno[0], i)) {
+        found = true;
+        att.verdict = PE;
+      }
+    }
+    if (!found) att.verdict = AC;
   }
   att.when = time(nullptr);
   
@@ -114,7 +119,9 @@ static void load_scripts() {
   scripts[".c"] = [](char p, const char* path, const char* fn, Settings& settings) {
     if (system("gcc -std=c11 %s -o %s%c -lm", fn, path, p)) return CE;
     bool tle;
-    int status = timeout(tle, settings.problems[p-'A'], "%s%c < problems/%c.in > %sout.txt", path, p, p, path);
+    char cmd[200];
+    sprintf(cmd, "%s%c", path, p);
+    int status = timeout2(tle, settings.problems[p-'A'], cmd, p, path);
     if (tle) return TLE;
     if (status) return RTE;
     return AC;

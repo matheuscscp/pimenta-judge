@@ -89,6 +89,48 @@ int timeout(bool& tle, int s, const char* cmd) {
   return status;
 }
 
+bool instance_exists(char problem, int i) {
+  char fn[50];
+  sprintf(fn, "problems/%c.in%d", problem, i);
+  FILE* fp = fopen(fn, "r");
+  if (!fp) return false;
+  fclose(fp);
+  return true;
+}
+
+int timeout2(bool& tle, int s, const string& cmd, char problem, const string& outpref) {
+  tle = false;
+  __suseconds_t us = s*1000000;
+  
+  timeval start;
+  gettimeofday(&start, nullptr);
+  
+  pid_t proc = fork();
+  if (!proc) {
+    setpgid(0, 0); // create new process group rooted at proc
+    char fcmd[256];
+    int tmp, status;
+    for (int i = 1; instance_exists(problem, i); i++) {
+      sprintf(fcmd, "%s < problems/%c.in%d > %s%c.out%d", cmd.c_str(), problem, i, outpref.c_str(), problem, i);
+      tmp = system(fcmd);
+      status = WEXITSTATUS(tmp);
+      if (status) exit(status);
+    }
+  }
+  
+  int status;
+  while (waitpid(proc, &status, WNOHANG) != proc) {
+    if (dt(start) > us) {
+      tle = true;
+      kill(-proc, SIGKILL); // the minus kills the whole group rooted at proc
+      waitpid(proc, &status, 0);
+      break;
+    }
+    usleep(10000);
+  }
+  return status;
+}
+
 void ignoresd(int sd) {
   char* buf = new char[1 << 10];
   while (read(sd, buf, 1 << 10) == (1 << 10));
