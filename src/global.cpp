@@ -72,15 +72,15 @@ int timeout(bool& tle, int s, const char* cmd) {
   pid_t proc = fork();
   if (!proc) {
     setpgid(0, 0); // create new process group rooted at proc
-    int status = system(cmd);
-    exit(WEXITSTATUS(status));
+    int tmp = system(cmd);
+    exit(WEXITSTATUS(tmp));
   }
   
   int status;
   while (waitpid(proc, &status, WNOHANG) != proc) {
     if (dt(start) > us) {
       tle = true;
-      kill(-proc, SIGKILL); //the minus kills the whole group rooted at proc
+      kill(-proc, SIGKILL); // the minus kills the whole group rooted at proc
       waitpid(proc, &status, 0);
       break;
     }
