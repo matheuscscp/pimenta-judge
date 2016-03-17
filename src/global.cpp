@@ -116,6 +116,7 @@ int timeout2(bool& tle, int s, const string& cmd, char problem, const string& ou
       status = WEXITSTATUS(tmp);
       if (status) exit(status);
     }
+    exit(0);
   }
   
   int status;
