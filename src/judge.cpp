@@ -167,7 +167,7 @@ static char run(
   while (waitpid(proc, &status, WNOHANG) != proc) {
     if (dt(start) > us) {
       kill(-proc, SIGKILL); // the minus kills the whole group rooted at proc
-      waitpid(proc, &status, 0); // FIXME reap correctly
+      waitpid(proc, &status, 0);
       return TLE;
     }
     usleep(10000);
