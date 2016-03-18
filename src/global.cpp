@@ -5,8 +5,6 @@
 #include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
-#include <sys/time.h>
-#include <sys/wait.h>
 #include <sys/msg.h>
 #include <sys/stat.h>
 
@@ -53,84 +51,6 @@ rejudgemsg::rejudgemsg(int id, char verdict)
 : mtype(1), id(id), verdict(verdict) {}
 
 size_t rejudgemsg::size() const { return sizeof(rejudgemsg)-sizeof(long); }
-
-static __suseconds_t dt(const timeval& start) {
-  timeval end;
-  gettimeofday(&end, nullptr);
-  return
-    (end.tv_sec*1000000 + end.tv_usec)-
-    (start.tv_sec*1000000 + start.tv_usec)
-  ;
-}
-int timeout(bool& tle, int s, const char* cmd) {
-  tle = false;
-  __suseconds_t us = s*1000000;
-  
-  timeval start;
-  gettimeofday(&start, nullptr);
-  
-  pid_t proc = fork();
-  if (!proc) {
-    setpgid(0, 0); // create new process group rooted at proc
-    int tmp = system(cmd);
-    exit(WEXITSTATUS(tmp));
-  }
-  
-  int status;
-  while (waitpid(proc, &status, WNOHANG) != proc) {
-    if (dt(start) > us) {
-      tle = true;
-      kill(-proc, SIGKILL); // the minus kills the whole group rooted at proc
-      waitpid(proc, &status, 0);
-      break;
-    }
-    usleep(10000);
-  }
-  return status;
-}
-
-bool instance_exists(char problem, int i) {
-  char fn[50];
-  sprintf(fn, "problems/%c.in%d", problem, i);
-  FILE* fp = fopen(fn, "r");
-  if (!fp) return false;
-  fclose(fp);
-  return true;
-}
-
-int timeout2(bool& tle, int s, const string& cmd, char problem, const string& outpref) {
-  tle = false;
-  __suseconds_t us = s*1000000;
-  
-  timeval start;
-  gettimeofday(&start, nullptr);
-  
-  pid_t proc = fork();
-  if (!proc) {
-    setpgid(0, 0); // create new process group rooted at proc
-    char fcmd[256];
-    int tmp, status;
-    for (int i = 1; instance_exists(problem, i); i++) {
-      sprintf(fcmd, "%s < problems/%c.in%d > %s%c.out%d", cmd.c_str(), problem, i, outpref.c_str(), problem, i);
-      tmp = system(fcmd);
-      status = WEXITSTATUS(tmp);
-      if (status) exit(status);
-    }
-    exit(0);
-  }
-  
-  int status;
-  while (waitpid(proc, &status, WNOHANG) != proc) {
-    if (dt(start) > us) {
-      tle = true;
-      kill(-proc, SIGKILL); // the minus kills the whole group rooted at proc
-      waitpid(proc, &status, 0);
-      break;
-    }
-    usleep(10000);
-  }
-  return status;
-}
 
 void ignoresd(int sd) {
   char* buf = new char[1 << 10];
@@ -214,17 +134,17 @@ void install(const string& dir) {
   fprintf(fp, "team1 C \"Question privately answered to team1\" \"Answer\"\n");
   fclose(fp);
   mkdir((dir+"/problems").c_str(), 0777);
-  fp = fopen((dir+"/problems/A.in").c_str(), "w");
+  fp = fopen((dir+"/problems/A.in1").c_str(), "w");
   fclose(fp);
-  fp = fopen((dir+"/problems/A.sol").c_str(), "w");
+  fp = fopen((dir+"/problems/A.sol1").c_str(), "w");
   fclose(fp);
-  fp = fopen((dir+"/problems/B.in").c_str(), "w");
+  fp = fopen((dir+"/problems/B.in1").c_str(), "w");
   fclose(fp);
-  fp = fopen((dir+"/problems/B.sol").c_str(), "w");
+  fp = fopen((dir+"/problems/B.sol1").c_str(), "w");
   fclose(fp);
-  fp = fopen((dir+"/problems/C.in").c_str(), "w");
+  fp = fopen((dir+"/problems/C.in1").c_str(), "w");
   fclose(fp);
-  fp = fopen((dir+"/problems/C.sol").c_str(), "w");
+  fp = fopen((dir+"/problems/C.sol1").c_str(), "w");
   fclose(fp);
   system("cp -rf /usr/local/share/pjudge/www %s/www", dir.c_str());
 }

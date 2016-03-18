@@ -1,5 +1,5 @@
 all:
-	g++ -std=c++1y src/*.cpp -o pjudge -pthread
+	g++ -std=c++0x src/*.cpp -o pjudge -pthread
 
 install:
 	cp pjudge /usr/local/bin

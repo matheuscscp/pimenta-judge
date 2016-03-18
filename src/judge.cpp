@@ -5,6 +5,8 @@
 #include <queue>
 
 #include <unistd.h>
+#include <sys/time.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 
 #include "judge.h"
@@ -15,12 +17,19 @@
 
 using namespace std;
 
-typedef function<char(char, const char*, const char*, Settings&)> Script;
+typedef function<char(char, char*, char*, Settings&)> Script;
 struct QueueData;
 
 static map<string, Script> scripts;
 static queue<QueueData*> jqueue;
 static pthread_mutex_t judger_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static bool instance_exists(char problem, int i) {
+  FILE* fp = fopen(stringf("problems/%c.in%d", problem, i).c_str(), "r");
+  if (!fp) return false;
+  fclose(fp);
+  return true;
+}
 
 static string judge(
   int id, const string& team, const string& fno,
@@ -32,24 +41,27 @@ static string judge(
   strcpy(att.team, team.c_str());
   att.problem = fno[0]-'A';
   char run = scripts[fno.substr(1, fno.size())](
-    fno[0], path.c_str(), fn.c_str(), settings
+    fno[0], (char*)path.c_str(), (char*)fn.c_str(), settings
   );
   if (run != AC) {
     att.verdict = run;
   }
   else {
-    bool found = false;
-    for (int i = 1; instance_exists(fno[0], i) && !found; i++) {
-           if (system("diff -wB %s%c.out%d problems/%c.sol%d", path.c_str(), fno[0], i, fno[0], i)) {
-        found = true;
-        att.verdict = WA;
-      }
-      else if (system("diff     %s%c.out%d problems/%c.sol%d", path.c_str(), fno[0], i, fno[0], i)) {
-        found = true;
-        att.verdict = PE;
+    att.verdict = AC;
+    for (int i = 1; instance_exists(fno[0], i) && att.verdict == AC; i++) {
+      int status = system(
+        "diff -wB %s%c.out%d problems/%c.sol%d",
+        path.c_str(), fno[0], i, fno[0], i
+      );
+      if (WEXITSTATUS(status)) att.verdict = WA;
+      else {
+        status = system(
+          "diff %s%c.out%d problems/%c.sol%d",
+          path.c_str(), fno[0], i, fno[0], i
+        );
+        if (WEXITSTATUS(status)) att.verdict = PE;
       }
     }
-    if (!found) att.verdict = AC;
   }
   att.when = time(nullptr);
   
@@ -115,54 +127,100 @@ static int genid() {
   return current;
 }
 
+static __suseconds_t dt(const timeval& start) {
+  timeval end;
+  gettimeofday(&end, nullptr);
+  return
+    (end.tv_sec*1000000 + end.tv_usec)-
+    (start.tv_sec*1000000 + start.tv_usec)
+  ;
+}
+static char run(
+  int s,
+  const string& exec_cmd,
+  char problem,
+  const string& output_path
+) {
+  __suseconds_t us = s*1000000;
+  
+  timeval start;
+  gettimeofday(&start, nullptr);
+  
+  pid_t proc = fork();
+  if (!proc) {
+    // TODO lose root permissions
+    setpgid(0, 0); // create new process group rooted at proc
+    for (int i = 1; instance_exists(problem, i); i++) {
+      int status = system(
+        "%s < problems/%c.in%d > %s%c.out%d",
+        exec_cmd.c_str(),
+        problem, i,
+        output_path.c_str(), problem, i
+      );
+      int exit_code = WEXITSTATUS(status);
+      if (exit_code) exit(exit_code);
+    }
+    exit(0);
+  }
+  
+  int status;
+  while (waitpid(proc, &status, WNOHANG) != proc) {
+    if (dt(start) > us) {
+      kill(-proc, SIGKILL); // the minus kills the whole group rooted at proc
+      waitpid(proc, &status, 0); // FIXME reap correctly
+      return TLE;
+    }
+    usleep(10000);
+  }
+  if (WEXITSTATUS(status)) return RTE;
+  return AC;
+}
 static void load_scripts() {
-  scripts[".c"] = [](char p, const char* path, const char* fn, Settings& settings) {
-    if (system("gcc -std=c11 %s -o %s%c -lm", fn, path, p)) return CE;
-    bool tle;
-    char cmd[200];
-    sprintf(cmd, "%s%c", path, p);
-    int status = timeout2(tle, settings.problems[p-'A'], cmd, p, path);
-    if (tle) return TLE;
-    if (status) return RTE;
-    return AC;
+  scripts[".c"] = [](char p, char* path, char* fn, Settings& settings) {
+    int status = system("gcc -std=c11 %s -o %s%c -lm", fn, path, p);
+    if (WEXITSTATUS(status)) return char(CE);
+    return run(
+      settings.problems[p-'A'],
+      stringf("%s%c", path, p),
+      p,
+      path
+    );
   };
-  scripts[".cpp"] = [](char p, const char* path, const char* fn, Settings& settings) {
-    if (system("g++ -std=c++1y %s -o %s%c", fn, path, p)) return CE;
-    bool tle;
-    int status = timeout(tle, settings.problems[p-'A'], "%s%c < problems/%c.in > %sout.txt", path, p, p, path);
-    if (tle) return TLE;
-    if (status) return RTE;
-    return AC;
+  scripts[".cpp"] = [](char p, char* path, char* fn, Settings& settings) {
+    int status = system("g++ -std=c++1y %s -o %s%c", fn, path, p);
+    if (WEXITSTATUS(status)) return char(CE);
+    return run(
+      settings.problems[p-'A'],
+      stringf("%s%c", path, p),
+      p,
+      path
+    );
   };
-  scripts[".java"] = [](char p, const char* path, const char* fn, Settings& settings) {
-    if (system("javac %s", fn)) return CE;
-    bool tle;
-    int status = timeout(tle, settings.problems[p-'A'], "java -cp %s %c < problems/%c.in > %sout.txt", path, p, p, path);
-    if (tle) return TLE;
-    if (status) return RTE;
-    return AC;
+  scripts[".java"] = [](char p, char* path, char* fn, Settings& settings) {
+    int status = system("javac %s", fn);
+    if (WEXITSTATUS(status)) return char(CE);
+    return run(
+      settings.problems[p-'A'],
+      stringf("java -cp %s %c", path, p),
+      p,
+      path
+    );
   };
-  scripts[".py"] = [](char p, const char* path, const char* fn, Settings& settings) {
-    bool tle;
-    int status = timeout(tle, settings.problems[p-'A'], "python %s < problems/%c.in > %sout.txt", fn, p, path);
-    if (tle) return TLE;
-    if (status) return RTE;
-    return AC;
+  scripts[".py"] = [](char p, char* path, char* fn, Settings& settings) {
+    return run(
+      settings.problems[p-'A'],
+      stringf("python %s", fn),
+      p,
+      path
+    );
   };
-  scripts[".py3"] = [](char p, const char* path, const char* fn, Settings& settings) {
-    bool tle;
-    int status = timeout(tle, settings.problems[p-'A'], "python3 %s < problems/%c.in > %sout.txt", fn, p, path);
-    if (tle) return TLE;
-    if (status) return RTE;
-    return AC;
-  };
-  scripts[".cs"] = [](char p, const char* path, const char* fn, Settings& settings) {
-    if (system("mcs %s", fn)) return CE;
-    bool tle;
-    int status = timeout(tle, settings.problems[p-'A'], "%s%c.exe < problems/%c.in > %sout.txt", path, p, p, path);
-    if (tle) return TLE;
-    if (status) return RTE;
-    return AC;
+  scripts[".py3"] = [](char p, char* path, char* fn, Settings& settings) {
+    return run(
+      settings.problems[p-'A'],
+      stringf("python3 %s", fn),
+      p,
+      path
+    );
   };
 }
 

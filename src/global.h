@@ -31,9 +31,6 @@ struct rejudgemsg {
   size_t size() const;
 };
 
-int timeout(bool&, int, const char*);
-bool instance_exists(char problem, int i);
-int timeout2(bool& tle, int s, const std::string& cmd, char problem, const std::string& outpref);
 void ignoresd(int);
 
 template <typename NewType, typename T>
@@ -46,17 +43,19 @@ template <>
 std::string to<std::string, in_addr_t>(const in_addr_t&);
 
 template <typename... Args>
-int system(const char* fmt, Args... args) {
-  char cmd[256];
-  sprintf(cmd, fmt, args...);
-  return ::system(cmd);
+std::string stringf(const char* fmt, Args... args) {
+  char aux;
+  int len = snprintf(&aux, 1, fmt, args...);
+  char* buf = new char[len+1];
+  sprintf(buf, fmt, args...);
+  std::string ret = buf;
+  delete[] buf;
+  return ret;
 }
 
 template <typename... Args>
-int timeout(bool& tle, int s, const char* fmt, Args... args) {
-  char cmd[256];
-  sprintf(cmd, fmt, args...);
-  return timeout(tle, s, cmd);
+int system(const char* fmt, Args... args) {
+  return ::system(stringf(fmt, args...).c_str());
 }
 
 namespace Global {
