@@ -153,10 +153,13 @@ void start(int argc, char** argv) {
   if (Contest().pid) return;
   arg = vector<string>(argc);
   for (int i = 0; i < argc; i++) arg[i] = argv[i];
-  daemon(1, 0);
   Contest(getpid(), msgqueue());
   signal(SIGTERM, term);
   signal(SIGPIPE, SIG_IGN);
+  signal(SIGHUP, SIG_IGN);
+  freopen("/dev/null", "r", stdin);
+  freopen("/dev/null", "w", stdout);
+  freopen("/dev/null", "w", stderr);
   Judge::fire();
   Scoreboard::fire();
   Rejudger::fire(msqid);
