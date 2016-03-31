@@ -1,4 +1,5 @@
 - implement automatic rejuding for one attempt
 - implement automatic rejuding for all attempts
 - log execution time of attempts
-- implement command line query for execution time of one attempt
+- implement command line query to display data of one attempt
+- implement session id (session expires if server dies)
