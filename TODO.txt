@@ -3,3 +3,5 @@
 - log execution time of attempts
 - implement command line query to display data of one attempt
 - implement session id (session expires if server dies)
+- ulimit -s and ulimit -v
+- print login time in ip_by_login.txt
