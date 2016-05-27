@@ -14,6 +14,7 @@
 #include "scoreboard.h"
 #include "rejudger.h"
 #include "webserver.h"
+#include "runlist.h"
 
 using namespace std;
 
@@ -43,6 +44,7 @@ Settings::Settings() {
   func(end);
   func(freeze);
   func(noverdict);
+  
   int timelimit;
   while (f >> tmp >> timelimit) problems.push_back(timelimit);
 }
@@ -115,6 +117,7 @@ vector<string> arg;
 
 void install(const string& dir) {
   mkdir(dir.c_str(), 0777);
+  mkdir((dir+"/runlist").c_str(), 0777);
   FILE* fp = fopen((dir+"/settings.txt").c_str(), "w");
   fprintf(fp, 
     "Begin:  2015 09 01 19 00\n"
@@ -158,6 +161,8 @@ void start(int argc, char** argv) {
   Contest(getpid(), msgqueue());
   signal(SIGTERM, term);
   signal(SIGPIPE, SIG_IGN);
+  
+  Runlist::load();
   Judge::fire();
   Scoreboard::fire();
   Rejudger::fire(msqid);

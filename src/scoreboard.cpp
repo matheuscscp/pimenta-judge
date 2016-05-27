@@ -49,7 +49,7 @@ static void update() {
       ret += ("<td>"+team+"</td>");
       char i = 'A';
       for (const problem_t& p : problems) {
-        ret += "<td class=\"problem\">";
+        ret += "<td class=\"problems\">";
         if (p.first > 0) {
           ret += img(i) + to<string>(p.first)+"/";
           ret += to<string>(int(round((p.second - begin)/60.0)));
@@ -79,6 +79,7 @@ static void update() {
   // compute entries
   map<string, Entry> entriesmap;
   for (Attempt& att : atts) {
+    if(att.when > time(nullptr)) continue;
     auto it = entriesmap.find(att.team);
     if (it == entriesmap.end()) {
       Entry& entry = entriesmap[att.team];

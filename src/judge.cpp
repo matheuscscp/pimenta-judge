@@ -239,6 +239,7 @@ static void* judger(void*) {
   return nullptr;
 }
 
+
 namespace Judge {
 
 void fire() {
