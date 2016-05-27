@@ -49,7 +49,7 @@ static void update() {
       ret += ("<td>"+team+"</td>");
       char i = 'A';
       for (const problem_t& p : problems) {
-        ret += "<td class=\"problems\">";
+        ret += "<td class=\"problem\">";
         if (p.first > 0) {
           ret += img(i) + to<string>(p.first)+"/";
           ret += to<string>(int(round((p.second - begin)/60.0)));
