@@ -29,7 +29,7 @@ $ pjudge stop
 * All it takes to run a `pjudge` instance is a directory and a port. So you can have multiple contests running in the same host!
 
 ## Directory and file structure
-### Automatically created stuff
+### Automatically generated at contest creation
 | Type      | Name                                            | Function              |
 | --------- | ----------------------------------------------- | --------------------- |
 | Directory | [`problems`](#directory-problems)               | Secret test cases     |
@@ -51,7 +51,7 @@ For each problem, the numbers must start with 1 and follow the natural order. Fo
 `A.in1`, `A.in2`, `A.sol3` and `A.sol3`
 
 #### Directory `www`
-Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of your contest! Just remember that some things are C++ hard-coded (like [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/scoreboard.cpp), [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/clarification.cpp) and [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/clarification.cpp)) and the problems' colors are in the beginning of `www/script.js`:
+Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of your contest! Just remember that some things are C++ hard-coded (like [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/scoreboard.cpp), [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/clarification.cpp) and [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/webserver.cpp)) and the problems' colors are in the beginning of `www/script.js`:
 ```javascript
 var problems = [];
 problems["A"] = "#FF0000";
@@ -66,7 +66,7 @@ problems["I"] = "#000000";
 problems["J"] = "#FFFF00";
 ```
 ##### Warning
-To avoid possible mistakes and bugs, keep the alphabetical order when setting the colors inside the JavaScript source!
+Keep the alphabetical order when setting the colors inside the JavaScript source!
 
 #### File `settings.txt`
 ```
