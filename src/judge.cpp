@@ -143,36 +143,37 @@ static char run(
 ) {
   __suseconds_t us = s*1000000;
   
-  timeval start;
-  gettimeofday(&start, nullptr);
-  
-  pid_t proc = fork();
-  if (!proc) {
-    // TODO lose root permissions
-    setpgid(0, 0); // create new process group rooted at proc
-    for (int i = 1; instance_exists(problem, i); i++) {
+  for (int i = 1; instance_exists(problem,i); i++) {
+    timeval start;
+    gettimeofday(&start, nullptr);
+    
+    // child
+    pid_t proc = fork();
+    if (!proc) {
+      // TODO lose root permissions
+      setpgid(0, 0); // create new process group rooted at proc
       int status = system(
         "%s < problems/%c.in%d > %s%c.out%d",
         exec_cmd.c_str(),
         problem, i,
         output_path.c_str(), problem, i
       );
-      int exit_code = WEXITSTATUS(status);
-      if (exit_code) exit(exit_code);
+      exit(WEXITSTATUS(status));
     }
-    exit(0);
+    
+    // judge
+    int status;
+    while (waitpid(proc, &status, WNOHANG) != proc) {
+      if (dt(start) > us) {
+        kill(-proc, SIGKILL); // the minus kills the whole group rooted at proc
+        waitpid(proc, &status, 0);
+        return TLE;
+      }
+      usleep(10000);
+    }
+    if (WEXITSTATUS(status)) return RTE;
   }
   
-  int status;
-  while (waitpid(proc, &status, WNOHANG) != proc) {
-    if (dt(start) > us) {
-      kill(-proc, SIGKILL); // the minus kills the whole group rooted at proc
-      waitpid(proc, &status, 0);
-      return TLE;
-    }
-    usleep(10000);
-  }
-  if (WEXITSTATUS(status)) return RTE;
   return AC;
 }
 static void load_scripts() {
