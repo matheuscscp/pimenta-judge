@@ -51,12 +51,12 @@ Just put all of your secret test cases' input and correct output files in this f
 * Input file: `<upper_case_letter>.in<positive_number>`
 * Correct output file: `<upper_case_letter>.sol<positive_number>`
 
-Example: `A.in1`, `A.in2`, `A.sol1`, `A.sol2`, `B.in1`, `B.in2`, `B.sol1` and `B.sol2`
+Example: `A.in1`, `A.in2`, `A.sol1`, `A.sol2`, `B.in1`, `B.in2`, `B.sol1`, `B.sol2`
 
 ##### Warning
 For each problem, the numbers must start with 1 and follow the natural order. For example, the following files will not work:
 
-`A.in1`, `A.in2`, `A.sol3` and `A.sol3`
+`A.in1`, `A.in2`, `A.sol3`, `A.sol3`
 
 #### Directory `www`
 Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of your contest! Just remember that some things are C++ hard-coded ([this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/scoreboard.cpp), [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/clarification.cpp) and [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/webserver.cpp)) and the problems' colors are in the beginning of `www/script.js`:
