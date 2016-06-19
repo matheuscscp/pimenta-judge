@@ -10,7 +10,7 @@ $ sudo make install
 ```
 
 ## Creating, starting and stopping a contest
-Choose a directory name, like `mycontest`, an available port, like 8000, and type the following commands:
+Choose a directory name, like `mycontest`, an available network port, like 8000, and type the following commands:
 ```bash
 $ pjudge install mycontest
 $ cd mycontest
@@ -25,7 +25,7 @@ $ pjudge stop
 
 ### Important hints
 * `pjudge start` creates a file inside the directory (`contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again!
-* You can have multiple instances of `pjudge` running in the same operating system!
+* All it takes to run a `pjudge` instance is a folder and a port. So you can have multiple contests running in the same host/operating system!
 * `pjudge` keeps nothing of its file structure (explained below) in memory. Anything you change in the directory will take effect instantly!
 
 ## Directory and file structure
