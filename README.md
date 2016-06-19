@@ -23,12 +23,12 @@ To stop, type:
 $ pjudge stop
 ```
 
-### Important warning
-`pjudge start` creates a file (`contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again.
+### Important hints
+* `pjudge start` creates a file inside the directory (`contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again!
+* You can have multiple instances of `pjudge` running in the same operating system!
+* `pjudge` keeps nothing of its file structure (explained below) in memory. Anything you change in the directory will take effect instantly!
 
 ## Directory and file structure
-When you enter `pjudge install <dirname>`, `pjudge` will create the directory with the following itens:
-
 | Type      | Name                                            | Function              |
 | --------- | ----------------------------------------------- | --------------------- |
 | Directory | [`problems`](#directory-problems)               | Secret test cases     |
@@ -36,8 +36,6 @@ When you enter `pjudge install <dirname>`, `pjudge` will create the directory wi
 | File      | [`settings.txt`](#file-settingstxt)             | Time settings         |
 | File      | [`teams.txt`](#file-teamstxt)                   | User accounts         |
 | File      | [`clarifications.txt`](#file-clarificationstxt) | Clarification answers |
-
-`pjudge` keeps nothing of these files in memory. Anything you change in the directory will have effect instantly.
 
 ### Directory `problems`
 tmp
