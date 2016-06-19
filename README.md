@@ -10,7 +10,7 @@ $ sudo make install
 ```
 
 ## Creating and starting a contest
-Choose an available port, for example, 8000, and:
+Choose an available port, like 8000, and:
 ```bash
 $ pjudge install contest_name
 $ cd contest_name
