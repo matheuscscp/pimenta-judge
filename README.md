@@ -122,7 +122,7 @@ Contest owner may add `statement.pdf` PDF file containing the problems' statemen
 ### Automatically generated during contest execution
 | Type      | Name              | Function                                            |
 | --------- | ----------------- | --------------------------------------------------- |
-| Directory | `attempts`        | Contestants' attempts files                         |
+| Directory | `attempts`        | All files related to contestants' attempts          |
 | Directory | `questions`       | Clarification requests                              |
 | File      | `ip_by_login.txt` | Log file of all logins with username and IP address |
 | File      | `attempts.bin`    | Attempts index                                      |
