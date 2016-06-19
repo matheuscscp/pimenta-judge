@@ -1,3 +1,4 @@
+- implement automatic generation of A.solX files, from A.cpp and A.inX
 - implement automatic rejuding for one attempt
 - implement automatic rejuding for all attempts
 - log execution time of attempts
