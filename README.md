@@ -115,25 +115,10 @@ team1username C "Question privately answered to team1username" "Answer"
 Contest owner may add `statement.pdf` PDF file containing the problems' statements. It will be available in the web interface!
 
 ### Automatically generated during contest execution
-| Type      | Name                                  | Function                   |
-| --------- | ----------------------------------- | ---------------------------- |
-| Directory | [`attempts`](#directory-attempts)   | Contestants' attempts        |
-| Directory | [`questions`](#directory-questions) | Clarification requests       |
-| File      | [`questions`](#file-questions) | Clarification requests       |
-| File      | [`attempts.bin`](#file-attemptsbin) | Contestants' attempts index  |
-| File      | [`next.bin`](#file-nextidbin)       | Next attempt ID              |
-
-#### Directory `attempts`
-All attempts' source codes, binaries and outputs, separated in directories by username, problem letter and attempt ID.
-
-#### Directory `questions`
-All clarification requests are saved in text files inside this directory.
-
-#### File `ip_by_login.txt`
-All logins are logged in this file with username and IP address.
-
-#### File `attempts.bin`
-All data needed to generate the scoreboard.
-
-#### File `nextid.bin`
-Binary file containing the ID for the next attempt.
+| Type      | Name              | Function                                            |
+| --------- | ----------------- | --------------------------------------------------- |
+| Directory | `attempts`        | Contestants' attempts files                         |
+| Directory | `questions`       | Clarification requests                              |
+| File      | `ip_by_login.txt` | Log file of all logins with username and IP address |
+| File      | `attempts.bin`    | Attempts index                                      |
+| File      | `next.bin`        | Next attempt ID                                     |
