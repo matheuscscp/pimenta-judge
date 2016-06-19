@@ -122,7 +122,7 @@ void install(const string& dir) {
     "Freeze: 2015 12 25 23 50\n"
     "Blind:  2015 12 25 23 50\n"
     "A(time-limit-per-file-in-seconds): 4\n"
-    "B(the-alphabetical-order-must-be-followed):\n"
+    "B(the-alphabetical-order-must-be-followed): 3\n"
     "C(these-comments-are-useless-and-can-be-removed): 5\n"
     "D: 1\n"
   );
