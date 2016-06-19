@@ -75,7 +75,7 @@ problems["I"] = "#000000";
 problems["J"] = "#FFFF00";
 ```
 ##### Warning
-Keep the alphabetical order when setting the colors!
+Keep the alphabetical sorting when setting the colors in this file!
 
 #### File `settings.txt`
 ```
@@ -90,7 +90,7 @@ D: 1
 ```
 
 ##### Warning
-Keep the alphabetical order when setting the time limits!
+Keep the alphabetical sorting when setting the time limits in this file!
 
 #### File `teams.txt`
 ```
