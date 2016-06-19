@@ -23,3 +23,16 @@ Then access [http://localhost:8000/](http://localhost:8000/).
 $ cd contest_name
 $ pjudge stop
 ```
+
+## Directory and file structure
+When you enter `pjudge install <dirname>`, `pjudge` will create the directory with the following itens:
+
+| Type      | Name                 | Function              |
+| --------- | -------------------- | --------------------- |
+| Directory | [`problems`]           | Secret test cases     |
+| Directory | `www`                | Web interface         |
+| File      | `settings.txt`       | Time settings         |
+| File      | `teams.txt`          | User accounts         |
+| File      | `clarifications.txt` | Clarification answers |
+
+### Directory `problems`
