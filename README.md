@@ -24,7 +24,7 @@ $ pjudge stop
 ```
 
 ### Important hints
-* `pjudge start` creates a file inside the directory (`contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again!
+* `pjudge start` creates a binary file inside the folder (`contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again!
 * All it takes to run a `pjudge` instance is a folder and a port. So you can have multiple contests running in the same host/operating system!
 * `pjudge` keeps nothing of its file structure (explained below) in memory. Anything you change in the directory will take effect instantly!
 
