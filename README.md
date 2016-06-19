@@ -1,5 +1,5 @@
 # pimenta-judge
-ACM ICPC contest system for training sessions made with C++ 11 to run on GNU/Linux.
+ACM ICPC contest system for training sessions made with C++ to run on GNU/Linux.
 
 ## Languages currently supported
 | Language | Compilation command | Execution command |
