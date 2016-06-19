@@ -138,9 +138,8 @@ void install(const string& dir) {
   fprintf(fp,
     "global A \"Problem A question available to all teams\" \"Answer\"\n"
     "team1username C \"Problem C question privately answered to team1username\""
-    " Answer\n"
+    " \"Answer\"\n"
   );
-  fprintf(fp, "team1 C \"Question privately answered to team1\" \"Answer\"\n");
   fclose(fp);
   mkdir((dir+"/problems").c_str(), 0777);
   fp = fopen((dir+"/problems/A.in1").c_str(), "w");
