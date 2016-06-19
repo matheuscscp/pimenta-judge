@@ -1,7 +1,7 @@
 # pimenta-judge
 ACM ICPC contest system for training sessions.
 
-## pjudge installation
+## Installation
 ```bash
 $ git clone https://github.com/matheuscscp/pimenta-judge.git
 $ cd pimenta-judge
