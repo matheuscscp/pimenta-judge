@@ -121,16 +121,25 @@ void install(const string& dir) {
     "End:    2015 12 25 23 50\n"
     "Freeze: 2015 12 25 23 50\n"
     "Blind:  2015 12 25 23 50\n"
-    "A(time-limit-in-seconds): 4\n"
-    "B(these-comments-are-useless-and-can-be-removed): 3\n"
-    "C: 5\n"
+    "A(time-limit-per-file-in-seconds): 4\n"
+    "B(the-alphabetical-order-must-be-followed):\n"
+    "C(these-comments-are-useless-and-can-be-removed): 5\n"
+    "D: 1\n"
   );
   fclose(fp);
   fp = fopen((dir+"/teams.txt").c_str(), "w");
-  fprintf(fp, "\"Team 1\" team1 team1pass\n");
+  fprintf(fp,
+    "\"Team 1 Name\" team1username team1password\n"
+    "\"Team 2 Name\" team1username team2password\n"
+    "\"Team 3 Name\" team1username team3password\n"
+  );
   fclose(fp);
   fp = fopen((dir+"/clarifications.txt").c_str(), "w");
-  fprintf(fp, "global A \"Question available to all teams\" \"Answer\"\n");
+  fprintf(fp,
+    "global A \"Problem A question available to all teams\" \"Answer\"\n"
+    "team1username C \"Problem C question privately answered to team1username\""
+    " Answer\n"
+  );
   fprintf(fp, "team1 C \"Question privately answered to team1\" \"Answer\"\n");
   fclose(fp);
   mkdir((dir+"/problems").c_str(), 0777);

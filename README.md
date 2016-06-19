@@ -100,8 +100,8 @@ Keep the alphabetical order when setting the time limits!
 
 #### File `clarifications.txt`
 ```
-global A "Question available to all teams" "Answer"
-team1username C "Question privately answered to team1username" "Answer"
+global A "Problem A question available to all teams" "Answer"
+team1username C "Problem C question privately answered to team1username" "Answer"
 ```
 
 ### Optionally added by contest owner
