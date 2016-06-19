@@ -27,12 +27,25 @@ $ pjudge stop
 ## Directory and file structure
 When you enter `pjudge install <dirname>`, `pjudge` will create the directory with the following itens:
 
-| Type      | Name                 | Function              |
-| --------- | -------------------- | --------------------- |
-| Directory | [`problems`]           | Secret test cases     |
-| Directory | `www`                | Web interface         |
-| File      | `settings.txt`       | Time settings         |
-| File      | `teams.txt`          | User accounts         |
-| File      | `clarifications.txt` | Clarification answers |
+| Type      | Name                                        | Function              |
+| --------- | ------------------------------------------- | --------------------- |
+| Directory | [`problems`](#directory-problems)           | Secret test cases     |
+| Directory | `www`                                       | Web interface         |
+| File      | `settings.txt`                              | Time settings         |
+| File      | `teams.txt`                                 | User accounts         |
+| File      | `clarifications.txt`                        | Clarification answers |
 
 ### Directory `problems`
+tmp
+
+### Directory `www`
+tmp
+
+### File `settings.txt`
+tmp
+
+### Directory `teams.txt`
+tmp
+
+### Directory `clarifications.txt`
+tmp
