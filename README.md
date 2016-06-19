@@ -23,6 +23,9 @@ To stop, type:
 $ pjudge stop
 ```
 
+### Important warning
+`pjudge start` creates a file (`contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again.
+
 ## Directory and file structure
 When you enter `pjudge install <dirname>`, `pjudge` will create the directory with the following itens:
 
@@ -50,6 +53,3 @@ tmp
 
 ### File `clarifications.txt`
 tmp
-
-## Important general warning
-`pjudge start` creates a file (`contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again.
