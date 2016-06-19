@@ -55,9 +55,15 @@ Just put all of your secret test cases' input and correct output files in this f
 Example: `A.in1`, `A.in2`, `A.sol1`, `A.sol2`, `B.in1`, `B.in2`, `B.sol1`, `B.sol2`
 
 ##### Warning
-For each problem, numbers must start with 1 and follow the natural order.
+For each problem, numbers must start with 1 and follow the natural order. For example, if you have the files:
 
-The following files *won't* work: `A.in1`, `A.in2`, `A.sol3`, `A.sol3`
+`A.in1`, `A.in2`, `A.sol3`, `A.sol3`
+
+But you don't have the files:
+
+`A.in2`, `A.sol2`
+
+Then `pjudge` *won't* find problem A's third test case!
 
 #### Directory `www`
 Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of your contest! Just remember that some things are C++ hard-coded ([this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/scoreboard.cpp), [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/clarification.cpp) and [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/webserver.cpp)) and the problems' colors are in the beginning of `www/script.js`:
