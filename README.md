@@ -25,9 +25,7 @@ $ pjudge install mycontest
 $ cd mycontest
 $ pjudge start 8000
 ```
-Then access [http://localhost:8000/](http://localhost:8000/).
-
-To stop, type:
+Then access [http://localhost:8000/](http://localhost:8000/). To stop, type:
 ```bash
 $ pjudge stop
 ```
