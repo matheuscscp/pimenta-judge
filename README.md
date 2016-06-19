@@ -1,6 +1,15 @@
 # pimenta-judge
 ACM ICPC contest system for training sessions made with C++ 11 to run on GNU/Linux.
 
+## Languages currently supported
+| Language | Compilation command | Execution command |
+| -------- | ------------------- | ----------------- |
+| C        | `gcc -std=c11`      | GNU/Linux default |
+| C++      | `g++ -std=c++1y`    | GNU/Linux default |
+| Java     | `javac`             | `java -cp`        |
+| Python   |                     | `python`          |
+| Python 3 |                     | `python3`         |
+
 ## Installation
 ```bash
 $ git clone https://github.com/matheuscscp/pimenta-judge.git
@@ -103,4 +112,16 @@ team1username C "Question privately answered to team1username" "Answer"
 | File | [`statement.pdf`](#file-statementpdf) | Problems' statements |
 
 #### File `statement.pdf`
-Contest owner may add a PDF file containing the problems' statements.
+Contest owner may add a PDF file containing the problems' statements. It will be available in the web interface!
+
+### Automatically generated during contest execution
+| Type      | Name                                  | Function              |
+| --------- | ------------------------------------- | --------------------- |
+| Directory | [`attempts`](#directory-attempts)     | Contestants' attempts |
+| Directory | [`questions`](#directory-questions)   | Contestants' attempts |
+
+#### Directory `attempts`
+Directory with source codes, binaries and outputs, separated by username, problem letter and attempt ID.
+
+#### Directory `questions`
+Each clarification request is saved in a text file inside this directory.
