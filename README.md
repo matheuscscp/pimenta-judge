@@ -59,7 +59,7 @@ For each problem, the numbers must start with 1 and follow the natural order. Fo
 `A.in1`, `A.in2`, `A.sol3` and `A.sol3`
 
 #### Directory `www`
-Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of your contest! Just remember that some things are C++ hard-coded (like [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/scoreboard.cpp), [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/clarification.cpp) and [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/webserver.cpp)) and the problems' colors are in the beginning of `www/script.js`:
+Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of your contest! Just remember that some things are C++ hard-coded ([this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/scoreboard.cpp), [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/clarification.cpp) and [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/webserver.cpp)) and the problems' colors are in the beginning of `www/script.js`:
 ```javascript
 var problems = [];
 problems["A"] = "#FF0000";
