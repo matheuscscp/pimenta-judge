@@ -1,7 +1,7 @@
 # pimenta-judge
 ACM ICPC contest system for training sessions.
 
-## Installation
+## pjudge installation
 ```bash
 $ git clone https://github.com/matheuscscp/pimenta-judge.git
 $ cd pimenta-judge
@@ -10,13 +10,13 @@ $ sudo make install
 ```
 
 ## Creating and starting a contest
-Choose an available port and:
+Choose an available port, for example, 8000, and:
 ```bash
 $ pjudge install contest_name
 $ cd contest_name
-$ pjudge start <port>
+$ pjudge start 8000
 ```
-Then access [http://localhost:\<port\>/](http://localhost:\<port\>/).
+Then access [http://localhost:8000/](http://localhost:8000/).
 
 ## Stopping a contest
 ```bash
