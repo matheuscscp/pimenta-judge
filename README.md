@@ -29,6 +29,7 @@ $ pjudge stop
 * (Hint) All it takes to run a `pjudge` instance is a directory and a port. So you can have multiple contests running in the same host!
 
 ## Directory and file structure
+
 ### Automatically generated at contest creation
 | Type      | Name                                            | Function              |
 | --------- | ----------------------------------------------- | --------------------- |
@@ -79,6 +80,7 @@ B(the-alphabetical-order-must-be-followed): 3
 C(these-comments-are-useless-and-can-be-removed): 5
 D: 1
 ```
+
 ##### Warning
 Keep the alphabetical order when setting the time limits!
 
@@ -90,7 +92,15 @@ Keep the alphabetical order when setting the time limits!
 ```
 
 #### File `clarifications.txt`
-tmp
+```
+global A "Question available to all teams" "Answer"
+team1username C "Question privately answered to team1username" "Answer"
+```
 
-##### Warning
-The
+### Optionally added by contest owner
+| Type | Name                                  | Function             |
+| ---- | ------------------------------------- | -------------------- |
+| File | [`statement.pdf`](#file-statementpdf) | Problems' statements |
+
+#### File `statement.pdf`
+Contest owner may add a PDF file containing the problems' statements.
