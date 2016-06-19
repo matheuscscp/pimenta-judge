@@ -1,5 +1,5 @@
 # pimenta-judge
-ACM ICPC contest system for training sessions made with C++ 11 to run over GNU/Linux.
+ACM ICPC contest system for training sessions made with C++ 11 to run on GNU/Linux.
 
 ## Installation
 ```bash
