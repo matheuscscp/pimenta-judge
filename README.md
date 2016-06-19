@@ -45,10 +45,10 @@ tmp
 ### File `settings.txt`
 tmp
 
-### Directory `teams.txt`
+### File `teams.txt`
 tmp
 
-### Directory `clarifications.txt`
+### File `clarifications.txt`
 tmp
 
 ## Important general warning
