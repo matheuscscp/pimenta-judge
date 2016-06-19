@@ -9,18 +9,17 @@ $ make
 $ sudo make install
 ```
 
-## Creating and starting a contest
-Choose an available port, like 8000, and:
+## Creating, starting and stopping a contest
+Choose a directory name, like `mycontest`, an available port, like 8000, and type the following commands:
 ```bash
-$ pjudge install contest_name
-$ cd contest_name
+$ pjudge install mycontest
+$ cd mycontest
 $ pjudge start 8000
 ```
 Then access [http://localhost:8000/](http://localhost:8000/).
 
-## Stopping a contest
+To stop, type:
 ```bash
-$ cd contest_name
 $ pjudge stop
 ```
 
@@ -34,6 +33,8 @@ When you enter `pjudge install <dirname>`, `pjudge` will create the directory wi
 | File      | [`settings.txt`](#file-settingstxt)             | Time settings         |
 | File      | [`teams.txt`](#file-teamstxt)                   | User accounts         |
 | File      | [`clarifications.txt`](#file-clarificationstxt) | Clarification answers |
+
+`pjudge` keeps nothing of these files in memory. Anything you change in the directory will have effect instantly.
 
 ### Directory `problems`
 tmp
@@ -49,3 +50,6 @@ tmp
 
 ### Directory `clarifications.txt`
 tmp
+
+## Important general warning
+`pjudge start` creates a file (`contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again.
