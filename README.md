@@ -50,7 +50,20 @@ For each problem, the numbers must start with 1 and follow the natural order. Fo
 `A.in1`, `A.in2`, `A.sol3` and `A.sol3`
 
 ### Directory `www`
-tmp
+Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of you contest! Just remember that some things are C++ hard-coded (like [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/scoreboard.cpp)) and the problems' colors are in the beginning of `www/script.js`:
+```javascript
+var problems = [];
+problems["A"] = "#FF0000";
+problems["B"] = "#00FF00";
+problems["C"] = "#0000FF";
+problems["D"] = "#FF6600";
+problems["E"] = "#006600";
+problems["F"] = "#003399";
+problems["G"] = "#FFCC00";
+problems["H"] = "#FFFFFF";
+problems["I"] = "#000000";
+problems["J"] = "#FFFF00";
+```
 
 ### File `settings.txt`
 tmp
