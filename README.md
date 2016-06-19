@@ -26,7 +26,7 @@ $ pjudge stop
 ### VERY IMPORTANT HINTS
 * `pjudge start` creates a binary file inside the folder (`mycontest/contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again!
 * `pjudge` keeps nothing of its file structure (described below) in memory. Anything you change in the directory will take effect instantly!
-* All it takes to run a `pjudge` instance is a folder and a port. So you can have multiple contests running in the same host!
+* All it takes to run a `pjudge` instance is a directory and a port. So you can have multiple contests running in the same host!
 
 ## Directory and file structure
 | Type      | Name                                            | Function              |
@@ -50,7 +50,7 @@ For each problem, the numbers must start with 1 and follow the natural order. Fo
 `A.in1`, `A.in2`, `A.sol3` and `A.sol3`
 
 ### Directory `www`
-Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of you contest! Just remember that some things are C++ hard-coded (like [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/scoreboard.cpp)) and the problems' colors are in the beginning of `www/script.js`:
+Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of your contest! Just remember that some things are C++ hard-coded (like [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/scoreboard.cpp)) and the problems' colors are in the beginning of `www/script.js`:
 ```javascript
 var problems = [];
 problems["A"] = "#FF0000";
@@ -64,6 +64,7 @@ problems["H"] = "#FFFFFF";
 problems["I"] = "#000000";
 problems["J"] = "#FFFF00";
 ```
+To avoid possible mistakes and bugs, keep the alphabetical order when setting the colors inside the JavaScript source!
 
 ### File `settings.txt`
 tmp
