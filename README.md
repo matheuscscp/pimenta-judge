@@ -38,7 +38,15 @@ $ pjudge stop
 | File      | [`clarifications.txt`](#file-clarificationstxt) | Clarification answers |
 
 ### Directory `problems`
-tmp
+Just put all of your secret test cases' input and correct output files in this folder, together. No folder separation is needed (or even allowed!). The file names must follow the format:
+* Input file: `<upper_case_letter>.in<positive_number>`
+* Correct output file: `<upper_case_letter>.sol<positive_number>`
+Example: `A.in1`, `A.in2`, `A.sol1`, `A.sol2`, `B.in1`, `B.in2`, `B.sol1` and `B.sol2`
+
+#### Warning
+For each problem, the test case file numbers must start with 1 (one) and follow the order. For example, the following files will not work:
+
+`A.in1`, `A.in2`, `A.sol3` and `A.sol3`
 
 ### Directory `www`
 tmp
