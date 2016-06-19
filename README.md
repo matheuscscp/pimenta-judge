@@ -1,5 +1,5 @@
 # pimenta-judge
-ACM ICPC contest system for training sessions made with C++ to run on GNU/Linux.
+ACM ICPC contest system for small contests made with C++ to run on GNU/Linux, because [BOCA](https://github.com/cassiopc/boca) is too freaking much!
 
 ## Languages currently supported
 | Language | Compilation command | Execution command |
