@@ -15,7 +15,7 @@
         <div id="teamname" class="left"></div>
         <div id="menu" class="right">
           <ul>
-            <li><a href="#" onclick="submission()">Submission</a></li>
+            <li><a href="#" onclick="submission()">Attempt</a></li>
             <li><a href="#" onclick="scoreboard()">Scoreboard</a></li>
             <li><a href="#" onclick="clarifications()">Clarifications</a></li>
             <li><a href="?statement">Statement</a></li>
@@ -27,8 +27,9 @@
       <div id="content">
       </div>
       <div id="submission" style="display: none;">
-        <h2>Submission</h2>
+        <h2>Send attempt</h2>
         <h4 id="response"></h4>
+        <div style="text-align: center; margin: 10px;">File name must match {problem's upper case letter}.{language extension}, like A.c</div>
         <table>
           <tr><td>File:</td><td><input id="file" type="file"></td></tr>
           <tr><td><button onclick="attempt()">Send</button></td></tr>

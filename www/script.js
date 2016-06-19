@@ -1,4 +1,5 @@
 
+// keep the alphabetical order!
 var problems = [];
 problems["A"] = "#FF0000";
 problems["B"] = "#00FF00";
