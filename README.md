@@ -41,6 +41,7 @@ $ pjudge stop
 Just put all of your secret test cases' input and correct output files in this folder, together. No folder separation is needed (or even allowed!). The file names must be in the following format:
 * Input file: `<upper_case_letter>.in<positive_number>`
 * Correct output file: `<upper_case_letter>.sol<positive_number>`
+
 Example: `A.in1`, `A.in2`, `A.sol1`, `A.sol2`, `B.in1`, `B.in2`, `B.sol1` and `B.sol2`
 
 #### Warning
