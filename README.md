@@ -81,9 +81,10 @@ problems["I"] = "#000000";
 problems["J"] = "#FFFF00";
 ```
 ##### Warning
-Keep the alphabetical sorting when setting the colors in this file!
+Keep problems sorted by alphabetical order in this file!
 
 #### File `settings.txt`
+Timestamp format: YYYY MM DD hh mm
 ```
 Begin:  2015 09 01 19 00
 End:    2015 12 25 23 50
@@ -96,7 +97,7 @@ D: 1
 ```
 
 ##### Warning
-Keep the alphabetical sorting when setting the time limits in this file!
+Keep problems sorted by alphabetical order in this file!
 
 #### File `teams.txt`
 ```
@@ -120,10 +121,10 @@ team1username C "Problem C question privately answered to team1username" "Answer
 Contest owner may add `statement.pdf` PDF file containing the problems' statements. It will be available in the web interface!
 
 ### Automatically generated during contest execution
-| Type      | Name              | Function                                            |
-| --------- | ----------------- | --------------------------------------------------- |
-| Directory | `attempts`        | All files related to contestants' attempts          |
-| Directory | `questions`       | Clarification requests                              |
-| File      | `ip_by_login.txt` | Log file of all logins with username and IP address |
-| File      | `attempts.bin`    | Attempts index                                      |
-| File      | `next.bin`        | Next attempt ID                                     |
+| Type      | Name              | Function                                                |
+| --------- | ----------------- | ------------------------------------------------------- |
+| Directory | `attempts`        | All files related to contestants' attempts              |
+| Directory | `questions`       | Clarification requests                                  |
+| File      | `ip_by_login.txt` | Log file for logins, containing username and IP address |
+| File      | `attempts.bin`    | Attempts index                                          |
+| File      | `nextid.bin`      | Next attempt ID                                         |
