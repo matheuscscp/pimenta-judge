@@ -70,7 +70,7 @@ static void update() {
   FILE* fp = fopen("attempts.bin", "rb");
   if (fp) {
     while (fread(&att, sizeof att, 1, fp) == 1) {
-      if (att.when < settings.freeze) atts.push_back(att);
+      if (att.when < min(settings.freeze, time(nullptr))) atts.push_back(att);
     }
     fclose(fp);
   }
