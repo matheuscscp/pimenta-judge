@@ -82,7 +82,7 @@ bool Attempt::read(FILE* fp) {
   id = to<int>(fields[0]);
   problem = fields[1][0]-'A';
   verdict = verdict_toi(fields[2]);
-  when = to<time_t>(fields[3]);
+  when = to<int>(fields[3]);
   strcpy(team,name.c_str());
   return true;
 }

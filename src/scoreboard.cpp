@@ -29,13 +29,13 @@ static void update() {
     vector<problem_t> problems;
     int solved;
     int penalty;
-    void compute_score(time_t begin) {
+    void compute_score() {
       solved = 0;
       penalty = 0;
       for (const problem_t& p : problems) {
         if (p.first <= 0) continue;
         solved++;
-        penalty += (int(round((p.second - begin)/60.0)) + 20*(p.first-1));
+        penalty += (p.second + 20*(p.first-1));
       }
     }
     bool operator<(const Entry& other) const {
@@ -44,7 +44,7 @@ static void update() {
         (solved == other.solved && penalty < other.penalty)
       ;
     }
-    string str(time_t begin) const {
+    string str() const {
       string ret;
       ret += ("<td>"+team+"</td>");
       char i = 'A';
@@ -52,7 +52,7 @@ static void update() {
         ret += "<td class=\"problem\">";
         if (p.first > 0) {
           ret += img(i) + to<string>(p.first)+"/";
-          ret += to<string>(int(round((p.second - begin)/60.0)));
+          ret += to<string>(p.second);
         }
         else if (p.first < 0) ret += to<string>(-p.first)+"/-";
         ret += "</td>";
@@ -70,9 +70,7 @@ static void update() {
   FILE* fp = fopen("attempts.txt", "r");
   if (fp) {
     while (att.read(fp)) {
-      att.when *= 60;
-      att.when += settings.begin;
-      if (att.when < settings.freeze) atts.push_back(att);
+      if (settings.begin + 60*att.when < settings.freeze) atts.push_back(att);
     }
     fclose(fp);
   }
@@ -108,7 +106,7 @@ static void update() {
   // sort entries
   vector<Entry> entries;
   for (auto& kv : entriesmap) {
-    kv.second.compute_score(settings.begin);
+    kv.second.compute_score();
     entries.push_back(kv.second);
   }
   sort(entries.begin(), entries.end());
@@ -124,7 +122,7 @@ static void update() {
   int place = 1;
   for (Entry& x : entries) {
     (*backbuf) += ("<tr><td>"+to<string>(place++)+"</td>");
-    (*backbuf) += x.str(settings.begin);
+    (*backbuf) += x.str();
     (*backbuf) += "</tr>";
   }
   

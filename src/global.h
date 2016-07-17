@@ -21,7 +21,7 @@ struct Attempt {
   int id;
   char problem;
   char verdict;
-  time_t when;
+  int when;
   char team[128];
   bool read(FILE*);
   void write(FILE*) const;
