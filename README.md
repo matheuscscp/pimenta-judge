@@ -128,6 +128,5 @@ Contest owner may add `statement.pdf` PDF file containing the problems' statemen
 | --------- | ----------------- | ------------------------------------------------------- |
 | Directory | `attempts`        | All files related to contestants' attempts              |
 | Directory | `questions`       | Clarification requests                                  |
-| File      | `ip_by_login.txt` | Log file for logins, containing username and IP address |
-| File      | `attempts.txt`    | Attempts index                                          |
+| File      | `attempts.txt`    | Attempts data                                           |
 | File      | `nextid.bin`      | Next attempt ID                                         |
