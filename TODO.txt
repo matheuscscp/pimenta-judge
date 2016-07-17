@@ -1,8 +1,11 @@
-- implement automatic generation of A.solX files, from A.cpp and A.inX
-- implement automatic rejuding for one attempt
-- implement automatic rejuding for all attempts
-- log execution time of attempts
-- implement command line query to display data of one attempt
-- implement safe session id (session expires if server dies)
-- ulimit -s and ulimit -v
-- print login time in ip_by_login.txt
+- log attempt's max(test case total time) and IP address.
+- autojudge flag.
+- private runlist.
+- main() commands.
+- include setting of 'allowed prog. languages'.
+- organize problems by directory. split I/O files in two dirs. allow any name for I/O files.
+- write time of attempt right after receiving it.
+- allow any name for attempt's source code file name.
+- implement session id (session expires if server dies).
+- implement safe computation (run untrusted code safely).
+- ulimit -s and ulimit -v.
