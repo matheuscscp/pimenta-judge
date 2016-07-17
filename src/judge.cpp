@@ -68,8 +68,8 @@ static string judge(
   // save attempt info
   Global::lock_att_file();
   if (Global::alive()) {
-    FILE* fp = fopen("attempts.bin", "ab");
-    fwrite(&att, sizeof att, 1, fp);
+    FILE* fp = fopen("attempts.txt", "a");
+    att.write(fp);
     fclose(fp);
   }
   Global::unlock_att_file();

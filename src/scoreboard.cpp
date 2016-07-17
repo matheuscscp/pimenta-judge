@@ -67,9 +67,9 @@ static void update() {
   Settings settings;
   list<Attempt> atts; Attempt att;
   Global::lock_att_file();
-  FILE* fp = fopen("attempts.bin", "rb");
+  FILE* fp = fopen("attempts.txt", "r");
   if (fp) {
-    while (fread(&att, sizeof att, 1, fp) == 1) {
+    while (att.read(fp)) {
       if (att.when < settings.freeze) atts.push_back(att);
     }
     fclose(fp);

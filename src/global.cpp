@@ -17,8 +17,30 @@
 
 using namespace std;
 
-static pthread_mutex_t localtime_mutex = PTHREAD_MUTEX_INITIALIZER;
+int verdict_toi(const string& verd) {
+  if (verd ==  "AC") return AC;
+  if (verd ==  "CE") return CE;
+  if (verd == "RTE") return RTE;
+  if (verd == "TLE") return TLE;
+  if (verd ==  "WA") return WA;
+  if (verd ==  "PE") return PE;
+  return -1;
+}
+
+string verdict_tos(int verd) {
+  switch (verd) {
+    case  AC: return "AC";
+    case  CE: return "CE";
+    case RTE: return "RTE";
+    case TLE: return "TLE";
+    case  WA: return "WA";
+    case  PE: return "PE";
+  }
+  return "";
+}
+
 Settings::Settings() {
+  static pthread_mutex_t localtime_mutex = PTHREAD_MUTEX_INITIALIZER;
   memset(this, 0, sizeof(::Settings));
   fstream f("settings.txt");
   if (!f.is_open()) return;
@@ -45,6 +67,35 @@ Settings::Settings() {
   func(noverdict);
   int timelimit;
   while (f >> tmp >> timelimit) problems.push_back(timelimit);
+}
+
+bool Attempt::read(FILE* fp) {
+  vector<string> fields;
+  for (int i = 0; i < 4 && !feof(fp); i++) {
+    fields.emplace_back();
+    string& s = fields.back();
+    for (char c = fgetc(fp); c != ',' && !feof(fp); c = fgetc(fp)) s += c;
+  }
+  string name;
+  for (char c = fgetc(fp); c != '\n' && !feof(fp); c = fgetc(fp)) name += c;
+  if (feof(fp)) return false;
+  id = to<int>(fields[0]);
+  problem = fields[1][0]-'A';
+  verdict = verdict_toi(fields[2]);
+  when = to<time_t>(fields[3]);
+  strcpy(team,name.c_str());
+  return true;
+}
+
+void Attempt::write(FILE* fp) const {
+  stringstream ss;
+  ss << id << ',';
+  ss << char(problem+'A') << ',';
+  ss << verdict_tos(verdict) << ',';
+  ss << when << ',';
+  string s;
+  ss >> s;
+  fprintf(fp,"%s%s\n",s.c_str(),team);
 }
 
 rejudgemsg::rejudgemsg(int id, char verdict)
@@ -168,7 +219,6 @@ void start(int argc, char** argv) {
   signal(SIGPIPE, SIG_IGN);
   Judge::fire();
   Scoreboard::fire();
-  Rejudger::fire(msqid);
   WebServer::fire();
   for (pthread_t& thread : threads) pthread_join(thread, nullptr);
 }

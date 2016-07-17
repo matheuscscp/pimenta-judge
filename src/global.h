@@ -8,6 +8,8 @@
 #include <netinet/in.h>
 
 enum {AC = 0, CE, RTE, TLE, WA, PE};
+int verdict_toi(const std::string&);
+std::string verdict_tos(int);
 
 struct Settings {
   time_t begin, end, freeze, noverdict;
@@ -17,10 +19,12 @@ struct Settings {
 
 struct Attempt {
   int id;
-  char team[128];
   char problem;
   char verdict;
   time_t when;
+  char team[128];
+  bool read(FILE*);
+  void write(FILE*) const;
 };
 
 struct rejudgemsg {
