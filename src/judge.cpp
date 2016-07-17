@@ -12,17 +12,21 @@
 
 #include "judge.h"
 
-#include "global.h"
-
 #define BSIZ (1 << 18)
 
 using namespace std;
 
-typedef function<char(char, char*, char*, Settings&)> Script;
-struct QueueData;
+typedef function<char(char, char*, char*, Settings&, int&)> Script;
+struct QueueData {
+  Attempt att;
+  string lang;
+  string path;
+  string fn;
+  Settings settings;
+};
 
 static map<string, Script> scripts;
-static queue<QueueData*> jqueue;
+static queue<QueueData> jqueue;
 static pthread_mutex_t judger_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool instance_exists(char problem, int i) {
@@ -32,39 +36,37 @@ static bool instance_exists(char problem, int i) {
   return true;
 }
 
-static string judge(
-  int id, const string& team, const string& fno,
-  const string& path, const string& fn, Settings& settings, int when
+static void judge(
+  Attempt& att,
+  const string& lang, const string& path, const string& fn,
+  Settings& settings
 ) {
   // build attempt
-  Attempt att;
-  att.id = id;
-  strcpy(att.team, team.c_str());
-  att.problem = fno[0]-'A';
-  char run = scripts[fno.substr(1, fno.size())](
-    fno[0], (char*)path.c_str(), (char*)fn.c_str(), settings
+  int maxms = 0;
+  char run = scripts[lang](
+    att.problem, (char*)path.c_str(), (char*)fn.c_str(), settings, maxms
   );
+  att.runtime = to<string>(maxms)+" ms";
   if (run != AC) {
     att.verdict = run;
   }
   else {
     att.verdict = AC;
-    for (int i = 1; instance_exists(fno[0], i) && att.verdict == AC; i++) {
+    for (int i = 1; instance_exists(att.problem, i) && att.verdict == AC; i++) {
       int status = system(
         "diff -wB %s%c.out%d problems/%c.sol%d",
-        path.c_str(), fno[0], i, fno[0], i
+        path.c_str(), att.problem, i, att.problem, i
       );
       if (WEXITSTATUS(status)) att.verdict = WA;
       else {
         status = system(
           "diff %s%c.out%d problems/%c.sol%d",
-          path.c_str(), fno[0], i, fno[0], i
+          path.c_str(), att.problem, i, att.problem, i
         );
         if (WEXITSTATUS(status)) att.verdict = PE;
       }
     }
   }
-  att.when = int(round((when-settings.begin)/60.0));
   
   // save attempt info
   Global::lock_att_file();
@@ -74,43 +76,15 @@ static string judge(
     fclose(fp);
   }
   Global::unlock_att_file();
-  
-  // return verdict
-  return
-    when < settings.noverdict ?
-    verdict_tos(att.verdict) :
-    "The judge is hiding verdicts!"
-  ;
 }
 
-struct QueueData {
-  int id;
-  string team;
-  string fno;
-  string path;
-  string fn;
-  Settings settings;
-  int when;
-  string verdict;
-  bool done;
-  QueueData() : done(false) {}
-  void push() {
-    pthread_mutex_lock(&judger_mutex);
-    jqueue.push(this);
-    pthread_mutex_unlock(&judger_mutex);
-    while (Global::alive() && !done) usleep(25000);
+static string valid_filename(Settings& settings, const string& fn) {
+  if (!(('A' <= fn[0]) && (fn[0] <= ('A' + int(settings.problems.size())-1)))) {
+    return "";
   }
-  void judge() {
-    verdict = ::judge(id, team, fno, path, fn, settings, when);
-    done = true;
-  }
-};
-
-static bool valid_filename(Settings& settings, const string& fn) {
-  return
-    ('A' <= fn[0]) && (fn[0] <= ('A' + int(settings.problems.size())-1)) &&
-    (scripts.find(fn.substr(1, fn.size())) != scripts.end())
-  ;
+  string lang = fn.substr(1,fn.size());
+  if (scripts.find(lang) != scripts.end()) return lang;
+  return "";
 }
 
 static int genid() {
@@ -140,7 +114,8 @@ static char run(
   int s,
   const string& exec_cmd,
   char problem,
-  const string& output_path
+  const string& output_path,
+  int& ms
 ) {
   __suseconds_t us = s*1000000;
   
@@ -172,56 +147,62 @@ static char run(
       }
       usleep(10000);
     }
+    ms = max(ms,int(dt(start)/1000));
     if (WEXITSTATUS(status)) return RTE;
   }
   
   return AC;
 }
 static void load_scripts() {
-  scripts[".c"] = [](char p, char* path, char* fn, Settings& settings) {
+  scripts[".c"] = [](char p, char* path, char* fn, Settings& sets, int& ms) {
     int status = system("gcc -std=c11 %s -o %s%c -lm", fn, path, p);
     if (WEXITSTATUS(status)) return char(CE);
     return run(
-      settings.problems[p-'A'],
+      sets.problems[p-'A'],
       stringf("%s%c", path, p),
       p,
-      path
+      path,
+      ms
     );
   };
-  scripts[".cpp"] = [](char p, char* path, char* fn, Settings& settings) {
+  scripts[".cpp"] = [](char p, char* path, char* fn, Settings& sets, int& ms) {
     int status = system("g++ -std=c++1y %s -o %s%c", fn, path, p);
     if (WEXITSTATUS(status)) return char(CE);
     return run(
-      settings.problems[p-'A'],
+      sets.problems[p-'A'],
       stringf("%s%c", path, p),
       p,
-      path
+      path,
+      ms
     );
   };
-  scripts[".java"] = [](char p, char* path, char* fn, Settings& settings) {
+  scripts[".java"] = [](char p, char* path, char* fn, Settings& sets, int& ms) {
     int status = system("javac %s", fn);
     if (WEXITSTATUS(status)) return char(CE);
     return run(
-      settings.problems[p-'A'],
+      sets.problems[p-'A'],
       stringf("java -cp %s %c", path, p),
       p,
-      path
+      path,
+      ms
     );
   };
-  scripts[".py"] = [](char p, char* path, char* fn, Settings& settings) {
+  scripts[".py"] = [](char p, char* path, char* fn, Settings& sets, int& ms) {
     return run(
-      settings.problems[p-'A'],
+      sets.problems[p-'A'],
       stringf("python %s", fn),
       p,
-      path
+      path,
+      ms
     );
   };
-  scripts[".py3"] = [](char p, char* path, char* fn, Settings& settings) {
+  scripts[".py3"] = [](char p, char* path, char* fn, Settings& sets, int& ms) {
     return run(
-      settings.problems[p-'A'],
+      sets.problems[p-'A'],
       stringf("python3 %s", fn),
       p,
-      path
+      path,
+      ms
     );
   };
 }
@@ -234,9 +215,9 @@ static void* judger(void*) {
       usleep(25000);
       continue;
     }
-    QueueData* qd = jqueue.front(); jqueue.pop();
+    QueueData qd = jqueue.front(); jqueue.pop();
     pthread_mutex_unlock(&judger_mutex);
-    qd->judge();
+    judge(qd.att,qd.lang,qd.path,qd.fn,qd.settings);
   }
   return nullptr;
 }
@@ -248,28 +229,25 @@ void fire() {
   Global::fire(judger);
 }
 
-void attempt(
-  int sd,
-  const string& teamname, const string& team,
-  const string& file_name, int file_size,
-  int when
-) {
+void attempt(int sd, const std::string& file_name, int file_size, Attempt att) {
   Settings settings;
   
   // check time
-  time_t now = time(nullptr);
-  if (now < settings.begin || settings.end <= now) {
+  if (att.when < settings.begin || settings.end <= att.when) {
     ignoresd(sd);
     write(sd, "The contest is not running.", 27);
     return;
   }
+  att.when = int(round((att.when-settings.begin)/60.0));
   
   // check file name
-  if (!valid_filename(settings, file_name)) {
+  string lang = valid_filename(settings,file_name);
+  if (lang == "") {
     ignoresd(sd);
-    write(sd, "Invalid file name!", 18);
+    write(sd, "Invalid programming language!", 29);
     return;
   }
+  att.problem = file_name[0];
   
   // check file size
   if (file_size > BSIZ) {
@@ -286,7 +264,7 @@ void attempt(
   for (int i = 0, fs = file_size; fs > 0;) {
     int rb = read(sd, &buf[i], fs);
     if (rb < 0) {
-      write(sd, "Incomplete request!", 19);
+      write(sd, "File corrupted!", 15);
       delete[] buf;
       return;
     }
@@ -301,17 +279,21 @@ void attempt(
     delete[] buf;
     return;
   }
-  int id = genid();
+  att.id = genid();
   Global::unlock_nextid_file();
+  
+  // respond
+  string response = "Attempt "+to<string>(att.id)+" received!";
+  write(sd, response.c_str(), response.size());
   
   // save file
   string fn = "attempts/";
   mkdir(fn.c_str(), 0777);
-  fn += (team+"/");
+  fn += (att.username+"/");
   mkdir(fn.c_str(), 0777);
   fn += file_name[0]; fn += "/";
   mkdir(fn.c_str(), 0777);
-  fn += (to<string>(id)+"/");
+  fn += (to<string>(att.id)+"/");
   mkdir(fn.c_str(), 0777);
   string path = "./"+fn;
   fn += file_name;
@@ -320,19 +302,16 @@ void attempt(
   fclose(fp);
   delete[] buf;
   
-  // respond
-  string response = "Attempt "+to<string>(id)+": ";
+  // push task
   QueueData qd;
-  qd.id = id;
-  qd.team = teamname;
-  qd.fno = file_name;
+  qd.att = att;
+  qd.lang = lang;
   qd.path = path;
   qd.fn = fn;
   qd.settings = settings;
-  qd.when = when;
-  qd.push();
-  response += qd.verdict;
-  write(sd, response.c_str(), response.size());
+  pthread_mutex_lock(&judger_mutex);
+  jqueue.push(qd);
+  pthread_mutex_unlock(&judger_mutex);
 }
 
 } // namespace Judge

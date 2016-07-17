@@ -120,15 +120,6 @@ static string login(const string& team, const string& password) {
   return name;
 }
 
-static void log(const string& team, in_addr_t ip) {
-  static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
-  pthread_mutex_lock(&log_mutex);
-  FILE* fp = fopen("ip_by_login.txt", "a");
-  fprintf(fp, "%s: %s\n", team.c_str(), to<string>(ip).c_str());
-  fclose(fp);
-  pthread_mutex_unlock(&log_mutex);
-}
-
 static void file(int sd, string uri, const string& def) {
   string notfound =
     "<html>\n"
@@ -227,7 +218,6 @@ static void* client(void* ptr) {
         write(cptr->sd, "Invalid team/password!", 22);
       }
       else {
-        log(team, cptr->addr.sin_addr.s_addr);
         string response =
           "HTTP/1.1 200 OK\r\n"
           "Connection: close\r\r"
@@ -259,11 +249,15 @@ static void* client(void* ptr) {
     // post
     if (req.line[0] == 'P') {
       if (req.uri.find("attempt") != string::npos) {
+        Attempt att;
+        att.when = cptr->when;
+        att.username = req.login;
+        att.ip = to<string>(cptr->addr.sin_addr.s_addr);
+        att.teamname = req.teamname;
         Judge::attempt(
           cptr->sd,
-          req.teamname, req.login,
           req.headers["File-name"], to<int>(req.headers["File-size"]),
-          cptr->when
+          att
         );
       }
       else if (req.uri.find("question") != string::npos) {

@@ -22,9 +22,13 @@ struct Attempt {
   char problem;
   char verdict;
   int when;
-  char team[128];
+  std::string runtime;
+  std::string username;
+  std::string ip;
+  std::string teamname;
   bool read(FILE*);
   void write(FILE*) const;
+  bool operator<(const Attempt&) const;
 };
 
 struct rejudgemsg {

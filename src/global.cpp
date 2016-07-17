@@ -73,31 +73,38 @@ Settings::Settings() {
 
 bool Attempt::read(FILE* fp) {
   vector<string> fields;
-  for (int i = 0; i < 4 && !feof(fp); i++) {
+  for (int i = 0; i < 7 && !feof(fp); i++) {
     fields.emplace_back();
     string& s = fields.back();
     for (char c = fgetc(fp); c != ',' && !feof(fp); c = fgetc(fp)) s += c;
   }
-  string name;
-  for (char c = fgetc(fp); c != '\n' && !feof(fp); c = fgetc(fp)) name += c;
+  teamname = "";
+  for (char c = fgetc(fp); c != '\n' && !feof(fp); c = fgetc(fp)) teamname += c;
   if (feof(fp)) return false;
-  id = to<int>(fields[0]);
-  problem = fields[1][0]-'A';
-  verdict = verdict_toi(fields[2]);
-  when = to<int>(fields[3]);
-  strcpy(team,name.c_str());
+  int f = 0;
+  id = to<int>(fields[f++]);
+  problem = fields[f++][0];
+  verdict = verdict_toi(fields[f++]);
+  when = to<int>(fields[f++]);
+  runtime = fields[f++];
+  username = fields[f++];
+  ip = fields[f++];
   return true;
 }
 
 void Attempt::write(FILE* fp) const {
-  stringstream ss;
-  ss << id << ',';
-  ss << char(problem+'A') << ',';
-  ss << verdict_tos(verdict) << ',';
-  ss << when << ',';
-  string s;
-  ss >> s;
-  fprintf(fp,"%s%s\n",s.c_str(),team);
+  fprintf(fp,"%d,",id);
+  fprintf(fp,"%c,",problem);
+  fprintf(fp,"%s,",verdict_tos(verdict).c_str());
+  fprintf(fp,"%d,",when);
+  fprintf(fp,"%s,",runtime.c_str());
+  fprintf(fp,"%s,",username.c_str());
+  fprintf(fp,"%s,",ip.c_str());
+  fprintf(fp,"%s\n",teamname.c_str());
+}
+
+bool Attempt::operator<(const Attempt& other) const {
+  return when < other.when;
 }
 
 rejudgemsg::rejudgemsg(int id, char verdict)

@@ -1,5 +1,4 @@
 #include <cmath>
-#include <list>
 #include <map>
 #include <algorithm>
 
@@ -29,6 +28,7 @@ static void update() {
     vector<problem_t> problems;
     int solved;
     int penalty;
+    vector<int> ACs;
     void compute_score() {
       solved = 0;
       penalty = 0;
@@ -39,10 +39,12 @@ static void update() {
       }
     }
     bool operator<(const Entry& other) const {
-      return
-        solved > other.solved ||
-        (solved == other.solved && penalty < other.penalty)
-      ;
+      if (solved != other.solved) return solved > other.solved;
+      if (penalty != other.penalty) return penalty < other.penalty;
+      for (int i = solved-1; 0 <= i; i--) {
+        if (ACs[i] != other.ACs[i]) return ACs[i] < other.ACs[i];
+      }
+      return false;
     }
     string str() const {
       string ret;
@@ -65,7 +67,7 @@ static void update() {
   
   // read file
   Settings settings;
-  list<Attempt> atts; Attempt att;
+  vector<Attempt> atts; Attempt att;
   Global::lock_att_file();
   FILE* fp = fopen("attempts.txt", "r");
   if (fp) {
@@ -75,30 +77,33 @@ static void update() {
     fclose(fp);
   }
   Global::unlock_att_file();
+  stable_sort(atts.begin(),atts.end());
   
   // compute entries
   map<string, Entry> entriesmap;
   for (Attempt& att : atts) {
-    auto it = entriesmap.find(att.team);
+    auto it = entriesmap.find(att.teamname);
     if (it == entriesmap.end()) {
-      Entry& entry = entriesmap[att.team];
-      entry.team = att.team;
+      Entry& entry = entriesmap[att.teamname];
+      entry.team = att.teamname;
       entry.problems = vector<problem_t>(
         settings.problems.size(), make_pair(0, 0)
       );
-      if (att.verdict != AC) entry.problems[att.problem].first = -1;
+      if (att.verdict != AC) entry.problems[att.problem-'A'].first = -1;
       else {
-        entry.problems[att.problem].first = 1;
-        entry.problems[att.problem].second = att.when;
+        entry.problems[att.problem-'A'].first = 1;
+        entry.problems[att.problem-'A'].second = att.when;
+        entry.ACs.push_back(att.when);
       }
     }
     else {
-      problem_t& p = it->second.problems[att.problem];
+      problem_t& p = it->second.problems[att.problem-'A'];
       if (p.first > 0) continue;
       if (att.verdict != AC) p.first--;
       else {
         p.first  = 1 - p.first;
         p.second = att.when;
+        it->second.ACs.push_back(att.when);
       }
     }
   }
