@@ -1,6 +1,5 @@
-- allow any name for attempt's source code file name.
-- organize problems by directory. split I/O files in two dirs. allow any name for I/O files.
 - include setting of 'allowed prog. languages'.
+- organize problems by directory. split I/O files in two dirs. allow any name for I/O files.
 - session id (session expires if server dies).
 - private runlist inside session.
 - autojudge flag.

@@ -56,11 +56,12 @@ function init_problems() {
     prob = String.fromCharCode(65+i);
     opts += ("<option value=\""+prob+"\">"+prob+"</option>");
   }
-  document.getElementById("problem").innerHTML = opts;
+  $("#submission-problem").html(opts);
+  $("#clarification-problem").html(opts);
 }
 
 function init_data() {
-  show_data("teamname", "teamname", "Team: ", "", function() {});
+  show_data("teamname", "teamname", "Team: ", "", function(){});
   var upd_rem_time_counter = function() {
     var now = new Date().getTime()/1000;
     var dt = now-remaining_time_json.init_time;
@@ -106,7 +107,7 @@ function show_data(key, tagid, before, after, cb) {
 
 function submission() {
   document.getElementById("content").innerHTML = document.getElementById("submission").innerHTML;
-  document.getElementById("file").focus();
+  document.getElementById("submission-problem").focus();
 }
 function scoreboard() {
   show_data("scoreboard", "content", "", "", function() {
@@ -126,7 +127,7 @@ function scoreboard() {
 }
 function clarifications() {
   show_data("clarifications", "content", document.getElementById("clarifications").innerHTML, "", function() {
-    document.getElementById("problem").focus();
+    document.getElementById("clarification-problem").focus();
   });
 }
 function logout() {
@@ -146,7 +147,18 @@ function logout() {
 
 function attempt() {
   document.getElementById("response").innerHTML = "Wait for the verdict.";
+  var prob = document.getElementById("submission-problem");
+  if (prob.value == "") {
+    document.getElementById("response").innerHTML = "Choose a problem!";
+    prob.focus();
+    return;
+  }
   file = document.getElementById("file");
+  if (file.value == "") {
+    document.getElementById("response").innerHTML = "Choose a file!";
+    file.focus();
+    return;
+  }
   var xmlhttp;
   if (window.XMLHttpRequest)
     xmlhttp = new XMLHttpRequest();
@@ -158,21 +170,26 @@ function attempt() {
     }
   }
   xmlhttp.open("POST", "attempt", true);
-  xmlhttp.setRequestHeader("File-name", file.files[0].name);
+  var re = /(?:\.([^.]+))?$/;
+  var ext = re.exec(file.files[0].name)[1];
+  xmlhttp.setRequestHeader("File-name", prob.value+"."+ext);
   xmlhttp.setRequestHeader("File-size", file.files[0].size);
   xmlhttp.send(file.files[0]);
+  prob.value = "";
   file.value = "";
 }
 
 function question() {
-  prob = document.getElementById("problem");
+  var prob = document.getElementById("clarification-problem");
   if (prob.value == "") {
     document.getElementById("response").innerHTML = "Choose a problem!";
+    prob.focus();
     return;
   }
   ques = document.getElementById("question");
   if (ques.value == "") {
     document.getElementById("response").innerHTML = "Write something!";
+    ques.focus();
     return;
   }
   document.getElementById("response").innerHTML = "Question sent. Wait and refresh.";
