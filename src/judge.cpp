@@ -1,4 +1,5 @@
 #include <cstring>
+#include <cmath>
 #include <set>
 #include <map>
 #include <functional>
@@ -33,7 +34,7 @@ static bool instance_exists(char problem, int i) {
 
 static string judge(
   int id, const string& team, const string& fno,
-  const string& path, const string& fn, Settings& settings
+  const string& path, const string& fn, Settings& settings, int when
 ) {
   // build attempt
   Attempt att;
@@ -63,7 +64,7 @@ static string judge(
       }
     }
   }
-  att.when = time(nullptr);
+  att.when = int(round((when-settings.begin)/60.0));
   
   // save attempt info
   Global::lock_att_file();
@@ -75,10 +76,9 @@ static string judge(
   Global::unlock_att_file();
   
   // return verdict
-  static string verdict[] = {"AC", "CE", "RTE", "TLE", "WA", "PE"};
   return
-    att.when < settings.noverdict ?
-    verdict[int(att.verdict)] :
+    when < settings.noverdict ?
+    verdict_tos(att.verdict) :
     "The judge is hiding verdicts!"
   ;
 }
@@ -90,6 +90,7 @@ struct QueueData {
   string path;
   string fn;
   Settings settings;
+  int when;
   string verdict;
   bool done;
   QueueData() : done(false) {}
@@ -100,7 +101,7 @@ struct QueueData {
     while (Global::alive() && !done) usleep(25000);
   }
   void judge() {
-    verdict = ::judge(id, team, fno, path, fn, settings);
+    verdict = ::judge(id, team, fno, path, fn, settings, when);
     done = true;
   }
 };
@@ -250,7 +251,8 @@ void fire() {
 void attempt(
   int sd,
   const string& teamname, const string& team,
-  const string& file_name, int file_size
+  const string& file_name, int file_size,
+  int when
 ) {
   Settings settings;
   
@@ -327,6 +329,7 @@ void attempt(
   qd.path = path;
   qd.fn = fn;
   qd.settings = settings;
+  qd.when = when;
   qd.push();
   response += qd.verdict;
   write(sd, response.c_str(), response.size());

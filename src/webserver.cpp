@@ -99,6 +99,7 @@ struct Request {
 struct Client {
   sockaddr_in addr;
   int sd;
+  int when;
 };
 
 static string login(const string& team, const string& password) {
@@ -261,7 +262,8 @@ static void* client(void* ptr) {
         Judge::attempt(
           cptr->sd,
           req.teamname, req.login,
-          req.headers["File-name"], to<int>(req.headers["File-size"])
+          req.headers["File-name"], to<int>(req.headers["File-size"]),
+          cptr->when
         );
       }
       else if (req.uri.find("question") != string::npos) {
@@ -321,6 +323,7 @@ static void* server(void*) {
     Client c;
     c.sd = accept(sd, (sockaddr*)&c.addr, &alen);
     if (c.sd < 0) { usleep(25000); continue; }
+    c.when = time(nullptr);
     pthread_t thread;
     pthread_create(&thread, nullptr, client, new Client(c));
     pthread_detach(thread);
