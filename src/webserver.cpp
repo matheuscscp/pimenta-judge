@@ -291,6 +291,13 @@ static void* client(void* ptr) {
       else if (req.uri.find("statement") != string::npos) {
         statement(cptr->sd);
       }
+      else if (req.uri.find("remaining-time") != string::npos) {
+        Settings settings;
+        time_t now = time(nullptr);
+        int tmp = (now < settings.begin ? 0 : max(0,int(settings.end-now)));
+        string ans = to<string>(tmp);
+        write(cptr->sd, ans.c_str(), ans.size());
+      }
     }
     // file request
     else file(cptr->sd, req.uri, "/index.html");

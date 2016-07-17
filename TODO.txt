@@ -1,11 +1,10 @@
-- minutes remaining in the web interface.
 - log attempt's max(test case total time) and IP address.
 - autojudge flag.
-- implement session id (session expires if server dies).
-- private runlist.
-- main() commands.
 - include setting of 'allowed prog. languages'.
+- session id (session expires if server dies).
+- private runlist inside session.
 - organize problems by directory. split I/O files in two dirs. allow any name for I/O files.
+- main() commands.
 - allow any name for attempt's source code file name.
 - implement safe computation (run untrusted code safely).
 - ulimit -s and ulimit -v.

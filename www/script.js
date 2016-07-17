@@ -19,6 +19,7 @@ function login() {
     document.getElementById("response").innerHTML = "Invalid team/password!";
     return;
   }
+  var xmlhttp;
   if (window.XMLHttpRequest)
     xmlhttp = new XMLHttpRequest();
   else
@@ -43,7 +44,7 @@ function login() {
 
 function init() {
   init_problems();
-  data("teamname", "teamname", "Team: ", "", function(){});
+  init_data();
   submission();
 }
 
@@ -58,19 +59,49 @@ function init_problems() {
   document.getElementById("problem").innerHTML = opts;
 }
 
-function data(key, tagid, before, after, cb) {
+function init_data() {
+  show_data("teamname", "teamname", "Team: ", "", function() {});
+  var upd_rem_time_counter = function() {
+    var now = new Date().getTime()/1000;
+    var dt = now-remaining_time_json.init_time;
+    var tmp = Math.round(Math.max(0,remaining_time_json.remaining_time-dt));
+    var ans = (tmp == 0 ? "The contest is not running." : "Remaining time: " + (tmp+"").toHHMMSS());
+    document.getElementById("remaining-time").innerHTML = ans;
+  };
+  var upd_rem_time = function() {
+    data("remaining-time", function(response) {
+      window["remaining_time_json"] = {
+        remaining_time: parseInt(response),
+        init_time: new Date().getTime()/1000
+      };
+      upd_rem_time_counter();
+    });
+  };
+  upd_rem_time();
+  setInterval(upd_rem_time, 30000);
+  setInterval(upd_rem_time_counter, 1000);
+}
+
+function data(key, cb) {
+  var xmlhttp;
   if (window.XMLHttpRequest)
     xmlhttp = new XMLHttpRequest();
   else
     xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
   xmlhttp.onreadystatechange = function() {
     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-      document.getElementById(tagid).innerHTML = before+xmlhttp.responseText+after;
-      cb();
+      cb(xmlhttp.responseText);
     }
   }
   xmlhttp.open("GET", "?"+key, true);
   xmlhttp.send();
+}
+
+function show_data(key, tagid, before, after, cb) {
+  data(key, function(response) {
+    document.getElementById(tagid).innerHTML = before+response+after;
+    cb();
+  });
 }
 
 function submission() {
@@ -78,7 +109,7 @@ function submission() {
   document.getElementById("file").focus();
 }
 function scoreboard() {
-  data("scoreboard", "content", "", "", function() {
+  show_data("scoreboard", "content", "", "", function() {
     jQuery.get(jQuery("img.svg").attr("src"), function(data) {
       var $svg = jQuery(data).find("svg");
       jQuery("img.svg").each(function(){
@@ -94,11 +125,12 @@ function scoreboard() {
   });
 }
 function clarifications() {
-  data("clarifications", "content", document.getElementById("clarifications").innerHTML, "", function() {
+  show_data("clarifications", "content", document.getElementById("clarifications").innerHTML, "", function() {
     document.getElementById("problem").focus();
   });
 }
 function logout() {
+  var xmlhttp;
   if (window.XMLHttpRequest)
     xmlhttp = new XMLHttpRequest();
   else
@@ -115,6 +147,7 @@ function logout() {
 function attempt() {
   document.getElementById("response").innerHTML = "Wait for the verdict.";
   file = document.getElementById("file");
+  var xmlhttp;
   if (window.XMLHttpRequest)
     xmlhttp = new XMLHttpRequest();
   else
@@ -143,6 +176,7 @@ function question() {
     return;
   }
   document.getElementById("response").innerHTML = "Question sent. Wait and refresh.";
+  var xmlhttp;
   if (window.XMLHttpRequest)
     xmlhttp = new XMLHttpRequest();
   else
@@ -158,4 +192,15 @@ function question() {
   xmlhttp.send();
   prob.value = "";
   ques.value = "";
+}
+
+String.prototype.toHHMMSS = function () {
+  var sec_num = parseInt(this, 10);
+  var hours   = Math.floor(sec_num / 3600);
+  var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+  var seconds = sec_num - (hours * 3600) - (minutes * 60);
+  if (hours   < 10) {hours   = "0"+hours;}
+  if (minutes < 10) {minutes = "0"+minutes;}
+  if (seconds < 10) {seconds = "0"+seconds;}
+  return hours+':'+minutes+':'+seconds;
 }

@@ -59,13 +59,14 @@ table.data td.problem {
   padding: 5px;
 }
 
-#menu ul {
+#header ul {
   list-style-type: none;
   margin: 0;
+  padding: 0;
   display: inline;
 }
 
-#menu li {
+#header li {
   display: inline;
 }
 
