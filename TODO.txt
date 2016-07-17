@@ -1,4 +1,4 @@
-- change time settings to relative values.
+- minutes remaining in the web interface.
 - log attempt's max(test case total time) and IP address.
 - autojudge flag.
 - implement session id (session expires if server dies).

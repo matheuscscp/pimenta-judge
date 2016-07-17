@@ -84,17 +84,20 @@ problems["J"] = "#FFFF00";
 Keep problems sorted by alphabetical order in this file!
 
 #### File `settings.txt`
-Timestamp format: YYYY MM DD hh mm
 ```
-Begin:  2015 09 01 19 00
-End:    2015 12 25 23 50
-Freeze: 2015 12 25 23 50
-Blind:  2015 12 25 23 50
+Start:    2015 09 01 19 00
+Duration: 300
+Freeze:   60
+Blind:    15
 A(time-limit-per-file-in-seconds): 4
 B(the-alphabetical-order-must-be-followed): 3
 C(these-comments-are-useless-and-can-be-removed): 5
 D: 1
 ```
+* Field `Start:` is a timestamp in the format YYYY MM DD hh mm.
+* Fields `Duration:`, `Freeze:` and `Blind:` are time in minutes.
+* Field `Duration:` is relative to the beginning of the contest.
+* Fields `Freeze:` and `Blind:` are relative to the end of the contest.
 
 ##### Warning
 Keep problems sorted by alphabetical order in this file!

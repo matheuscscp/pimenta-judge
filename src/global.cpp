@@ -45,12 +45,12 @@ Settings::Settings() {
   fstream f("settings.txt");
   if (!f.is_open()) return;
   string tmp;
-  auto func = [&](time_t& buf) {
+  { // begin
     int Y, M, D, h, m;
     f >> tmp >> Y >> M >> D >> h >> m;
-    time(&buf);
+    time(&begin);
     pthread_mutex_lock(&localtime_mutex);
-    tm* tinfo = localtime(&buf);
+    tm* tinfo = localtime(&begin);
     tm ti = *tinfo;
     pthread_mutex_unlock(&localtime_mutex);
     ti.tm_year = Y - 1900;
@@ -59,12 +59,14 @@ Settings::Settings() {
     ti.tm_hour = h;
     ti.tm_min  = m;
     ti.tm_sec  = 0;
-    buf = mktime(&ti);
-  };
-  func(begin);
-  func(end);
-  func(freeze);
-  func(noverdict);
+    begin = mktime(&ti);
+  }
+  f >> tmp >> end;
+  end = begin + 60*end;
+  f >> tmp >> freeze;
+  freeze = end - 60*freeze;
+  f >> tmp >> noverdict;
+  noverdict = end - 60*noverdict;
   int timelimit;
   while (f >> tmp >> timelimit) problems.push_back(timelimit);
 }
@@ -168,10 +170,10 @@ void install(const string& dir) {
   mkdir(dir.c_str(), 0777);
   FILE* fp = fopen((dir+"/settings.txt").c_str(), "w");
   fprintf(fp, 
-    "Begin:  2015 09 01 19 00\n"
-    "End:    2015 12 25 23 50\n"
-    "Freeze: 2015 12 25 23 50\n"
-    "Blind:  2015 12 25 23 50\n"
+    "Start:    2015 09 01 19 00\n"
+    "Duration: 300\n"
+    "Freeze:   60\n"
+    "Blind:    15\n"
     "A(time-limit-per-file-in-seconds): 4\n"
     "B(the-alphabetical-order-must-be-followed): 3\n"
     "C(these-comments-are-useless-and-can-be-removed): 5\n"
