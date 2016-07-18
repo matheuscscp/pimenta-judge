@@ -30,7 +30,8 @@ static queue<QueueData> jqueue;
 static pthread_mutex_t judger_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool instance_exists(char problem, int i) {
-  FILE* fp = fopen(stringf("problems/%c.in%d", problem, i).c_str(), "r");
+  string fn = stringf("problems/%c/input/%c.in%d", problem, problem, i);
+  FILE* fp = fopen(fn.c_str(), "r");
   if (!fp) return false;
   fclose(fp);
   return true;
@@ -54,14 +55,14 @@ static void judge(
     att.verdict = AC;
     for (int i = 1; instance_exists(att.problem, i) && att.verdict == AC; i++) {
       int status = system(
-        "diff -wB %s%c.out%d problems/%c.sol%d",
-        path.c_str(), att.problem, i, att.problem, i
+        "diff -wB %s%c.out%d problems/%c/output/%c.sol%d",
+        path.c_str(), att.problem, i, att.problem, att.problem, i
       );
       if (WEXITSTATUS(status)) att.verdict = WA;
       else {
         status = system(
-          "diff %s%c.out%d problems/%c.sol%d",
-          path.c_str(), att.problem, i, att.problem, i
+          "diff %s%c.out%d problems/%c/output/%c.sol%d",
+          path.c_str(), att.problem, i, att.problem, att.problem, i
         );
         if (WEXITSTATUS(status)) att.verdict = PE;
       }
@@ -128,9 +129,9 @@ static char run(
       // TODO lose root permissions
       setpgid(0, 0); // create new process group rooted at proc
       int status = system(
-        "%s < problems/%c.in%d > %s%c.out%d",
+        "%s < problems/%c/input/%c.in%d > %s%c.out%d",
         exec_cmd.c_str(),
-        problem, i,
+        problem, problem, i,
         output_path.c_str(), problem, i
       );
       exit(WEXITSTATUS(status));
