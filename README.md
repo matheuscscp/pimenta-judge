@@ -52,25 +52,22 @@ $ pjudge stop
 problems/
 ├── A
 │   ├── input
-│   │   └── A.in1
+│   │   ├── A.in1
+│   │   └── A.in2
 │   └── output
-│       └── A.sol1
-├── B
-│   ├── input
-│   │   └── B.in1
-│   └── output
-│       └── B.sol1
-└── C
+│       ├── A.sol1
+│       └── A.sol2
+└── B
     ├── input
-    │   └── C.in1
+    │   ├── B.in1
+    │   └── B.in2
     └── output
-        └── C.sol1
+        ├── B.sol1
+        └── B.sol2
 ```
-Just put all of your secret test cases' input and correct output files in this folder, together. No folder separation is needed (or even allowed!). The file names must be in the following format:
+Note that the file names must be in the following format:
 * Input file: `<upper_case_letter>.in<positive_number>`
 * Correct output file: `<upper_case_letter>.sol<positive_number>`
-
-Example: `A.in1`, `A.in2`, `A.sol1`, `A.sol2`, `B.in1`, `B.in2`, `B.sol1`, `B.sol2`
 
 ##### Warning
 For each problem, numbers must start with 1 and follow the natural order. For example, if you have the files:
@@ -84,7 +81,9 @@ But you don't have the files:
 Then `pjudge` *won't* find problem A's third test case!
 
 #### Directory `www`
-Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of your contest! Just remember that some things are C++ hard-coded ([this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/scoreboard.cpp), [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/clarification.cpp) and [this](https://github.com/matheuscscp/pimenta-judge/blob/master/src/webserver.cpp)) and the problems' colors are in the beginning of `www/script.js`:
+Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of your contest! Just remember that some parts of the web stuff are C++ hard-coded. Whatever you don't find in the `www` folder, you will find in the C++ source code!
+
+The problems' colors are in the beginning of `www/script.js`:
 ```javascript
 var problems = [];
 problems["A"] = "#FF0000";
