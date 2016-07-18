@@ -75,11 +75,9 @@ static void judge(
   
   // save attempt info
   Global::lock_att_file();
-  if (Global::alive()) {
-    FILE* fp = fopen("attempts.txt", "a");
-    att.write(fp);
-    fclose(fp);
-  }
+  FILE* fp = fopen("attempts.txt", "a");
+  att.write(fp);
+  fclose(fp);
   Global::unlock_att_file();
 }
 
@@ -163,7 +161,7 @@ static char run(
       }
       if (ans == AC) usleep(10000);
     }
-    ms = max(ms,int(dt(start)/1000));
+    ms = (ans == TLE ? tle_secs*1000 : max(ms,int(dt(start)/1000)));
     if (WEXITSTATUS(status)) ans = RTE;
   }
   closedir(dir);
@@ -291,11 +289,6 @@ void attempt(int sd, const std::string& file_name, int file_size, Attempt att) {
   
   // generate id
   Global::lock_nextid_file();
-  if (!Global::alive()) {
-    Global::unlock_nextid_file();
-    delete[] buf;
-    return;
-  }
   att.id = genid();
   Global::unlock_nextid_file();
   

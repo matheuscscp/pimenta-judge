@@ -12,6 +12,7 @@
 
 #include "global.h"
 #include "judge.h"
+#include "runlist.h"
 #include "scoreboard.h"
 #include "clarification.h"
 
@@ -85,9 +86,9 @@ static char tohex(char num) {
 }
 static string generate_token() {
   string ans;
-  for (int i = 0; Global::alive() && i < 16; i++) {
+  for (int i = 0; i < 16; i++) {
     char buf = 0;
-    for (int j = 0; Global::alive() && j < 8; j++) if (rand()%100 < 50) {
+    for (int j = 0; j < 8; j++) if (rand()%100 < 50) {
       buf |= (1<<j);
     }
     ans += tohex((buf>>4)&0x0f);
@@ -100,11 +101,7 @@ static void create_session(Session& session) {
   // generate token
   do {
     session.token = generate_token();
-  } while (Global::alive() && sessions.find(session.token) != sessions.end());
-  if (!Global::alive()) {
-    pthread_mutex_unlock(&sessions_mutex);
-    return;
-  }
+  } while (sessions.find(session.token) != sessions.end());
   // detect already existing session for this account
   auto it = session_tokens.find(session.username);
   if (it != session_tokens.end()) {
@@ -149,7 +146,7 @@ static void clean_sessions() {
   
   // clean
   pthread_mutex_lock(&sessions_mutex);
-  for (auto it = sessions.begin(); Global::alive() && it != sessions.end();) {
+  for (auto it = sessions.begin(); it != sessions.end();) {
     if (!it->second.expired()) { it++; continue; }
     session_tokens.erase(it->second.username);
     sessions.erase(it++);
@@ -388,22 +385,25 @@ static void* client(void* ptr) {
     }
     // data request
     else if (req.uri.find("?") != string::npos) {
-      if (req.uri.find("teamname") != string::npos) {
+      if (req.uri.find("runlist") != string::npos) {
+        Runlist::send(sess.username,cptr->sd);
+      }
+      else if (req.uri.find("scoreboard") != string::npos) {
+        Scoreboard::send(cptr->sd,Settings().freeze <= time(nullptr));
+      }
+      else if (req.uri.find("clarifications") != string::npos) {
+        Clarification::send(sess.username,cptr->sd);
+      }
+      else if (req.uri.find("statement") != string::npos) {
+        statement(cptr->sd);
+      }
+      else if (req.uri.find("teamname") != string::npos) {
         write(cptr->sd, sess.teamname.c_str(), sess.teamname.size());
       }
       else if (req.uri.find("problems") != string::npos) {
         Settings settings;
         string ans = to<string>(settings.problems.size());
         write(cptr->sd, ans.c_str(), ans.size());
-      }
-      else if (req.uri.find("scoreboard") != string::npos) {
-        Scoreboard::send(cptr->sd);
-      }
-      else if (req.uri.find("clarifications") != string::npos) {
-        Clarification::send(cptr->sd, sess.username);
-      }
-      else if (req.uri.find("statement") != string::npos) {
-        statement(cptr->sd);
       }
       else if (req.uri.find("remaining-time") != string::npos) {
         Settings settings;

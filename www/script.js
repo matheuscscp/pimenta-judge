@@ -12,6 +12,21 @@ problems["H"] = "#FFFFFF";
 problems["I"] = "#000000";
 problems["J"] = "#FFFF00";
 
+function fix_balloons() {
+  jQuery.get(jQuery("img.svg").attr("src"), function(data) {
+    var $svg = jQuery(data).find("svg");
+    jQuery("img.svg").each(function(){
+      var $svgtmp = $svg.clone();
+      var $img = jQuery(this);
+      $svgtmp.attr("class", $img.attr("class"));
+      $img.replaceWith($svgtmp);
+    });
+    for (p in problems) {
+      $(".balloon."+p+" > path.balloonfill").css("fill", problems[p]);
+    }
+  });
+}
+
 function login() {
   team = document.getElementById("team");
   pass = document.getElementById("pass");
@@ -105,25 +120,15 @@ function submission() {
   document.getElementById("content").innerHTML = document.getElementById("submission").innerHTML;
   document.getElementById("submission-problem").focus();
   data("allowed-langs", function(response) {
-    window["allowed_langs"] = response;
     $("#content").append($(response));
+    data("runlist", function(response) {
+      $("#content").append($(response));
+      fix_balloons();
+    });
   });
 }
 function scoreboard() {
-  show_data("scoreboard", "content", "", "", function() {
-    jQuery.get(jQuery("img.svg").attr("src"), function(data) {
-      var $svg = jQuery(data).find("svg");
-      jQuery("img.svg").each(function(){
-        var $svgtmp = $svg.clone();
-        var $img = jQuery(this);
-        $svgtmp.attr("class", $img.attr("class"));
-        $img.replaceWith($svgtmp);
-      });
-      for (p in problems) {
-        $(".balloon."+p+" > path.balloonfill").css("fill", problems[p]);
-      }
-    });
-  });
+  show_data("scoreboard", "content", "", "", fix_balloons);
 }
 function clarifications() {
   show_data("clarifications", "content", document.getElementById("clarifications").innerHTML, "", function() {

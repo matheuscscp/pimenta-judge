@@ -11,6 +11,7 @@
 #include "global.h"
 
 #include "judge.h"
+#include "runlist.h"
 #include "scoreboard.h"
 #include "rejudger.h"
 #include "webserver.h"
@@ -39,6 +40,24 @@ string verdict_tos(int verd) {
   return "";
 }
 
+string verdict_tolongs(int verd) {
+  switch (verd) {
+    case  AC: return "Accepted";
+    case  CE: return "Compile Error";
+    case RTE: return "Runtime Error";
+    case TLE: return "Time Limit Exceeded";
+    case  WA: return "Wrong Answer";
+    case  PE: return "Presentation Error";
+  }
+  return "";
+}
+
+string balloon_img(char p) {
+  string ret = "<img src=\"balloon.svg\" class=\"svg balloon ";
+  ret += p;
+  return ret + "\" />";
+}
+
 Settings::Settings() {
   memset(this, 0, sizeof(::Settings));
   fstream f("settings.txt");
@@ -62,8 +81,8 @@ Settings::Settings() {
   end = begin + 60*end;
   f >> tmp >> freeze;
   freeze = end - 60*freeze;
-  f >> tmp >> noverdict;
-  noverdict = end - 60*noverdict;
+  f >> tmp >> blind;
+  blind = end - 60*blind;
   set<string> langs;
   f >> tmp >> tmp2;
   if (tmp2 == "allowed") langs.insert(".c");
@@ -131,7 +150,36 @@ void Attempt::write(FILE* fp) const {
 }
 
 bool Attempt::operator<(const Attempt& other) const {
-  return when < other.when;
+  if (when != other.when) return when < other.when;
+  return id < other.id;
+}
+
+string Attempt::toHTMLtr(bool blind, bool is_first) const {
+  string ans = "<tr>";
+  ans += "<td>"+to<string>(id)+"</td>";
+  ans += "<td>"+to<string>(problem)+"</td>";
+  ans += "<td>"+to<string>(when)+"</td>";
+  ans += "<td>"+runtime+"</td>";
+  if (blind) ans += "<td>Blind attempt</td>";
+  else {
+    ans += "<td>";
+    if (is_first) ans += balloon_img(problem)+" ";
+    ans += verdict_tolongs(verdict);
+    ans += "</td>";
+  }
+  return ans+"</tr>";
+}
+
+string Attempt::getHTMLtrheader() {
+  return
+    "<tr>"
+      "<th>ID</th>"
+      "<th>Problem</th>"
+      "<th>Time</th>"
+      "<th>Execution time</th>"
+      "<th>Answer</th>"
+    "</tr>"
+  ;
 }
 
 rejudgemsg::rejudgemsg(int id, char verdict)
@@ -185,13 +233,7 @@ static key_t msgqueue() {
 static void term(int) {
   msgctl(msqid, IPC_RMID, nullptr);
   remove("contest.bin");
-  pthread_mutex_lock(&attfile_mutex);
-  pthread_mutex_lock(&nextidfile_mutex);
-  pthread_mutex_lock(&questionfile_mutex);
   quit = true;
-  pthread_mutex_unlock(&questionfile_mutex);
-  pthread_mutex_unlock(&nextidfile_mutex);
-  pthread_mutex_unlock(&attfile_mutex);
   for (pthread_t& thread : threads) pthread_join(thread, nullptr);
   exit(0);
 }
@@ -265,6 +307,7 @@ void start(int argc, char** argv) {
   signal(SIGTERM, term);
   signal(SIGPIPE, SIG_IGN);
   Judge::fire();
+  Runlist::fire();
   Scoreboard::fire();
   WebServer::fire();
   for (pthread_t& thread : threads) pthread_join(thread, nullptr);

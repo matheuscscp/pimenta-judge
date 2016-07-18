@@ -1,4 +1,3 @@
-#include <cmath>
 #include <map>
 #include <algorithm>
 
@@ -14,12 +13,6 @@ static string buf1, buf2;
 static string* frontbuf = &buf1;
 static string* backbuf = &buf2;
 static pthread_mutex_t frontbuf_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static string img(char p) {
-  string ret = "<img src=\"balloon.svg\" class=\"svg balloon ";
-  ret += p;
-  return ret + "\" />";
-}
 
 static void update() {
   typedef pair<int, time_t> problem_t;
@@ -53,7 +46,7 @@ static void update() {
       for (const problem_t& p : problems) {
         ret += "<td class=\"problem\">";
         if (p.first > 0) {
-          ret += img(i) + to<string>(p.first)+"/";
+          ret += balloon_img(i) + to<string>(p.first)+"/";
           ret += to<string>(p.second);
         }
         else if (p.first < 0) ret += to<string>(-p.first)+"/-";
@@ -154,19 +147,21 @@ void fire() {
   Global::fire(poller);
 }
 
-void send(int sd) {
+void send(int sd, bool freeze) {
   // make local copy of scoreboard
   pthread_mutex_lock(&frontbuf_mutex);
   string scoreboard(*frontbuf);
   pthread_mutex_unlock(&frontbuf_mutex);
   
   // respond
+  string frozen;
+  if (freeze) frozen = " (frozen)";
   string response =
     "HTTP/1.1 200 OK\r\n"
     "Connection: close\r\r"
     "Content-Type: text/html\r\n"
     "\r\n"
-    "<h2>Scoreboard</h2>\n"
+    "<h2>Scoreboard"+frozen+"</h2>\n"
     "<table class=\"data\">"+
     scoreboard+
     "</table>"

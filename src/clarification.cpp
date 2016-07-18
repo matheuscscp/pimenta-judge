@@ -44,7 +44,7 @@ static string clarifications(const string& team) {
 
 namespace Clarification {
 
-void send(int sd, const string& team) {
+void send(const string& team, int sd) {
   string response =
     "HTTP/1.1 200 OK\r\n"
     "Connection: close\r\r"
@@ -90,10 +90,6 @@ void question(
   char fn[17];
   strcpy(fn, "questions/XXXXXX");
   Global::lock_question_file();
-  if (!Global::alive()) {
-    Global::unlock_question_file();
-    return;
-  }
   int fd = mkstemp(fn);
   dprintf(fd, "Team: %s\n", team.c_str());
   dprintf(fd, "Problem: %c\n", problem[0]);

@@ -4,7 +4,7 @@
 namespace Scoreboard {
 
 void fire();
-void send(int);
+void send(int, bool);
 
 } // namespace Scoreboard
 

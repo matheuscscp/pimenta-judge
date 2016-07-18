@@ -11,9 +11,11 @@
 enum {AC = 0, CE, RTE, TLE, WA, PE};
 int verdict_toi(const std::string&);
 std::string verdict_tos(int);
+std::string verdict_tolongs(int);
+std::string balloon_img(char);
 
 struct Settings {
-  time_t begin, end, freeze, noverdict;
+  time_t begin, end, freeze, blind;
   std::set<std::string> langs;
   std::vector<int> problems;
   Settings();
@@ -32,6 +34,8 @@ struct Attempt {
   bool read(FILE*);
   void write(FILE*) const;
   bool operator<(const Attempt&) const;
+  std::string toHTMLtr(bool, bool) const;
+  static std::string getHTMLtrheader();
 };
 
 struct rejudgemsg {
