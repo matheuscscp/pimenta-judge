@@ -4,7 +4,7 @@ ACM ICPC contest system for small competitions made in C++ to run on GNU/Linux, 
 ## Languages currently supported
 | Language | Compilation command | Execution command |
 | -------- | ------------------- | ----------------- |
-| C        | `gcc -std=c11`      | GNU/Linux default |
+| C        | `gcc -std=c11 -lm`  | GNU/Linux default |
 | C++      | `g++ -std=c++1y`    | GNU/Linux default |
 | Java     | `javac`             | `java -cp`        |
 | Python   |                     | `python`          |
@@ -89,6 +89,11 @@ Start:    2015 09 01 19 00
 Duration: 300
 Freeze:   60
 Blind:    15
+C:        allowed
+C++:      allowed
+Java:     allowed
+Python:   forbidden
+Python3:  forbidden
 A(time-limit-per-file-in-seconds): 4
 B(the-alphabetical-order-must-be-followed): 3
 C(these-comments-are-useless-and-can-be-removed): 5

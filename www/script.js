@@ -69,18 +69,14 @@ function init_data() {
     var ans = (tmp == 0 ? "The contest is not running." : "Remaining time: " + (tmp+"").toHHMMSS());
     document.getElementById("remaining-time").innerHTML = ans;
   };
-  var upd_rem_time = function() {
-    data("remaining-time", function(response) {
-      window["remaining_time_json"] = {
-        remaining_time: parseInt(response),
-        init_time: new Date().getTime()/1000
-      };
-      upd_rem_time_counter();
-    });
-  };
-  upd_rem_time();
-  setInterval(upd_rem_time, 30000);
-  setInterval(upd_rem_time_counter, 1000);
+  data("remaining-time", function(response) {
+    window["remaining_time_json"] = {
+      remaining_time: parseInt(response),
+      init_time: new Date().getTime()/1000
+    };
+    upd_rem_time_counter();
+    setInterval(upd_rem_time_counter, 1000);
+  });
 }
 
 function data(key, cb) {
@@ -108,6 +104,10 @@ function show_data(key, tagid, before, after, cb) {
 function submission() {
   document.getElementById("content").innerHTML = document.getElementById("submission").innerHTML;
   document.getElementById("submission-problem").focus();
+  data("allowed-langs", function(response) {
+    window["allowed_langs"] = response;
+    $("#content").append($(response));
+  });
 }
 function scoreboard() {
   show_data("scoreboard", "content", "", "", function() {
@@ -146,7 +146,7 @@ function logout() {
 }
 
 function attempt() {
-  document.getElementById("response").innerHTML = "Wait for the verdict.";
+  document.getElementById("response").innerHTML = "Waiting server response...";
   var prob = document.getElementById("submission-problem");
   if (prob.value == "") {
     document.getElementById("response").innerHTML = "Choose a problem!";

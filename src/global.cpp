@@ -44,8 +44,8 @@ Settings::Settings() {
   memset(this, 0, sizeof(::Settings));
   fstream f("settings.txt");
   if (!f.is_open()) return;
-  string tmp;
-  { // begin
+  string tmp,tmp2;
+  {
     int Y, M, D, h, m;
     f >> tmp >> Y >> M >> D >> h >> m;
     time(&begin);
@@ -67,8 +67,38 @@ Settings::Settings() {
   freeze = end - 60*freeze;
   f >> tmp >> noverdict;
   noverdict = end - 60*noverdict;
+  set<string> langs;
+  f >> tmp >> tmp2;
+  if (tmp2 == "allowed") langs.insert(".c");
+  f >> tmp >> tmp2;
+  if (tmp2 == "allowed") langs.insert(".cpp");
+  f >> tmp >> tmp2;
+  if (tmp2 == "allowed") langs.insert(".java");
+  f >> tmp >> tmp2;
+  if (tmp2 == "allowed") langs.insert(".py");
+  f >> tmp >> tmp2;
+  if (tmp2 == "allowed") langs.insert(".py3");
+  this->langs = langs;
   int timelimit;
   while (f >> tmp >> timelimit) problems.push_back(timelimit);
+}
+
+string Settings::allowed_langs() const {
+  string ans =
+    "<h3>Allowed Programming Languages</h3>"
+    "<table id=\"allowed-langs\" class=\"data\">"
+      "<tr><th>Name</th><th>File extension</th><th>Flags</th></tr>";
+  if (langs.find(".c") != langs.end())
+    ans += "<tr><td>C</td><td>.c</td><td>-std=c11 -lm</td></tr>";
+  if (langs.find(".cpp") != langs.end())
+    ans += "<tr><td>C++</td><td>.cpp</td><td>-std=c++1y</td></tr>";
+  if (langs.find(".java") != langs.end())
+    ans += "<tr><td>Java</td><td>.java</td><td></td></tr>";
+  if (langs.find(".py") != langs.end())
+    ans += "<tr><td>Python</td><td>.py</td><td></td></tr>";
+  if (langs.find(".py3") != langs.end())
+    ans += "<tr><td>Python 3</td><td>.py3</td><td></td></tr>";
+  return ans+"</table>";
 }
 
 bool Attempt::read(FILE* fp) {
@@ -181,6 +211,11 @@ void install(const string& dir) {
     "Duration: 300\n"
     "Freeze:   60\n"
     "Blind:    15\n"
+    "C:        allowed\n"
+    "C++:      allowed\n"
+    "Java:     allowed\n"
+    "Python:   forbidden\n"
+    "Python3:  forbidden\n"
     "A(time-limit-per-file-in-seconds): 4\n"
     "B(the-alphabetical-order-must-be-followed): 3\n"
     "C(these-comments-are-useless-and-can-be-removed): 5\n"

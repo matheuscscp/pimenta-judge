@@ -292,6 +292,11 @@ static void* client(void* ptr) {
         string ans = to<string>(tmp);
         write(cptr->sd, ans.c_str(), ans.size());
       }
+      else if (req.uri.find("allowed-langs") != string::npos) {
+        Settings settings;
+        string ans = settings.allowed_langs();
+        write(cptr->sd, ans.c_str(), ans.size());
+      }
     }
     // file request
     else file(cptr->sd, req.uri, "/index.html");

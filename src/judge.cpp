@@ -83,8 +83,7 @@ static string valid_filename(Settings& settings, const string& fn) {
     return "";
   }
   string lang = fn.substr(1,fn.size());
-  if (scripts.find(lang) != scripts.end()) return lang;
-  return "";
+  return (settings.langs.find(lang) != settings.langs.end() ? lang : "");
 }
 
 static int genid() {
@@ -234,7 +233,7 @@ void attempt(int sd, const std::string& file_name, int file_size, Attempt att) {
   
   // check time
   if (att.when < settings.begin || settings.end <= att.when) {
-    ignoresd(sd);
+    if (file_size) ignoresd(sd);
     write(sd, "The contest is not running.", 27);
     return;
   }
@@ -243,7 +242,7 @@ void attempt(int sd, const std::string& file_name, int file_size, Attempt att) {
   // check file name
   string lang = valid_filename(settings,file_name);
   if (lang == "") {
-    ignoresd(sd);
+    if (file_size) ignoresd(sd);
     write(sd, "Invalid programming language!", 29);
     return;
   }
@@ -254,7 +253,7 @@ void attempt(int sd, const std::string& file_name, int file_size, Attempt att) {
     string resp =
       "Files with more than "+to<string>(BSIZ)+" bytes are not allowed!"
     ;
-    ignoresd(sd);
+    if (file_size) ignoresd(sd);
     write(sd, resp.c_str(), resp.size());
     return;
   }

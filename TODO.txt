@@ -1,4 +1,3 @@
-- include setting of 'allowed prog. languages'.
 - organize problems by directory. split I/O files in two dirs. allow any name for I/O files.
 - session id (session expires if server dies).
 - private runlist inside session.

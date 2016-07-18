@@ -1,8 +1,9 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-#include <vector>
 #include <string>
+#include <set>
+#include <vector>
 #include <sstream>
 
 #include <netinet/in.h>
@@ -13,8 +14,10 @@ std::string verdict_tos(int);
 
 struct Settings {
   time_t begin, end, freeze, noverdict;
+  std::set<std::string> langs;
   std::vector<int> problems;
   Settings();
+  std::string allowed_langs() const;
 };
 
 struct Attempt {
