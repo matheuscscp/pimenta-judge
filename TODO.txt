@@ -1,4 +1,3 @@
-- allow any name for I/O files.
 - session id (session expires if server dies).
 - private runlist inside session.
 - autojudge flag.

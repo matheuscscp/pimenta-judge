@@ -6,6 +6,7 @@
 #include <queue>
 
 #include <unistd.h>
+#include <dirent.h>
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -29,44 +30,47 @@ static map<string, Script> scripts;
 static queue<QueueData> jqueue;
 static pthread_mutex_t judger_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static bool instance_exists(char problem, int i) {
-  string fn = stringf("problems/%c/input/%c.in%d", problem, problem, i);
-  FILE* fp = fopen(fn.c_str(), "r");
-  if (!fp) return false;
-  fclose(fp);
-  return true;
-}
-
 static void judge(
   Attempt& att,
   const string& lang, const string& path, const string& fn,
   Settings& settings
 ) {
-  // build attempt
+  // run
   int maxms = 0;
-  char run = scripts[lang](
+  att.verdict = scripts[lang](
     att.problem, (char*)path.c_str(), (char*)fn.c_str(), settings, maxms
   );
   att.runtime = to<string>(maxms)+" ms";
-  if (run != AC) {
-    att.verdict = run;
-  }
-  else {
-    att.verdict = AC;
-    for (int i = 1; instance_exists(att.problem, i) && att.verdict == AC; i++) {
+  
+  // diff files
+  if (att.verdict == AC) {
+    string dn = stringf("problems/%c/output/",att.problem);
+    DIR* dir = opendir(dn.c_str());
+    for (
+      dirent* ent = readdir(dir);
+      ent && att.verdict == AC;
+      ent = readdir(dir)
+    ) {
+      string fn = dn+ent->d_name;
+      
+      // check if dirent is regular file
+      struct stat stt;
+      stat(fn.c_str(),&stt);
+      if (!S_ISREG(stt.st_mode)) continue;
+      
+      // diffs
       int status = system(
-        "diff -wB %s%c.out%d problems/%c/output/%c.sol%d",
-        path.c_str(), att.problem, i, att.problem, att.problem, i
+        "diff -wB %s %soutput/%s", fn.c_str(), path.c_str(), ent->d_name
       );
       if (WEXITSTATUS(status)) att.verdict = WA;
       else {
         status = system(
-          "diff %s%c.out%d problems/%c/output/%c.sol%d",
-          path.c_str(), att.problem, i, att.problem, att.problem, i
+          "diff %s %soutput/%s", fn.c_str(), path.c_str(), ent->d_name
         );
         if (WEXITSTATUS(status)) att.verdict = PE;
       }
     }
+    closedir(dir);
   }
   
   // save attempt info
@@ -111,15 +115,26 @@ static __suseconds_t dt(const timeval& start) {
   ;
 }
 static char run(
-  int s,
+  int tle_secs,
   const string& exec_cmd,
   char problem,
   const string& output_path,
   int& ms
 ) {
-  __suseconds_t us = s*1000000;
+  char ans = AC;
+  __suseconds_t us = tle_secs*1000000;
   
-  for (int i = 1; instance_exists(problem,i); i++) {
+  string dn = stringf("problems/%c/input/",problem);
+  DIR* dir = opendir(dn.c_str());
+  for (dirent* ent = readdir(dir); ent && ans == AC; ent = readdir(dir)) {
+    string fn = dn+ent->d_name;
+    
+    // check if dirent is regular file
+    struct stat stt;
+    stat(fn.c_str(),&stt);
+    if (!S_ISREG(stt.st_mode)) continue;
+    
+    // init time
     timeval start;
     gettimeofday(&start, nullptr);
     
@@ -129,29 +144,31 @@ static char run(
       // TODO lose root permissions
       setpgid(0, 0); // create new process group rooted at proc
       int status = system(
-        "%s < problems/%c/input/%c.in%d > %s%c.out%d",
+        "%s < %s > %soutput/%s",
         exec_cmd.c_str(),
-        problem, problem, i,
-        output_path.c_str(), problem, i
+        fn.c_str(),
+        output_path.c_str(),
+        ent->d_name
       );
       exit(WEXITSTATUS(status));
     }
     
     // judge
     int status;
-    while (waitpid(proc, &status, WNOHANG) != proc) {
+    while (waitpid(proc, &status, WNOHANG) != proc && ans == AC) {
       if (dt(start) > us) {
         kill(-proc, SIGKILL); // the minus kills the whole group rooted at proc
         waitpid(proc, &status, 0);
-        return TLE;
+        ans = TLE;
       }
-      usleep(10000);
+      if (ans == AC) usleep(10000);
     }
     ms = max(ms,int(dt(start)/1000));
-    if (WEXITSTATUS(status)) return RTE;
+    if (WEXITSTATUS(status)) ans = RTE;
   }
+  closedir(dir);
   
-  return AC;
+  return ans;
 }
 static void load_scripts() {
   scripts[".c"] = [](char p, char* path, char* fn, Settings& sets, int& ms) {
@@ -291,10 +308,11 @@ void attempt(int sd, const std::string& file_name, int file_size, Attempt att) {
   mkdir(fn.c_str(), 0777);
   fn += (att.username+"/");
   mkdir(fn.c_str(), 0777);
-  fn += file_name[0]; fn += "/";
+  fn += att.problem; fn += "/";
   mkdir(fn.c_str(), 0777);
   fn += (to<string>(att.id)+"/");
   mkdir(fn.c_str(), 0777);
+  mkdir((fn+"output/").c_str(), 0777);
   string path = "./"+fn;
   fn += file_name;
   FILE* fp = fopen(fn.c_str(), "wb");

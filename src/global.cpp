@@ -243,20 +243,17 @@ void install(const string& dir) {
   mkdir((dir+"/problems/B").c_str(), 0777);
   mkdir((dir+"/problems/B/input").c_str(), 0777);
   mkdir((dir+"/problems/B/output").c_str(), 0777);
-  mkdir((dir+"/problems/C").c_str(), 0777);
-  mkdir((dir+"/problems/C/input").c_str(), 0777);
-  mkdir((dir+"/problems/C/output").c_str(), 0777);
-  fp = fopen((dir+"/problems/A/input/A.in1").c_str(), "w");
+  fp = fopen((dir+"/problems/A/input/file1_huge_case").c_str(), "w");
   fclose(fp);
-  fp = fopen((dir+"/problems/A/output/A.sol1").c_str(), "w");
+  fp = fopen((dir+"/problems/A/input/file2").c_str(), "w");
   fclose(fp);
-  fp = fopen((dir+"/problems/B/input/B.in1").c_str(), "w");
+  fp = fopen((dir+"/problems/A/output/file1_huge_case").c_str(), "w");
   fclose(fp);
-  fp = fopen((dir+"/problems/B/output/B.sol1").c_str(), "w");
+  fp = fopen((dir+"/problems/A/output/file2").c_str(), "w");
   fclose(fp);
-  fp = fopen((dir+"/problems/C/input/C.in1").c_str(), "w");
+  fp = fopen((dir+"/problems/B/input/file1").c_str(), "w");
   fclose(fp);
-  fp = fopen((dir+"/problems/C/output/C.sol1").c_str(), "w");
+  fp = fopen((dir+"/problems/B/output/file1").c_str(), "w");
   fclose(fp);
   system("cp -rf /usr/local/share/pjudge/www %s/www", dir.c_str());
 }

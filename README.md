@@ -51,34 +51,18 @@ $ pjudge stop
 ```
 problems/
 ├── A
-│   ├── input
-│   │   ├── A.in1
-│   │   └── A.in2
-│   └── output
-│       ├── A.sol1
-│       └── A.sol2
+│   ├── input
+│   │   ├── file1_huge_case
+│   │   └── file2
+│   └── output
+│       ├── file1_huge_case
+│       └── file2
 └── B
     ├── input
-    │   ├── B.in1
-    │   └── B.in2
+    │   └── file1
     └── output
-        ├── B.sol1
-        └── B.sol2
+        └── file1
 ```
-Note that the file names must be in the following format:
-* Input file: `<upper_case_letter>.in<positive_number>`
-* Correct output file: `<upper_case_letter>.sol<positive_number>`
-
-##### Warning
-For each problem, numbers must start with 1 and follow the natural order. For example, if you have the files:
-
-`A.in1`, `A.in2`, `A.sol3`, `A.sol3`
-
-But you don't have the files:
-
-`A.in2`, `A.sol2`
-
-Then `pjudge` *won't* find problem A's third test case!
 
 #### Directory `www`
 Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of your contest! Just remember that some parts of the web stuff are C++ hard-coded. Whatever you don't find in the `www` folder, you will find in the C++ source code!
