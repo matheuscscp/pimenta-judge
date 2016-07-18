@@ -1,6 +1,7 @@
-- session id (session expires if server dies).
-- private runlist inside session.
+- runlist poller.
 - autojudge flag.
 - main() commands.
 - implement safe computation (run untrusted code safely).
+- implement HTTPS.
 - ulimit -s and ulimit -v.
+- task system (balloons and prints).

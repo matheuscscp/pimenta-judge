@@ -40,7 +40,6 @@ string verdict_tos(int verd) {
 }
 
 Settings::Settings() {
-  static pthread_mutex_t localtime_mutex = PTHREAD_MUTEX_INITIALIZER;
   memset(this, 0, sizeof(::Settings));
   fstream f("settings.txt");
   if (!f.is_open()) return;
@@ -48,11 +47,9 @@ Settings::Settings() {
   {
     int Y, M, D, h, m;
     f >> tmp >> Y >> M >> D >> h >> m;
-    time(&begin);
-    pthread_mutex_lock(&localtime_mutex);
-    tm* tinfo = localtime(&begin);
-    tm ti = *tinfo;
-    pthread_mutex_unlock(&localtime_mutex);
+    begin = time(nullptr);
+    tm ti;
+    localtime_r(&begin,&ti);
     ti.tm_year = Y - 1900;
     ti.tm_mon  = M - 1;
     ti.tm_mday = D;

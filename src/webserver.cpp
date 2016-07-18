@@ -21,32 +21,150 @@
 
 using namespace std;
 
-static string findname(const string& team) {
-  FILE* fp = fopen("teams.txt", "r");
-  if (!fp) return "";
-  string name;
-  for (fgetc(fp); name == "" && !feof(fp); fgetc(fp)) {
-    string ntmp;
-    for (char c = fgetc(fp); c != '"'; c = fgetc(fp)) ntmp += c;
-    fgetc(fp);
-    string tmp;
-    for (char c = fgetc(fp); c != ' '; c = fgetc(fp)) tmp += c;
-    string pass;
-    for (char c = fgetc(fp); c != '\n'; c = fgetc(fp)) pass += c;
-    if (team == tmp) name = ntmp;
-  }
+struct Client {
+  int sd;
+  uint32_t ip;
+  int when;
+};
+
+struct Session {
+  string token;
+  uint32_t ip;
+  time_t end;
+  string username;
+  string teamname;
+  bool expired() const { return end <= time(nullptr); }
+};
+
+static map<string, Session> sessions;
+static map<string, string> session_tokens;
+static pthread_mutex_t sessions_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static void log(const string& msg) {
+  FILE* fp = fopen("log.txt","a");
+  fprintf(fp,"%s\n",msg.c_str());
   fclose(fp);
-  return name;
+}
+
+static bool eqip(uint32_t a, uint32_t b) {
+  if ((a == 0 || a == 0x0100007f) && (b == 0 || b == 0x0100007f)) return true;
+  return a == b;
+}
+static Session get_session(const string& token, uint32_t ip) {
+  Session session;
+  pthread_mutex_lock(&sessions_mutex);
+  auto it = sessions.find(token);
+  if (it != sessions.end()) {
+    if (!it->second.expired() && eqip(it->second.ip,ip)) session = it->second;
+    else {
+      if (!eqip(it->second.ip,ip)) { // hacking attempt detected
+        time_t now = time(nullptr);
+        tm ti;
+        char buf[20];
+        strftime(buf,20,"%d/%m/%Y %H:%M:%S",localtime_r(&now,&ti));
+        log(stringf(
+          "%s at %s: IP %s tried to hack IP %s.",
+          it->second.username.c_str(),
+          buf,
+          to<string>(ip).c_str(),
+          to<string>(it->second.ip).c_str()
+        ));
+      }
+      session_tokens.erase(it->second.username);
+      sessions.erase(it);
+    }
+  }
+  pthread_mutex_unlock(&sessions_mutex);
+  return session;
+}
+
+static char tohex(char num) {
+  if (num < 10) return num+'0';
+  num -= 10;
+  return num+'a';
+}
+static string generate_token() {
+  string ans;
+  for (int i = 0; Global::alive() && i < 16; i++) {
+    char buf = 0;
+    for (int j = 0; Global::alive() && j < 8; j++) if (rand()%100 < 50) {
+      buf |= (1<<j);
+    }
+    ans += tohex((buf>>4)&0x0f);
+    ans += tohex(buf&0x0f);
+  }
+  return ans;
+}
+static void create_session(Session& session) {
+  pthread_mutex_lock(&sessions_mutex);
+  // generate token
+  do {
+    session.token = generate_token();
+  } while (Global::alive() && sessions.find(session.token) != sessions.end());
+  if (!Global::alive()) {
+    pthread_mutex_unlock(&sessions_mutex);
+    return;
+  }
+  // detect already existing session for this account
+  auto it = session_tokens.find(session.username);
+  if (it != session_tokens.end()) {
+    auto it2 = sessions.find(it->second);
+    if (!it2->second.expired()) { // detected
+      time_t now = time(nullptr);
+      tm ti;
+      char buf[20];
+      strftime(buf,20,"%d/%m/%Y %H:%M:%S",localtime_r(&now,&ti));
+      log(stringf(
+        "%s at %s: IP %s logged in while IP %s was already logged in.",
+        session.username.c_str(),
+        buf,
+        to<string>(session.ip).c_str(),
+        to<string>(it2->second.ip).c_str()
+      ));
+    }
+    sessions.erase(it2);
+    it->second = session.token;
+  }
+  else session_tokens[session.username] = session.token;
+  sessions[session.token] = session;
+  pthread_mutex_unlock(&sessions_mutex);
+}
+
+static void remove_session(const string& token) {
+  pthread_mutex_lock(&sessions_mutex);
+  auto it = sessions.find(token);
+  if (it != sessions.end()) {
+    session_tokens.erase(it->second.username);
+    sessions.erase(it);
+  }
+  pthread_mutex_unlock(&sessions_mutex);
+}
+
+static void clean_sessions() {
+  // delay cleanups
+  static time_t next = 0;
+  time_t now = time(nullptr);
+  if (now < next) return;
+  next = now + 600;
+  
+  // clean
+  pthread_mutex_lock(&sessions_mutex);
+  for (auto it = sessions.begin(); Global::alive() && it != sessions.end();) {
+    if (!it->second.expired()) { it++; continue; }
+    session_tokens.erase(it->second.username);
+    sessions.erase(it++);
+  }
+  pthread_mutex_unlock(&sessions_mutex);
 }
 
 struct Request {
-  string line, uri, login, teamname;
+  string line, uri;
   map<string, string> headers;
-  Request(int sd) {
+  Request(const Client& cl, Session& session) {
     // read socket
     vector<char> buf; {
       bool done = false;
-      for (char c; !done && read(sd,&c,1) == 1;) {
+      for (char c; !done && read(cl.sd,&c,1) == 1;) {
         buf.push_back(c);
         if (c == '\n' && buf.size() >= 4 && buf[buf.size()-4] == '\r') {
           done = true;
@@ -83,38 +201,33 @@ struct Request {
       headers[header] = content;
     }
     
-    // session cookie
+    // get session
     string cookie = headers["Cookie"];
     auto f = cookie.find("sessionToken=");
     if (f != string::npos) {
       stringstream ss;
       ss << cookie.substr(cookie.find("sessionToken=")+13, cookie.size());
-      ss >> login;
-      if (login[login.size()-1] == ';') login = login.substr(0, login.size()-1);
-      teamname = findname(login);
+      string token;
+      ss >> token;
+      if (token[token.size()-1] == ';') token = token.substr(0,token.size()-1);
+      session = get_session(token,cl.ip);
     }
   }
 };
 
-struct Client {
-  sockaddr_in addr;
-  int sd;
-  int when;
-};
-
-static string login(const string& team, const string& password) {
+static string find_teamname(const string& username, const string& password) {
   FILE* fp = fopen("teams.txt", "r");
   if (!fp) return "";
   string name;
   for (fgetc(fp); name == "" && !feof(fp); fgetc(fp)) {
     string ntmp;
-    for (char c = fgetc(fp); c != '"'; c = fgetc(fp)) ntmp += c;
+    for (char c = fgetc(fp); c != '"' && !feof(fp); c = fgetc(fp)) ntmp += c;
     fgetc(fp);
     string tmp;
-    for (char c = fgetc(fp); c != ' '; c = fgetc(fp)) tmp += c;
+    for (char c = fgetc(fp); c != ' ' && !feof(fp); c = fgetc(fp)) tmp += c;
     string pass;
-    for (char c = fgetc(fp); c != '\n'; c = fgetc(fp)) pass += c;
-    if (team == tmp && password == pass) name = ntmp;
+    for (char c = fgetc(fp); c != '\n' && !feof(fp); c = fgetc(fp)) pass += c;
+    if (username == tmp && password == pass) name = ntmp;
   }
   fclose(fp);
   return name;
@@ -203,7 +316,8 @@ static void statement(int sd) {
 
 static void* client(void* ptr) {
   Client* cptr = (Client*)ptr;
-  Request req(cptr->sd);
+  Session sess;
+  Request req(*cptr,sess);
   if (req.line == "badrequest") {
     close(cptr->sd);
     delete cptr;
@@ -211,18 +325,20 @@ static void* client(void* ptr) {
   }
   
   // login
-  if (req.teamname == "") {
-    if (req.line[0] == 'P' && req.line.find("login") != string::npos) {
-      string team = req.headers["Team"];
-      if (login(team, req.headers["Password"]) == "") {
-        write(cptr->sd, "Invalid team/password!", 22);
-      }
+  if (sess.username == "") {
+    if (req.line[0] == 'P' && req.uri.find("login") != string::npos) {
+      sess.username = req.headers["Team"];
+      sess.teamname = find_teamname(sess.username,req.headers["Password"]);
+      if (sess.teamname == "") write(cptr->sd, "Invalid team/password!", 22);
       else {
+        sess.ip = cptr->ip;
+        sess.end = time(nullptr) + 2592000;
+        create_session(sess);
         string response =
           "HTTP/1.1 200 OK\r\n"
           "Connection: close\r\r"
           P3P
-          "Set-Cookie: sessionToken="+team+"; Max-Age=2592000\r\n"
+          "Set-Cookie: sessionToken="+sess.token+"; Max-Age=2592000\r\n"
           "\r\n"
           "ok"
         ;
@@ -234,7 +350,8 @@ static void* client(void* ptr) {
     }
   }
   // logout
-  else if (req.line.find("logout") != string::npos) {
+  else if (req.uri.find("logout") != string::npos) {
+    remove_session(sess.token);
     string response =
       "HTTP/1.1 200 OK\r\n"
       "Connection: close\r\r"
@@ -251,9 +368,9 @@ static void* client(void* ptr) {
       if (req.uri.find("attempt") != string::npos) {
         Attempt att;
         att.when = cptr->when;
-        att.username = req.login;
-        att.ip = to<string>(cptr->addr.sin_addr.s_addr);
-        att.teamname = req.teamname;
+        att.username = sess.username;
+        att.ip = to<string>(cptr->ip);
+        att.teamname = sess.teamname;
         Judge::attempt(
           cptr->sd,
           req.headers["File-name"], to<int>(req.headers["File-size"]),
@@ -262,14 +379,17 @@ static void* client(void* ptr) {
       }
       else if (req.uri.find("question") != string::npos) {
         Clarification::question(
-          cptr->sd, req.login, req.headers["Problem"], req.headers["Question"]
+          cptr->sd,
+          sess.username,
+          req.headers["Problem"],
+          req.headers["Question"]
         );
       }
     }
     // data request
     else if (req.uri.find("?") != string::npos) {
       if (req.uri.find("teamname") != string::npos) {
-        write(cptr->sd, req.teamname.c_str(), req.teamname.size());
+        write(cptr->sd, sess.teamname.c_str(), sess.teamname.size());
       }
       else if (req.uri.find("problems") != string::npos) {
         Settings settings;
@@ -280,7 +400,7 @@ static void* client(void* ptr) {
         Scoreboard::send(cptr->sd);
       }
       else if (req.uri.find("clarifications") != string::npos) {
-        Clarification::send(cptr->sd, req.login);
+        Clarification::send(cptr->sd, sess.username);
       }
       else if (req.uri.find("statement") != string::npos) {
         statement(cptr->sd);
@@ -325,10 +445,13 @@ static void* server(void*) {
   // listen
   listen(sd, SOMAXCONN);
   while (Global::alive()) {
-    socklen_t alen;
+    clean_sessions();
     Client c;
-    c.sd = accept(sd, (sockaddr*)&c.addr, &alen);
+    sockaddr_in addr;
+    socklen_t alen;
+    c.sd = accept(sd, (sockaddr*)&addr, &alen);
     if (c.sd < 0) { usleep(25000); continue; }
+    c.ip = addr.sin_addr.s_addr;
     c.when = time(nullptr);
     pthread_t thread;
     pthread_create(&thread, nullptr, client, new Client(c));

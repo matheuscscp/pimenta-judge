@@ -32,7 +32,7 @@ $ pjudge stop
 
 ### VERY IMPORTANT WARNINGS AND HINTS
 * (Warning) `pjudge start` creates a file inside the folder (`mycontest/contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again!
-* (Warning) `pjudge` completely relies on its file structure (described below). Anything you change in the directory will take effect in a few seconds (or even instantly!).
+* (Warning) Except for web user sessions, `pjudge` completely relies on its file structure (described below). Anything you change in the directory will take effect without the need of a restart!
 * (Hint) All it takes to run a `pjudge` instance is a directory and a port. So you can have multiple contests running in the same host!
 * (Hint) `pjudge` do *not* supports memory limit configuration. If you need it, feel free to use GNU/Linux commands, like `ulimit -a`, `ulimit -s` and `ulimit -v`, *before* starting `pjudge`!
 
