@@ -3,6 +3,5 @@
 - implement safe computation (run untrusted code safely).
 - implement HTTPS.
 - ulimit -s and ulimit -v.
-- web system for manual judging.
-- web system for answering clarifications.
-- web system for tasks (balloons and prints).
+- web system for judges (manual judging and clarifications).
+- web system for staff (balloons and prints).
