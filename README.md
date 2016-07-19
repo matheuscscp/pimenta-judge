@@ -5,7 +5,7 @@ ACM ICPC contest system for small competitions made in C++ to run on GNU/Linux.
 * [Table of contents](#table-of-contents)
 * [Languages currently supported](#languages-currently-supported)
 * [Installation](#installation)
-* [Creating, starting and stopping a contest](#creating-starting-and-stopping-a-contest)
+* [Usage](#usage)
   * [VERY IMPORTANT WARNINGS AND HINTS](#very-important-warnings-and-hints)
 * [Directory and file structure](#directory-and-file-structure)
 
@@ -26,10 +26,13 @@ $ make
 $ sudo make install
 ```
 
-## Creating, starting and stopping a contest
-Choose a directory name, like `mycontest`, an available network port, like 8000, and type the following commands:
+## Usage
+To create a contest, choose a directory name, like `mycontest`, and type:
 ```bash
 $ pjudge install mycontest
+```
+To start the system, choose an available network port, like 8000, and type:
+```bash
 $ cd mycontest
 $ pjudge start 8000
 ```
