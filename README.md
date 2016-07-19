@@ -2,24 +2,12 @@
 ACM ICPC contest system for small competitions made in C++ to run on GNU/Linux.
 
 ## Table of contents
-  * [pimenta-judge](#pimenta-judge)
-    * [Table of contents](#table-of-contents)
-    * [Languages currently supported](#languages-currently-supported)
-    * [Installation](#installation)
-    * [Creating, starting and stopping a contest](#creating-starting-and-stopping-a-contest)
-      * [VERY IMPORTANT WARNINGS AND HINTS](#very-important-warnings-and-hints)
-    * [Directory and file structure](#directory-and-file-structure)
-      * [Automatically generated at contest creation](#automatically-generated-at-contest-creation)
-        * [Directory problems](#directory-problems)
-        * [Directory www](#directory-www)
-          * [WARNING](#warning)
-        * [File settings.txt](#file-settingstxt)
-          * [WARNING](#warning-1)
-        * [File teams.txt](#file-teamstxt)
-        * [File clarifications.txt](#file-clarificationstxt)
-      * [Optionally added by contest owner](#optionally-added-by-contest-owner)
-        * [File statement.pdf](#file-statementpdf)
-      * [Automatically generated during contest execution](#automatically-generated-during-contest-execution)
+* [Table of contents](#table-of-contents)
+* [Languages currently supported](#languages-currently-supported)
+* [Installation](#installation)
+* [Creating, starting and stopping a contest](#creating-starting-and-stopping-a-contest)
+  * [VERY IMPORTANT WARNINGS AND HINTS](#very-important-warnings-and-hints)
+* [Directory and file structure](#directory-and-file-structure)
 
 ## Languages currently supported
 | Language | Compilation command | Execution command |
