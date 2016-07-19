@@ -114,6 +114,7 @@ B:        3 manual
 * `Duration` is relative to the beginning of the contest.
 * `Freeze` and `Blind` are relative to the end of the contest.
 * The first setting of a problem (the number) is the time limit in seconds.
+
 ##### WARNING
 Keep problems sorted by alphabetical order in this file!
 
@@ -168,3 +169,6 @@ where:
 * `IP` is the IP address that sent the attempt.
 * `Fullname` is the full name of the user.
 * `Status` may be `judged` or `tojudge`. Only `judged` attempts will affect the scoreboard.
+
+##### WARNING
+Only problems with the `autojudge` setting will produce `judged` attempts.
