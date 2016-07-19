@@ -1,8 +1,8 @@
 - migrate color settings to settings.txt.
-- limits per language.
 - main() commands.
 - implement safe computation (run untrusted code safely).
 - implement HTTPS.
 - ulimit -s and ulimit -v.
+- limits per language.
 - web system for judges (manual judging and clarifications).
 - web system for staff (balloons and prints).
