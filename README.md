@@ -1,5 +1,5 @@
 # pimenta-judge
-ACM ICPC contest system for small competitions made in C++ to run on GNU/Linux, because [BOCA](https://github.com/cassiopc/boca) is too freaking much!
+ACM ICPC contest system for small competitions made in C++ to run on GNU/Linux.
 
 ## Languages currently supported
 | Language | Compilation command | Execution command |
@@ -32,7 +32,7 @@ $ pjudge stop
 
 ### VERY IMPORTANT WARNINGS AND HINTS
 * (WARNING) `pjudge start` creates a file inside the folder (`mycontest/contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again!
-* (WARNING) Except for web user sessions, `pjudge` completely relies on its file structure (described below). Anything you change in the directory will take effect without the need of a restart!
+* (WARNING) Except for web sessions, `pjudge` completely relies on its file structure (described below). Anything you change in the directory will take effect without the need of a restart!
 * (WARNING) Regarding problems' labels (capital letters): *No* letter can be skipped! Problems must be A, B, C and so on.
 * (Hint) All it takes to run a `pjudge` instance is a directory and a port. So you can have multiple contests running in the same host!
 * (Hint) `pjudge` do *not* supports memory limit configuration. If you need it, feel free to use GNU/Linux commands, like `ulimit -a`, `ulimit -s` and `ulimit -v`, *before* starting `pjudge`!
@@ -136,4 +136,4 @@ Contest owner may add `statement.pdf` PDF file containing the problems' statemen
 | Directory | `questions`       | Clarification requests                                  |
 | File      | `attempts.txt`    | Attempts data                                           |
 | File      | `nextid.bin`      | Next attempt ID                                         |
-| File      | `log.txt`         | Logs of important user session events                   |
+| File      | `log.txt`         | Logs of important web session events                    |
