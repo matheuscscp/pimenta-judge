@@ -136,3 +136,4 @@ Contest owner may add `statement.pdf` PDF file containing the problems' statemen
 | Directory | `questions`       | Clarification requests                                  |
 | File      | `attempts.txt`    | Attempts data                                           |
 | File      | `nextid.bin`      | Next attempt ID                                         |
+| File      | `log.txt`         | Logs of important user session events                   |
