@@ -156,12 +156,12 @@ where:
 * `ID` is a unique integer to identify the attempt.
 * `Problem` is a capital letter to identify the problem of the attempt.
 * `Verdict` may be:
-  * `AC` -- Accepted. The only "yes" answer.
-  * `CE` -- Compile Error.
-  * `RTE` -- Runtime Error.
-  * `TLE` -- Time Limit Exceeded.
-  * `WA` -- Wrong Answer.
-  * `PE` -- Presentation Error.
+  * `AC` — Accepted. The only "yes" answer.
+  * `CE` — Compile Error.
+  * `RTE` — Runtime Error.
+  * `TLE` — Time Limit Exceeded.
+  * `WA` — Wrong Answer.
+  * `PE` — Presentation Error.
 * `Time` is the number of minutes passed since the beginning of the contest when the attempt was made.
 * `Runtime` is the maximum time in seconds that the attempt took to execute.
 * `Username` is the user name.
