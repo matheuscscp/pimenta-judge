@@ -109,12 +109,11 @@ Python3:  disabled
 A:        4 autojudge
 B:        3 manual
 ```
-* Setting `Start` follows the format YYYY MM DD hh mm.
-* Settings `Duration`, `Freeze` and `Blind` are time in minutes.
-* Setting `Duration` is relative to the beginning of the contest.
-* Settings `Freeze` and `Blind` are relative to the end of the contest.
-* First setting of a problem (number) is the time limit in seconds.
-
+* `Start` follows the format YYYY MM DD hh mm.
+* `Duration`, `Freeze` and `Blind` are time in minutes.
+* `Duration` is relative to the beginning of the contest.
+* `Freeze` and `Blind` are relative to the end of the contest.
+* The first setting of a problem (the number) is the time limit in seconds.
 ##### WARNING
 Keep problems sorted by alphabetical order in this file!
 
@@ -140,10 +139,32 @@ team1username B "Problem B question privately answered to Team 1" "Answer"
 Contest owner may add `statement.pdf` PDF file containing the problems' statements. It will be available in the web interface!
 
 ### Automatically generated during contest execution
-| Type      | Name              | Function                                                |
-| --------- | ----------------- | ------------------------------------------------------- |
-| Directory | `attempts`        | All files related to contestants' attempts              |
-| Directory | `questions`       | Clarification requests                                  |
-| File      | `attempts.txt`    | Attempts data                                           |
-| File      | `nextid.bin`      | Next attempt ID                                         |
-| File      | `log.txt`         | Logs of important web session events                    |
+| Type      | Name                                | Function                                   |
+| --------- | ----------------------------------- | ------------------------------------------ |
+| Directory | `attempts`                          | All files related to contestants' attempts |
+| Directory | `questions`                         | Clarification requests                     |
+| File      | [`attempts.txt`](#file-attemptstxt) | Attempts data                              |
+| File      | `nextid.bin`                        | Next attempt ID                            |
+| File      | `log.txt`                           | Logs of important web session events       |
+
+#### File `attempts.txt`
+Each line in this file stands for one attempt and follows the format:
+```
+ID,Problem,Verdict,Time,Runtime,Username,IP,Fullname,Status
+```
+where:
+* `ID` is a unique integer to identify the attempt.
+* `Problem` is a capital letter to identify the problem of the attempt.
+* `Verdict` may be:
+  * `AC` -- Accepted. The only "yes" answer.
+  * `CE` -- Compile Error.
+  * `RTE` -- Runtime Error.
+  * `TLE` -- Time Limit Exceeded.
+  * `WA` -- Wrong Answer.
+  * `PE` -- Presentation Error.
+* `Time` is the number of minutes passed since the beginning of the contest when the attempt was made.
+* `Runtime` is the maximum time in seconds that the attempt took to execute.
+* `Username` is the user name.
+* `IP` is the IP address that sent the attempt.
+* `Fullname` is the full name of the user.
+* `Status` may be `judged` or `tojudge`. Only `judged` attempts will affect the scoreboard.
