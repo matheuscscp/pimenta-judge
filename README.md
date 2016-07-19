@@ -46,7 +46,6 @@ $ pjudge stop
 ### VERY IMPORTANT WARNINGS AND HINTS
 * (WARNING) `pjudge start` creates a file inside the folder (`mycontest/contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again!
 * (WARNING) Except for web sessions, `pjudge` completely relies on its file structure (described below). Anything you change in the directory will take effect without the need of a restart!
-* (WARNING) Regarding problems' labels (capital letters): *No* letter can be skipped! Problems must be A, B, C and so on.
 * (Hint) All it takes to run a `pjudge` instance is a directory and a port. So you can have multiple contests running in the same host!
 * (Hint) `pjudge` do *not* supports memory limit configuration. If you need it, feel free to use GNU/Linux commands, like `ulimit -a`, `ulimit -s` and `ulimit -v`, *before* starting `pjudge`!
 
@@ -81,23 +80,6 @@ problems/
 #### Directory `www`
 Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of your contest! Just remember that some parts of the web stuff are C++ hard-coded. Whatever you don't find in the `www` folder, you will find in the C++ source code!
 
-The problems' colors are in the beginning of `www/script.js`:
-```javascript
-var problems = [];
-problems["A"] = "#FF0000";
-problems["B"] = "#00FF00";
-problems["C"] = "#0000FF";
-problems["D"] = "#FF6600";
-problems["E"] = "#006600";
-problems["F"] = "#003399";
-problems["G"] = "#FFCC00";
-problems["H"] = "#FFFFFF";
-problems["I"] = "#000000";
-problems["J"] = "#FFFF00";
-```
-##### WARNING
-Keep problems sorted by alphabetical order in this file!
-
 #### File `settings.txt`
 ```
 Start:    2015 09 01 19 00
@@ -119,7 +101,7 @@ B:        3 manual
 * The first setting of a problem (the number) is the time limit in seconds.
 
 ##### WARNING
-Keep problems sorted by alphabetical order in this file!
+Problems must be A, B, C and so on. No letter can be skipped! And remember to keep the alphabetical order!
 
 #### File `teams.txt`
 ```
