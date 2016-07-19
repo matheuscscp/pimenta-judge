@@ -156,4 +156,4 @@ where:
 * `Status` may be `judged` or `tojudge`. Only `judged` attempts will affect the scoreboard.
 
 ##### WARNING
-Only problems with the `autojudge` setting will produce `judged` attempts.
+Problems with the `autojudge` setting will produce `judged` attempts, while problems with the `manual` setting will produce `tojudge` attempts.
