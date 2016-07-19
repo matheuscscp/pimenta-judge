@@ -1,3 +1,4 @@
+- migrate color settings to settings.txt.
 - main() commands.
 - implement safe computation (run untrusted code safely).
 - implement HTTPS.
