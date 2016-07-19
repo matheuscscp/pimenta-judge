@@ -1,14 +1,7 @@
 # pimenta-judge
 ACM ICPC contest system for small competitions made in C++ to run on GNU/Linux.
 
-## Table of contents
-* [Languages currently supported](#languages-currently-supported)
-* [Installation](#installation)
-* [Usage](#usage)
-  * [VERY IMPORTANT WARNINGS AND HINTS](#very-important-warnings-and-hints)
-* [Directory and file structure](#directory-and-file-structure)
-
-## Languages currently supported
+The following programming languages are currently supported:
 | Language | Compilation command | Execution command |
 | -------- | ------------------- | ----------------- |
 | C        | `gcc -std=c11 -lm`  | GNU/Linux default |
@@ -16,6 +9,15 @@ ACM ICPC contest system for small competitions made in C++ to run on GNU/Linux.
 | Java     | `javac`             | `java -cp`        |
 | Python   |                     | `python`          |
 | Python 3 |                     | `python3`         |
+
+## Table of contents
+* [Installation](#installation)
+* [Usage](#usage)
+  * [VERY IMPORTANT WARNINGS AND HINTS](#very-important-warnings-and-hints)
+* [Directory and file structure](#directory-and-file-structure)
+  * [Automatically generated at contest creation](#automatically-generated-at-contest-creation)
+  * [Optionally added by contest owner](#optionally-added-by-contest-owner)
+  * [Automatically generated during contest execution](#automatically-generated-during-contest-execution)
 
 ## Installation
 ```bash
