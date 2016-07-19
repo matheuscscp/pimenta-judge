@@ -1,7 +1,8 @@
 # pimenta-judge
 ACM ICPC contest system for small competitions made in C++ to run on GNU/Linux.
 
-The following programming languages are currently supported:
+The currently supported programming languages are:
+
 | Language | Compilation command | Execution command |
 | -------- | ------------------- | ----------------- |
 | C        | `gcc -std=c11 -lm`  | GNU/Linux default |
