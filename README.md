@@ -1,5 +1,5 @@
 # pimenta-judge
-ACM ICPC contest system for small competitions made in C++ to run on GNU/Linux.
+ACM ICPC contest system for GNU/Linux.
 
 The currently supported programming languages are:
 
