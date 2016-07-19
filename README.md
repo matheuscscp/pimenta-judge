@@ -2,7 +2,6 @@
 ACM ICPC contest system for small competitions made in C++ to run on GNU/Linux.
 
 ## Table of contents
-* [Table of contents](#table-of-contents)
 * [Languages currently supported](#languages-currently-supported)
 * [Installation](#installation)
 * [Usage](#usage)
