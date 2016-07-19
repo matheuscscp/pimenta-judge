@@ -31,8 +31,9 @@ $ pjudge stop
 ```
 
 ### VERY IMPORTANT WARNINGS AND HINTS
-* (Warning) `pjudge start` creates a file inside the folder (`mycontest/contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again!
-* (Warning) Except for web user sessions, `pjudge` completely relies on its file structure (described below). Anything you change in the directory will take effect without the need of a restart!
+* (WARNING) `pjudge start` creates a file inside the folder (`mycontest/contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again!
+* (WARNING) Except for web user sessions, `pjudge` completely relies on its file structure (described below). Anything you change in the directory will take effect without the need of a restart!
+* (WARNING) Regarding problems' labels (capital letters): *No* alphabetical letter can be skipped! Problems must be A, B, C...
 * (Hint) All it takes to run a `pjudge` instance is a directory and a port. So you can have multiple contests running in the same host!
 * (Hint) `pjudge` do *not* supports memory limit configuration. If you need it, feel free to use GNU/Linux commands, like `ulimit -a`, `ulimit -s` and `ulimit -v`, *before* starting `pjudge`!
 
@@ -81,7 +82,7 @@ problems["H"] = "#FFFFFF";
 problems["I"] = "#000000";
 problems["J"] = "#FFFF00";
 ```
-##### Warning
+##### WARNING
 Keep problems sorted by alphabetical order in this file!
 
 #### File `settings.txt`
@@ -90,35 +91,34 @@ Start:    2015 09 01 19 00
 Duration: 300
 Freeze:   60
 Blind:    15
-C:        allowed
-C++:      allowed
-Java:     allowed
-Python:   forbidden
-Python3:  forbidden
-A(time-limit-per-file-in-seconds): 4
-B(the-alphabetical-order-must-be-followed): 3
-C(these-comments-are-useless-and-can-be-removed): 5
-D: 1
+C:        enabled
+C++:      enabled
+Java:     enabled
+Python:   disabled
+Python3:  disabled
+A:        4 autojudge
+B:        3 manual
 ```
-* Field `Start:` is a timestamp in the format YYYY MM DD hh mm.
-* Fields `Duration:`, `Freeze:` and `Blind:` are time in minutes.
-* Field `Duration:` is relative to the beginning of the contest.
-* Fields `Freeze:` and `Blind:` are relative to the end of the contest.
+* Setting `Start` is a timestamp in the format YYYY MM DD hh mm.
+* Settings `Duration`, `Freeze` and `Blind` are time in minutes.
+* Setting `Duration` is relative to the beginning of the contest.
+* Settings `Freeze` and `Blind` are relative to the end of the contest.
+* First setting of a problem (number) is the time limit in seconds.
 
-##### Warning
+##### WARNING
 Keep problems sorted by alphabetical order in this file!
 
 #### File `teams.txt`
 ```
-"Team 1 Name" team1username team1password
-"Team 2 Name" team2username team2password
-"Team 3 Name" team3username team3password
+"Team 1" team1username team1password
+"Team 2" team2username team2password
+"Team 3" team3username team3password
 ```
 
 #### File `clarifications.txt`
 ```
 global A "Problem A question available to all teams" "Answer"
-team1username C "Problem C question privately answered to team1username" "Answer"
+team1username B "Problem B question privately answered to Team 1" "Answer"
 ```
 
 ### Optionally added by contest owner

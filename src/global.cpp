@@ -85,21 +85,23 @@ Settings::Settings() {
   blind = end - 60*blind;
   set<string> langs;
   f >> tmp >> tmp2;
-  if (tmp2 == "allowed") langs.insert(".c");
+  if (tmp2 == "enabled") langs.insert(".c");
   f >> tmp >> tmp2;
-  if (tmp2 == "allowed") langs.insert(".cpp");
+  if (tmp2 == "enabled") langs.insert(".cpp");
   f >> tmp >> tmp2;
-  if (tmp2 == "allowed") langs.insert(".java");
+  if (tmp2 == "enabled") langs.insert(".java");
   f >> tmp >> tmp2;
-  if (tmp2 == "allowed") langs.insert(".py");
+  if (tmp2 == "enabled") langs.insert(".py");
   f >> tmp >> tmp2;
-  if (tmp2 == "allowed") langs.insert(".py3");
+  if (tmp2 == "enabled") langs.insert(".py3");
   this->langs = langs;
-  int timelimit;
-  while (f >> tmp >> timelimit) problems.push_back(timelimit);
+  for (Problem p; f >> tmp >> p.timelimit >> tmp2;) {
+    p.autojudge = (tmp2 == "autojudge");
+    problems.push_back(p);
+  }
 }
 
-string Settings::allowed_langs() const {
+string Settings::enabled_langs() const {
   string ans =
     "<h3>Programming Languages</h3>"
     "<table class=\"data\">"
@@ -132,7 +134,7 @@ string Settings::limits() const {
       "<tr><th>Time limit (s)</th>"
   ;
   for (int i = 0; i < problems.size(); i++) {
-    ans += "<td>"+to<string>(problems[i])+"</td>";
+    ans += "<td>"+to<string>(problems[i].timelimit)+"</td>";
   }
   ans +=
       "</tr>"
@@ -143,13 +145,13 @@ string Settings::limits() const {
 
 bool Attempt::read(FILE* fp) {
   vector<string> fields;
-  for (int i = 0; i < 7 && !feof(fp); i++) {
+  for (int i = 0; i < 8 && !feof(fp); i++) {
     fields.emplace_back();
     string& s = fields.back();
     for (char c = fgetc(fp); c != ',' && !feof(fp); c = fgetc(fp)) s += c;
   }
-  teamname = "";
-  for (char c = fgetc(fp); c != '\n' && !feof(fp); c = fgetc(fp)) teamname += c;
+  status = "";
+  for (char c = fgetc(fp); c != '\n' && !feof(fp); c = fgetc(fp)) status += c;
   if (feof(fp)) return false;
   int f = 0;
   id = to<int>(fields[f++]);
@@ -159,6 +161,7 @@ bool Attempt::read(FILE* fp) {
   runtime = fields[f++];
   username = fields[f++];
   ip = fields[f++];
+  teamname = fields[f++];
   return true;
 }
 
@@ -170,7 +173,8 @@ void Attempt::write(FILE* fp) const {
   fprintf(fp,"%s,",runtime.c_str());
   fprintf(fp,"%s,",username.c_str());
   fprintf(fp,"%s,",ip.c_str());
-  fprintf(fp,"%s\n",teamname.c_str());
+  fprintf(fp,"%s,",teamname.c_str());
+  fprintf(fp,"%s\n",status.c_str());
 }
 
 bool Attempt::operator<(const Attempt& other) const {
@@ -183,11 +187,13 @@ string Attempt::toHTMLtr(bool blind, bool is_first) const {
   ans += "<td>"+to<string>(id)+"</td>";
   ans += "<td>"+to<string>(problem)+"</td>";
   ans += "<td>"+to<string>(when)+"</td>";
-  ans += "<td>"+runtime+"</td>";
+  ans += "<td>"+(verdict == TLE ? verdict_tolongs(TLE) : runtime)+"</td>";
   if (blind) ans += "<td>Blind attempt</td>";
   else {
     ans += "<td>";
-    ans += (is_first ? balloon_img(problem) : verdict_tolongs(verdict));
+    if (is_first) ans += balloon_img(problem);
+    else if (status != "judged") ans += "Not answered yet";
+    else ans += verdict_tolongs(verdict);
     ans += "</td>";
   }
   return ans+"</tr>";
@@ -273,28 +279,26 @@ void install(const string& dir) {
     "Duration: 300\n"
     "Freeze:   60\n"
     "Blind:    15\n"
-    "C:        allowed\n"
-    "C++:      allowed\n"
-    "Java:     allowed\n"
-    "Python:   forbidden\n"
-    "Python3:  forbidden\n"
-    "A(time-limit-per-file-in-seconds): 4\n"
-    "B(the-alphabetical-order-must-be-followed): 3\n"
-    "C(these-comments-are-useless-and-can-be-removed): 5\n"
-    "D: 1\n"
+    "C:        enabled\n"
+    "C++:      enabled\n"
+    "Java:     enabled\n"
+    "Python:   disabled\n"
+    "Python3:  disabled\n"
+    "A:        4 autojudge\n"
+    "B:        3 manual\n"
   );
   fclose(fp);
   fp = fopen((dir+"/teams.txt").c_str(), "w");
   fprintf(fp,
-    "\"Team 1 Name\" team1username team1password\n"
-    "\"Team 2 Name\" team2username team2password\n"
-    "\"Team 3 Name\" team3username team3password\n"
+    "\"Team 1\" team1username team1password\n"
+    "\"Team 2\" team2username team2password\n"
+    "\"Team 3\" team3username team3password\n"
   );
   fclose(fp);
   fp = fopen((dir+"/clarifications.txt").c_str(), "w");
   fprintf(fp,
     "global A \"Problem A question available to all teams\" \"Answer\"\n"
-    "team1username C \"Problem C question privately answered to team1username\""
+    "team1username B \"Problem B question privately answered to Team 1\""
     " \"Answer\"\n"
   );
   fclose(fp);

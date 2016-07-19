@@ -173,7 +173,7 @@ static void load_scripts() {
     int status = system("gcc -std=c11 %s -o %s%c -lm", fn, path, p);
     if (WEXITSTATUS(status)) return char(CE);
     return run(
-      sets.problems[p-'A'],
+      sets.problems[p-'A'].timelimit,
       stringf("%s%c", path, p),
       p,
       path,
@@ -184,7 +184,7 @@ static void load_scripts() {
     int status = system("g++ -std=c++1y %s -o %s%c", fn, path, p);
     if (WEXITSTATUS(status)) return char(CE);
     return run(
-      sets.problems[p-'A'],
+      sets.problems[p-'A'].timelimit,
       stringf("%s%c", path, p),
       p,
       path,
@@ -195,7 +195,7 @@ static void load_scripts() {
     int status = system("javac %s", fn);
     if (WEXITSTATUS(status)) return char(CE);
     return run(
-      sets.problems[p-'A'],
+      sets.problems[p-'A'].timelimit,
       stringf("java -cp %s %c", path, p),
       p,
       path,
@@ -204,7 +204,7 @@ static void load_scripts() {
   };
   scripts[".py"] = [](char p, char* path, char* fn, Settings& sets, int& ms) {
     return run(
-      sets.problems[p-'A'],
+      sets.problems[p-'A'].timelimit,
       stringf("python %s", fn),
       p,
       path,
@@ -213,7 +213,7 @@ static void load_scripts() {
   };
   scripts[".py3"] = [](char p, char* path, char* fn, Settings& sets, int& ms) {
     return run(
-      sets.problems[p-'A'],
+      sets.problems[p-'A'].timelimit,
       stringf("python3 %s", fn),
       p,
       path,
@@ -263,6 +263,10 @@ void attempt(int sd, const std::string& file_name, int file_size, Attempt att) {
     return;
   }
   att.problem = file_name[0];
+  
+  // set status
+  if (settings.problems[att.problem-'A'].autojudge) att.status = "judged";
+  else att.status = "tojudge";
   
   // check file size
   if (file_size > BSIZ) {

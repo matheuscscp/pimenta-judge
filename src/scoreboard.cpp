@@ -66,7 +66,9 @@ static void update() {
   if (fp) {
     while (att.read(fp)) {
       time_t when = settings.begin + 60*att.when;
-      if (when < settings.freeze && when < settings.blind) atts.push_back(att);
+      if (settings.freeze <= when) continue;
+      if (settings.blind <= when) continue;
+      if (att.status == "judged") atts.push_back(att);
     }
     fclose(fp);
   }

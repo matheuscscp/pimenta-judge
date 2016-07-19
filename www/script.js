@@ -119,7 +119,7 @@ function show_data(key, tagid, before, after, cb) {
 function submission() {
   document.getElementById("content").innerHTML = document.getElementById("submission").innerHTML;
   document.getElementById("submission-problem").focus();
-  data("allowed-langs", function(response) {
+  data("enabled-langs", function(response) {
     $("#content").append($(response));
     data("limits", function(response) {
       $("#content").append($(response));

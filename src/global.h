@@ -15,11 +15,15 @@ std::string verdict_tolongs(int);
 std::string balloon_img(char);
 
 struct Settings {
+  struct Problem {
+    int timelimit;
+    bool autojudge;
+  };
   time_t begin, end, freeze, blind;
   std::set<std::string> langs;
-  std::vector<int> problems;
+  std::vector<Problem> problems;
   Settings();
-  std::string allowed_langs() const;
+  std::string enabled_langs() const;
   std::string limits() const;
 };
 
@@ -32,6 +36,7 @@ struct Attempt {
   std::string username;
   std::string ip;
   std::string teamname;
+  std::string status;
   bool read(FILE*);
   void write(FILE*) const;
   bool operator<(const Attempt&) const;

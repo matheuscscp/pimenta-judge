@@ -411,8 +411,8 @@ static void* client(void* ptr) {
         string ans = to<string>(tmp);
         write(cptr->sd, ans.c_str(), ans.size());
       }
-      else if (req.uri.find("allowed-langs") != string::npos) {
-        string ans = Settings().allowed_langs();
+      else if (req.uri.find("enabled-langs") != string::npos) {
+        string ans = Settings().enabled_langs();
         write(cptr->sd, ans.c_str(), ans.size());
       }
       else if (req.uri.find("limits") != string::npos) {

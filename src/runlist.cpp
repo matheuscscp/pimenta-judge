@@ -37,9 +37,13 @@ static void update() {
     if (s == "") s = Attempt::getHTMLtrheader();
     auto& S = ACs[att.username];
     bool blind = settings.blind <= settings.begin + 60*att.when;
-    bool is_first = S.find(att.problem) == S.end() && att.verdict == AC;
+    bool is_first =
+      S.find(att.problem) == S.end() &&
+      att.verdict == AC &&
+      att.status == "judged"
+    ;
     s += att.toHTMLtr(blind,is_first);
-    if (att.verdict == AC) S.insert(att.problem);
+    if (is_first) S.insert(att.problem);
   }
   
   // swap buffers
