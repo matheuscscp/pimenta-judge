@@ -99,7 +99,7 @@ Python3:  disabled
 A:        4 autojudge
 B:        3 manual
 ```
-* Setting `Start` is a timestamp in the format YYYY MM DD hh mm.
+* Setting `Start` follows the format YYYY MM DD hh mm.
 * Settings `Duration`, `Freeze` and `Blind` are time in minutes.
 * Setting `Duration` is relative to the beginning of the contest.
 * Settings `Freeze` and `Blind` are relative to the end of the contest.
