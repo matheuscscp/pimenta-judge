@@ -36,13 +36,18 @@ table.data {
 
 table.data, table.data th, table.data td {
   border: 2px solid black;
-  padding: 2px;
+  padding: 2px 20px;
+  text-align: center;
 }
 
 table.data td.problem {
-  text-align: center;
-  min-width: 80px;
   font-size: 11px;
+  min-width: 80px;
+  padding: 2px;
+}
+
+table#attempts-table td {
+  height: 45px;
 }
 
 #site {

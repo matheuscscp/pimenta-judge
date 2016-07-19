@@ -401,8 +401,7 @@ static void* client(void* ptr) {
         write(cptr->sd, sess.teamname.c_str(), sess.teamname.size());
       }
       else if (req.uri.find("problems") != string::npos) {
-        Settings settings;
-        string ans = to<string>(settings.problems.size());
+        string ans = to<string>(Settings().problems.size());
         write(cptr->sd, ans.c_str(), ans.size());
       }
       else if (req.uri.find("remaining-time") != string::npos) {
@@ -413,8 +412,11 @@ static void* client(void* ptr) {
         write(cptr->sd, ans.c_str(), ans.size());
       }
       else if (req.uri.find("allowed-langs") != string::npos) {
-        Settings settings;
-        string ans = settings.allowed_langs();
+        string ans = Settings().allowed_langs();
+        write(cptr->sd, ans.c_str(), ans.size());
+      }
+      else if (req.uri.find("limits") != string::npos) {
+        string ans = Settings().limits();
         write(cptr->sd, ans.c_str(), ans.size());
       }
     }

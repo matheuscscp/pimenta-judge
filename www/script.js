@@ -121,9 +121,12 @@ function submission() {
   document.getElementById("submission-problem").focus();
   data("allowed-langs", function(response) {
     $("#content").append($(response));
-    data("runlist", function(response) {
+    data("limits", function(response) {
       $("#content").append($(response));
-      fix_balloons();
+      data("runlist", function(response) {
+        $("#content").append($(response));
+        fix_balloons();
+      });
     });
   });
 }

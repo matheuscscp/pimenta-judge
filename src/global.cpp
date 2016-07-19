@@ -101,9 +101,10 @@ Settings::Settings() {
 
 string Settings::allowed_langs() const {
   string ans =
-    "<h3>Allowed Programming Languages</h3>"
-    "<table id=\"allowed-langs\" class=\"data\">"
-      "<tr><th>Name</th><th>File extension</th><th>Flags</th></tr>";
+    "<h3>Programming Languages</h3>"
+    "<table class=\"data\">"
+      "<tr><th>Name</th><th>File extension</th><th>Flags</th></tr>"
+  ;
   if (langs.find(".c") != langs.end())
     ans += "<tr><td>C</td><td>.c</td><td>-std=c11 -lm</td></tr>";
   if (langs.find(".cpp") != langs.end())
@@ -115,6 +116,29 @@ string Settings::allowed_langs() const {
   if (langs.find(".py3") != langs.end())
     ans += "<tr><td>Python 3</td><td>.py3</td><td></td></tr>";
   return ans+"</table>";
+}
+
+string Settings::limits() const {
+  string ans =
+    "<h3>Limits</h3>"
+    "<table class=\"data\">"
+      "<tr><th>Problem</th>"
+  ;
+  for (int i = 0; i < problems.size(); i++) {
+    ans += "<th>"+to<string>(char(i+'A'))+"</th>";
+  }
+  ans +=
+      "</tr>"
+      "<tr><th>Time limit (s)</th>"
+  ;
+  for (int i = 0; i < problems.size(); i++) {
+    ans += "<td>"+to<string>(problems[i])+"</td>";
+  }
+  ans +=
+      "</tr>"
+    "</table>"
+  ;
+  return ans;
 }
 
 bool Attempt::read(FILE* fp) {
@@ -163,8 +187,7 @@ string Attempt::toHTMLtr(bool blind, bool is_first) const {
   if (blind) ans += "<td>Blind attempt</td>";
   else {
     ans += "<td>";
-    if (is_first) ans += balloon_img(problem)+" ";
-    ans += verdict_tolongs(verdict);
+    ans += (is_first ? balloon_img(problem) : verdict_tolongs(verdict));
     ans += "</td>";
   }
   return ans+"</tr>";
@@ -175,8 +198,8 @@ string Attempt::getHTMLtrheader() {
     "<tr>"
       "<th>ID</th>"
       "<th>Problem</th>"
-      "<th>Time</th>"
-      "<th>Execution time</th>"
+      "<th>Time (m)</th>"
+      "<th>Execution time (s)</th>"
       "<th>Answer</th>"
     "</tr>"
   ;
@@ -264,8 +287,8 @@ void install(const string& dir) {
   fp = fopen((dir+"/teams.txt").c_str(), "w");
   fprintf(fp,
     "\"Team 1 Name\" team1username team1password\n"
-    "\"Team 2 Name\" team1username team2password\n"
-    "\"Team 3 Name\" team1username team3password\n"
+    "\"Team 2 Name\" team2username team2password\n"
+    "\"Team 3 Name\" team3username team3password\n"
   );
   fclose(fp);
   fp = fopen((dir+"/clarifications.txt").c_str(), "w");

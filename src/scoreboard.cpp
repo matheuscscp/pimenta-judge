@@ -65,7 +65,8 @@ static void update() {
   FILE* fp = fopen("attempts.txt", "r");
   if (fp) {
     while (att.read(fp)) {
-      if (settings.begin + 60*att.when < settings.freeze) atts.push_back(att);
+      time_t when = settings.begin + 60*att.when;
+      if (when < settings.freeze && when < settings.blind) atts.push_back(att);
     }
     fclose(fp);
   }

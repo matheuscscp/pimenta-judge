@@ -78,7 +78,7 @@ void send(const string& username, int sd) {
     "Content-Type: text/html\r\n"
     "\r\n"
     "<h2>Attempts</h2>\n"
-    "<table class=\"data\">"+
+    "<table id=\"attempts-table\" class=\"data\">"+
     runlist+
     "</table>"
   ;

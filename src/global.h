@@ -20,6 +20,7 @@ struct Settings {
   std::vector<int> problems;
   Settings();
   std::string allowed_langs() const;
+  std::string limits() const;
 };
 
 struct Attempt {

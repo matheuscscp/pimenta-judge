@@ -40,7 +40,7 @@ static void judge(
   att.verdict = scripts[lang](
     att.problem, (char*)path.c_str(), (char*)fn.c_str(), settings, maxms
   );
-  att.runtime = to<string>(maxms)+" ms";
+  att.runtime = stringf("%.3lf",maxms/1000.0);
   
   // diff files
   if (att.verdict == AC) {
