@@ -103,9 +103,8 @@ Settings::Settings() {
 
 string Settings::enabled_langs() const {
   string ans =
-    "<h3>Programming Languages</h3>"
     "<table class=\"data\">"
-      "<tr><th>Name</th><th>File extension</th><th>Flags</th></tr>"
+      "<tr><th>Language</th><th>File extension</th><th>Flags</th></tr>"
   ;
   if (langs.find(".c") != langs.end())
     ans += "<tr><td>C</td><td>.c</td><td>-std=c11 -lm</td></tr>";
@@ -122,7 +121,6 @@ string Settings::enabled_langs() const {
 
 string Settings::limits() const {
   string ans =
-    "<h3>Limits</h3>"
     "<table class=\"data\">"
       "<tr><th>Problem</th>"
   ;
