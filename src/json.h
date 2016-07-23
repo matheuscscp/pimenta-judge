@@ -7,7 +7,7 @@ struct JSONValue;
 class JSON {
   // API
   public:
-    // C++ special members
+    // special members
     JSON();
     ~JSON();
     JSON(const JSON&);
