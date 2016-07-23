@@ -489,12 +489,12 @@ static vector<Token> tokens(const string& ln, string& error) {
   return ans;
 }
 
-enum {START=1,OBJECT,KEY,COLON,VALUE,MEMBERS,ARRAY,ELEMENTS};
+enum {OBJECT=1,KEY,COLON,VALUE,MEMBERS,ARRAY,ELEMENTS};
 struct PDA {
   int state;
   stack<JSON> S;
   JSON json;
-  PDA() : state(START) {}
+  PDA() : state(VALUE) {}
   void push_obj() {
     state = OBJECT;
     S.emplace();
@@ -513,7 +513,11 @@ struct PDA {
     else value(json);
   }
   void value(const JSON& obj) {
-    if (S.top().isstr()) {
+    if (S.size() == 0) {
+      state = 0;
+      json = obj;
+    }
+    else if (S.top().isstr()) {
       state = MEMBERS;
       string key = S.top(); S.pop();
       S.top()[key] = obj;
@@ -525,10 +529,6 @@ struct PDA {
   }
   void process(const Token& token, string& error) {
     switch (state) {
-      case START:
-        if (token.type == '{') push_obj();
-        else error = "syntax error: expected '{'";
-        break;
       case OBJECT:
         if (token.type == '}') pop();
         else if (token.type == STRING) push_key(token.data);
