@@ -88,11 +88,11 @@ struct Object : public JSONValue {
   bool isstr() const {
     return false;
   }
-  JSON& operator[](const string& prop) {
-    return v[prop];
+  JSON& operator[](const string& key) {
+    return v[key];
   }
-  const JSON* find(const string& prop) const {
-    auto it = v.find(prop);
+  const JSON* find(const string& key) const {
+    auto it = v.find(key);
     return (it == v.end() ? nullptr : &it->second);
   }
   vector<string> keys() const {
@@ -229,12 +229,12 @@ bool JSON::isstr() const {
   return value->isstr();
 }
 
-JSON& JSON::operator[](const string& prop) {
-  return (*value)[prop];
+JSON& JSON::operator[](const string& key) {
+  return (*value)[key];
 }
 
-const JSON* JSON::find(const string& prop) const {
-  return value->find(prop);
+const JSON* JSON::find(const string& key) const {
+  return value->find(key);
 }
 
 vector<string> JSON::keys() const {
@@ -414,8 +414,8 @@ enum {STRING=0,NUMBER,CONST,ERROR};
 struct Token {
   char type;
   string data;
-  Token(const string& str) : type(STRING), data(str) {}
   Token(char type, const string& data = "") : type(type), data(data) {}
+  Token(const string& str) : type(STRING), data(str) {}
 };
 
 static void small_tkns(const string& big, vector<Token>& ans, string& err) {
