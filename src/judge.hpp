@@ -1,7 +1,7 @@
 #ifndef JUDGE_H
 #define JUDGE_H
 
-#include "global.h"
+#include "global.hpp"
 
 namespace Judge {
 

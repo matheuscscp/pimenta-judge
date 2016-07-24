@@ -11,7 +11,7 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 
-#include "judge.h"
+#include "judge.hpp"
 
 #define BSIZ (1 << 18)
 

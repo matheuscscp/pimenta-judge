@@ -1,9 +1,9 @@
 #include <unistd.h>
 #include <sys/msg.h>
 
-#include "rejudger.h"
+#include "rejudger.hpp"
 
-#include "global.h"
+#include "global.hpp"
 
 static int msqid;
 

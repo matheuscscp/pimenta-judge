@@ -8,13 +8,13 @@
 #include <sys/msg.h>
 #include <sys/stat.h>
 
-#include "global.h"
+#include "global.hpp"
 
-#include "judge.h"
-#include "runlist.h"
-#include "scoreboard.h"
-#include "rejudger.h"
-#include "webserver.h"
+#include "judge.hpp"
+#include "runlist.hpp"
+#include "scoreboard.hpp"
+#include "rejudger.hpp"
+#include "webserver.hpp"
 
 using namespace std;
 

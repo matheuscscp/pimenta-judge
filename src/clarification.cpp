@@ -3,9 +3,9 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#include "clarification.h"
+#include "clarification.hpp"
 
-#include "global.h"
+#include "global.hpp"
 
 using namespace std;
 

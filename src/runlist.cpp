@@ -3,9 +3,9 @@
 
 #include <unistd.h>
 
-#include "runlist.h"
+#include "runlist.hpp"
 
-#include "global.h"
+#include "global.hpp"
 
 using namespace std;
 

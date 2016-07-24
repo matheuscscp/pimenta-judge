@@ -8,13 +8,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "webserver.h"
+#include "webserver.hpp"
 
-#include "global.h"
-#include "judge.h"
-#include "runlist.h"
-#include "scoreboard.h"
-#include "clarification.h"
+#include "global.hpp"
+#include "judge.hpp"
+#include "runlist.hpp"
+#include "scoreboard.hpp"
+#include "clarification.hpp"
 
 #define P3P \
 "P3P: CP=\"CURa ADMa DEVa PSAo PSDo OUR BUS UNI PUR INT" \

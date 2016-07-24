@@ -3,9 +3,9 @@
 
 #include <unistd.h>
 
-#include "scoreboard.h"
+#include "scoreboard.hpp"
 
-#include "global.h"
+#include "global.hpp"
 
 using namespace std;
 
