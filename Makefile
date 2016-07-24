@@ -8,7 +8,7 @@ LIBS    = -pthread
 
 CXX     = g++ -std=c++0x
 SRCS    = $(shell find src -name '*.cpp')
-HEADERS = $(shell find src -name '*.h')
+HEADERS = $(shell find src -name '*.hpp')
 OBJS    = $(addprefix obj/,$(notdir $(SRCS:%.cpp=%.o)))
 
 $(EXE): $(OBJS)
