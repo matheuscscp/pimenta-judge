@@ -1,5 +1,33 @@
-all:
-	g++ -std=c++0x src/*.cpp -o pjudge -pthread
+# ==============================================================================
+# BEGIN template
+# ==============================================================================
+
+# parameters
+EXE     = pjudge
+LIBS    = -pthread
+
+CXX     = g++ -std=c++0x
+SRCS    = $(shell find src -name '*.cpp')
+HEADERS = $(shell find src -name '*.h')
+OBJS    = $(addprefix obj/,$(notdir $(SRCS:%.cpp=%.o)))
+
+$(EXE): $(OBJS)
+	$(CXX) $(LIBS) $(OBJS) -o $@
+
+obj/%.o: src/%.cpp $(HEADERS)
+	mkdir -p obj
+	$(CXX) -c $< -o $@
+
+.PHONY: clean
+
+clean:
+	rm -rf $(EXE) obj
+
+# ==============================================================================
+# END template
+# ==============================================================================
+
+.PHONY: install
 
 install:
 	cp pjudge /usr/local/bin
