@@ -521,6 +521,14 @@ JSON::operator const string&() const {
   return (string&)(*value);
 }
 
+string& JSON::str() {
+  return (string&)(*value);
+}
+
+const string& JSON::str() const {
+  return (string&)(*value);
+}
+
 bool JSON::operator==(const string& val) const {
   return value->isstr() && val == (string&)(*value);
 }

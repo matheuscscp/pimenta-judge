@@ -78,6 +78,8 @@ class JSON {
     bool isstr() const;
     operator std::string&();
     operator const std::string&() const;
+    std::string& str();
+    const std::string& str() const;
     bool operator==(const std::string&) const;
     // number
     bool isnum() const;
