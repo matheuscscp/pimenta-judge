@@ -100,6 +100,7 @@ class JSON {
     }
     // object
     bool isobj() const;
+    JSON& operator[](const char*);
     JSON& operator[](const std::string&);
     JSON& operator[](std::string&&);
     std::map<std::string,JSON>::iterator find(const std::string&);

@@ -553,6 +553,10 @@ bool JSON::isobj() const {
   return value->isobj();
 }
 
+JSON& JSON::operator[](const char* key) {
+  return (*value)[string(key)];
+}
+
 JSON& JSON::operator[](const string& key) {
   return (*value)[key];
 }
