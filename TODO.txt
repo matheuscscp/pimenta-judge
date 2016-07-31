@@ -6,3 +6,4 @@
 - ulimit -s and ulimit -v.
 - web system for judges (manual judging and clarifications).
 - web system for staff (balloons and prints).
+- runlist exporter.
