@@ -1,52 +1,98 @@
-#include <map>
+#include <cstring>
 #include <stack>
 #include <sstream>
+#include <fstream>
 #include <algorithm>
 
 #include "json.hpp"
 
 using namespace std;
 
-static JSON* JSONerror = nullptr;
+static string to_json(const string& val);
+static size_t json_number_length(const char* val);
+static bool is_json_zero(const string& val);
+static bool operator>>(istream& is, JSON& json);
+static void encode_utf8(unsigned cpt, string& buf);
+static bool isctl(unsigned char c);
+static const uint8_t* decode_utf8(const uint8_t* s, string& buf);
 
 struct JSONValue {
   virtual ~JSONValue() {}
   virtual JSONValue* clone() const = 0;
-  virtual string str(int) const = 0;
   virtual bool isstr() const = 0;
+  virtual operator string&() = 0;
+  virtual bool isobj() const = 0;
   virtual JSON& operator[](const string&) = 0;
-  virtual const JSON* find(const string&) const = 0;
-  virtual vector<string> keys() const = 0;
-  virtual JSON& operator[](size_t i) = 0;
+  virtual JSON& operator[](string&&) = 0;
+  virtual map<string,JSON>::iterator find(const string&) = 0;
+  virtual map<string,JSON>::const_iterator find(const string&) const = 0;
+  virtual map<string,JSON>::iterator erase(
+    map<string,JSON>::const_iterator
+  ) = 0;
+  virtual size_t erase(const string&) = 0;
+  virtual map<string,JSON>::iterator begin_o() = 0;
+  virtual map<string,JSON>::iterator end_o() = 0;
+  virtual map<string,JSON>::const_iterator begin_o() const = 0;
+  virtual map<string,JSON>::const_iterator end_o() const = 0;
   virtual bool isarr() const = 0;
   virtual void push_back(const JSON&) = 0;
+  virtual void push_back(JSON&&) = 0;
+  virtual JSON& operator[](size_t i) = 0;
   virtual size_t erase(size_t, size_t) = 0;
+  virtual vector<JSON>::iterator begin_a() = 0;
+  virtual vector<JSON>::iterator end_a() = 0;
+  virtual vector<JSON>::const_iterator begin_a() const = 0;
+  virtual vector<JSON>::const_iterator end_a() const = 0;
   virtual size_t size() const = 0;
+  virtual const JSON* find_tuple(const string&) const = 0;
+  virtual string generate(unsigned) const = 0;
 };
 
 struct String : public JSONValue {
   string v;
   String(const string& v) : v(v) {}
+  String(string&& v) : v(move(v)) {}
   JSONValue* clone() const {
     return new String(v);
-  }
-  string str(int) const {
-    return v;
   }
   bool isstr() const {
     return true;
   }
+  operator string&() {
+    return v;
+  }
+  bool isobj() const {
+    return false;
+  }
   JSON& operator[](const string&) {
-    return *JSONerror;
+    
   }
-  const JSON* find(const string&) const {
-    return nullptr;
+  JSON& operator[](string&&) {
+    
   }
-  vector<string> keys() const {
-    return vector<string>();
+  map<string,JSON>::iterator find(const string&) {
+    
   }
-  JSON& operator[](size_t) {
-    return *JSONerror;
+  map<string,JSON>::const_iterator find(const string&) const {
+    
+  }
+  map<string,JSON>::iterator erase(map<string,JSON>::const_iterator) {
+    
+  }
+  size_t erase(const string&) {
+    
+  }
+  map<string,JSON>::iterator begin_o() {
+    
+  }
+  map<string,JSON>::iterator end_o() {
+    
+  }
+  map<string,JSON>::const_iterator begin_o() const {
+    
+  }
+  map<string,JSON>::const_iterator end_o() const {
+    
   }
   bool isarr() const {
     return false;
@@ -54,54 +100,83 @@ struct String : public JSONValue {
   void push_back(const JSON&) {
     
   }
+  void push_back(JSON&&) {
+    
+  }
+  JSON& operator[](size_t) {
+    
+  }
   size_t erase(size_t, size_t) {
+    
+  }
+  vector<JSON>::iterator begin_a() {
+    
+  }
+  vector<JSON>::iterator end_a() {
+    
+  }
+  vector<JSON>::const_iterator begin_a() const {
+    
+  }
+  vector<JSON>::const_iterator end_a() const {
     
   }
   size_t size() const {
     return v.size();
+  }
+  const JSON* find_tuple(const string&) const {
+    return nullptr;
+  }
+  string generate(unsigned) const {
+    return to_json(v);
   }
 };
 
 struct Object : public JSONValue {
   map<string,JSON> v;
-  Object(const map<string,JSON>& v = map<string,JSON>()) : v(v) {}
+  Object() {}
+  Object(const map<string,JSON>& v) : v(v) {}
   JSONValue* clone() const {
     return new Object(v);
-  }
-  string str(int indent) const {
-    string ans = "{"; if (indent > 0) ans += "\n";
-    auto cnt = v.size();
-    for (auto& kv : v) {
-      for (int i = 0; i < indent; i++) ans += "  ";
-      ans += JSON::str(kv.first);
-      ans += " : ";
-      if (!kv.second.isstr()) ans += kv.second.str(indent ? indent+1 : 0);
-      else ans += JSON::str(kv.second.str(indent ? indent+1 : 0));
-      cnt--;
-      if (cnt > 0) ans += ",";
-      if (indent > 0) ans += "\n";
-    }
-    for (int i = 0; i < indent-1; i++) ans += "  ";
-    ans += "}";
-    return ans;
   }
   bool isstr() const {
     return false;
   }
+  operator string&() {
+    
+  }
+  bool isobj() const {
+    return true;
+  }
   JSON& operator[](const string& key) {
     return v[key];
   }
-  const JSON* find(const string& key) const {
-    auto it = v.find(key);
-    return (it == v.end() ? nullptr : &it->second);
+  JSON& operator[](string&& key) {
+    return v[move(key)];
   }
-  vector<string> keys() const {
-    vector<string> ans(v.size());
-    size_t i = 0; for (auto& kv : v) ans[i++] = kv.first;
-    return ans;
+  map<string,JSON>::iterator find(const string& key) {
+    return v.find(key);
   }
-  JSON& operator[](size_t) {
-    return *JSONerror;
+  map<string,JSON>::const_iterator find(const string& key) const {
+    return v.find(key);
+  }
+  map<string,JSON>::iterator erase(map<string,JSON>::const_iterator it) {
+    return v.erase(it);
+  }
+  size_t erase(const string& key) {
+    return v.erase(key);
+  }
+  map<string,JSON>::iterator begin_o() {
+    return v.begin();
+  }
+  map<string,JSON>::iterator end_o() {
+    return v.end();
+  }
+  map<string,JSON>::const_iterator begin_o() const {
+    return v.begin();
+  }
+  map<string,JSON>::const_iterator end_o() const {
+    return v.end();
   }
   bool isarr() const {
     return false;
@@ -109,49 +184,97 @@ struct Object : public JSONValue {
   void push_back(const JSON&) {
     
   }
+  void push_back(JSON&&) {
+    
+  }
+  JSON& operator[](size_t) {
+    
+  }
   size_t erase(size_t, size_t) {
+    
+  }
+  vector<JSON>::iterator begin_a() {
+    
+  }
+  vector<JSON>::iterator end_a() {
+    
+  }
+  vector<JSON>::const_iterator begin_a() const {
+    
+  }
+  vector<JSON>::const_iterator end_a() const {
     
   }
   size_t size() const {
     return v.size();
   }
+  const JSON* find_tuple(const string& key) const {
+    auto it = v.find(key);
+    return (it == v.end() ? nullptr : &it->second);
+  }
+  string generate(unsigned indent) const {
+    string ans = "{"; if (indent) ans += "\n";
+    auto cnt = v.size();
+    for (auto it = v.begin(); it != v.end(); it++) {
+      for (int i = 0; i < indent; i++) ans += "  ";
+      ans += to_json(it->first);
+      ans += ": ";
+      ans += it->second.generate(indent ? indent+1 : 0);
+      cnt--;
+      if (cnt > 0) ans += ",";
+      if (indent) ans += "\n";
+    }
+    if (indent) for (int i = 0; i < indent-1; i++) ans += "  ";
+    ans += "}";
+    return ans;
+  }
 };
 
 struct Array : public JSONValue {
   vector<JSON> v;
-  Array(const vector<JSON>& v = vector<JSON>()) : v(v) {}
+  Array(const vector<JSON>& v) : v(v) {}
+  Array(vector<JSON>&& v) : v(move(v)) {}
   JSONValue* clone() const {
     return new Array(v);
-  }
-  string str(int indent) const {
-    string ans = "["; if (indent > 0) ans += "\n";
-    auto cnt = v.size();
-    for (auto& obj : v) {
-      for (int i = 0; i < indent; i++) ans += "  ";
-      if (!obj.isstr()) ans += obj.str(indent ? indent+1 : 0);
-      else ans += JSON::str(obj.str(indent ? indent+1 : 0));
-      cnt--;
-      if (cnt > 0) ans += ",";
-      if (indent > 0) ans += "\n";
-    }
-    for (int i = 0; i < indent-1; i++) ans += "  ";
-    ans += "]";
-    return ans;
   }
   bool isstr() const {
     return false;
   }
+  operator string&() {
+    
+  }
+  bool isobj() const {
+    return false;
+  }
   JSON& operator[](const string&) {
-    return *JSONerror;
+    
   }
-  const JSON* find(const string&) const {
-    return nullptr;
+  JSON& operator[](string&&) {
+    
   }
-  vector<string> keys() const {
-    return vector<string>();
+  map<string,JSON>::iterator find(const string&) {
+    
   }
-  JSON& operator[](size_t i) {
-    return v[i];
+  map<string,JSON>::const_iterator find(const string&) const {
+    
+  }
+  map<string,JSON>::iterator erase(map<string,JSON>::const_iterator) {
+    
+  }
+  size_t erase(const string&) {
+    
+  }
+  map<string,JSON>::iterator begin_o() {
+    
+  }
+  map<string,JSON>::iterator end_o() {
+    
+  }
+  map<string,JSON>::const_iterator begin_o() const {
+    
+  }
+  map<string,JSON>::const_iterator end_o() const {
+    
   }
   bool isarr() const {
     return true;
@@ -159,14 +282,149 @@ struct Array : public JSONValue {
   void push_back(const JSON& val) {
     v.push_back(val);
   }
-  size_t erase(size_t first, size_t last) {
-    auto it = v.erase(v.begin()+first,v.begin()+last);
+  void push_back(JSON&& val) {
+    v.emplace_back();
+    v.back() = move(val);
+  }
+  JSON& operator[](size_t i) {
+    return v[i];
+  }
+  size_t erase(size_t L, size_t R) {
+    auto it = (
+      R ?
+      v.erase(v.begin()+L,v.begin()+min(R,v.size())) :
+      v.erase(v.begin()+L)
+    );
     return it-v.begin();
+  }
+  vector<JSON>::iterator begin_a() {
+    return v.begin();
+  }
+  vector<JSON>::iterator end_a() {
+    return v.end();
+  }
+  vector<JSON>::const_iterator begin_a() const {
+    return v.begin();
+  }
+  vector<JSON>::const_iterator end_a() const {
+    return v.end();
   }
   size_t size() const {
     return v.size();
   }
+  const JSON* find_tuple(const string&) const {
+    return nullptr;
+  }
+  string generate(unsigned indent) const {
+    string ans = "["; if (indent) ans += "\n";
+    for (int i = 0; i < v.size(); i++) {
+      for (int i = 0; i < indent; i++) ans += "  ";
+      ans += v[i].generate(indent ? indent+1 : 0);
+      if (i < v.size()-1) ans += ",";
+      if (indent) ans += "\n";
+    }
+    if (indent) for (int i = 0; i < indent-1; i++) ans += "  ";
+    ans += "]";
+    return ans;
+  }
 };
+
+JSON::number::number(const char* s) :
+is_num(false), is_neg(false), is_exp_neg(false)
+{
+  if (*s == '-') { is_neg = true; s++; }
+  if (*s < '0' || '9' < *s) return;
+  if (*s == '0') { int_ += *s; s++; }
+  else while ('0' <= *s && *s <= '9') { int_ += *s; s++; }
+  if (*s == '.') {
+    s++;
+    if (*s < '0' || '9' < *s) return;
+    while ('0' <= *s && *s <= '9') { frac_ += *s; s++; }
+  }
+  if (*s == 0) { is_num = true; return; }
+  if (*s != 'e' && *s != 'E') return;
+  s++;
+  if (*s == '+') s++;
+  else if (*s == '-') { is_exp_neg = true; s++; }
+  else if (*s < '0' || '9' < *s) return;
+  while (*s == '0') s++;
+  if (*s == 0) { is_num = true; return; }
+  if (*s < '1' || '9' < *s) return;
+  while ('0' <= *s && *s <= '9') { exp_ += *s; s++; }
+  is_num = (*s == 0);
+}
+
+bool JSON::number::isnum() const {
+  return is_num;
+}
+
+bool JSON::number::isneg() const {
+  return is_neg;
+}
+
+bool JSON::number::isexpneg() const {
+  return is_exp_neg;
+}
+
+string JSON::number::integer() const {
+  return int_;
+}
+
+string JSON::number::frac() const {
+  return frac_;
+}
+
+string JSON::number::exp() const {
+  return exp_;
+}
+
+JSON::object_iterator::object_iterator(JSON* obj) : obj(obj) {
+  
+}
+
+map<string,JSON>::iterator JSON::object_iterator::begin() {
+  return obj->begin_o();
+}
+
+map<string,JSON>::iterator JSON::object_iterator::end() {
+  return obj->end_o();
+}
+
+JSON::object_const_iterator::object_const_iterator(const JSON* obj) : obj(obj) {
+  
+}
+
+map<string,JSON>::const_iterator JSON::object_const_iterator::begin() const {
+  return obj->begin_o();
+}
+
+map<string,JSON>::const_iterator JSON::object_const_iterator::end() const {
+  return obj->end_o();
+}
+
+JSON::array_iterator::array_iterator(JSON* arr) : arr(arr) {
+  
+}
+
+vector<JSON>::iterator JSON::array_iterator::begin() {
+  return arr->begin_a();
+}
+
+vector<JSON>::iterator JSON::array_iterator::end() {
+  return arr->end_a();
+}
+
+JSON::array_const_iterator::array_const_iterator(const JSON* arr) : arr(arr) {
+  
+}
+
+vector<JSON>::const_iterator JSON::array_const_iterator::begin() const {
+  return arr->begin_a();
+}
+
+vector<JSON>::const_iterator JSON::array_const_iterator::end() const {
+  return arr->end_a();
+}
 
 JSON::JSON() : value(new Object) {
   
@@ -195,20 +453,12 @@ JSON& JSON::operator=(JSON&& val) {
   return *this;
 }
 
-JSON::operator string() const {
-  return str();
-}
-
-string JSON::str(int indent) const {
-  return value->str(indent);
-}
-
 JSON::JSON(const char* val) : value(nullptr) {
-  operator=(string(val));
+  operator=(move(string(val)));
 }
 
 JSON& JSON::operator=(const char* val) {
-  return operator=(string(val));
+  return operator=(move(string(val)));
 }
 
 JSON::JSON(const string& val) : value(nullptr) {
@@ -221,32 +471,14 @@ JSON& JSON::operator=(const string& val) {
   return *this;
 }
 
-bool JSON::operator==(const string& val) const {
-  return true;
+JSON::JSON(string&& val) : value(nullptr) {
+  operator=(move(val));
 }
 
-bool JSON::isstr() const {
-  return value->isstr();
-}
-
-JSON& JSON::operator[](const string& key) {
-  return (*value)[key];
-}
-
-const JSON* JSON::find(const string& key) const {
-  return value->find(key);
-}
-
-vector<string> JSON::keys() const {
-  return value->keys();
-}
-
-JSON& JSON::operator[](size_t i) {
-  return (*value)[i];
-}
-
-const JSON& JSON::operator[](size_t i) const {
-  return (*value)[i];
+JSON& JSON::operator=(string&& val) {
+  delete value;
+  value = new String(move(val));
+  return *this;
 }
 
 JSON::JSON(const initializer_list<JSON>& val) : value(nullptr) {
@@ -267,6 +499,100 @@ JSON& JSON::operator=(const vector<JSON>& val) {
   return *this;
 }
 
+JSON::JSON(vector<JSON>&& val) : value(nullptr) {
+  operator=(move(val));
+}
+
+JSON& JSON::operator=(vector<JSON>&& val) {
+  delete value;
+  value = new Array(move(val));
+  return *this;
+}
+
+bool JSON::isstr() const {
+  return value->isstr();
+}
+
+JSON::operator string&() {
+  return (string&)(*value);
+}
+
+JSON::operator const string&() const {
+  return (string&)(*value);
+}
+
+bool JSON::operator==(const string& val) const {
+  return value->isstr() && val == (string&)(*value);
+}
+
+bool operator==(const string& val, const JSON& json) {
+  return json == val;
+}
+
+bool JSON::isnum() const {
+  return
+    value->isstr() &&
+    value->size() > 0 &&
+    json_number_length(((const string&)*this).c_str()) == value->size()
+  ;
+}
+
+JSON::number JSON::num() const {
+  return number(value->isstr() ? ((const string&)*this).c_str() : "");
+}
+
+bool JSON::isobj() const {
+  return value->isobj();
+}
+
+JSON& JSON::operator[](const string& key) {
+  return (*value)[key];
+}
+
+JSON& JSON::operator[](string&& key) {
+  return (*value)[move(key)];
+}
+
+map<string,JSON>::iterator JSON::find(const string& key) {
+  return value->find(key);
+}
+
+map<string,JSON>::const_iterator JSON::find(const string& key) const {
+  return value->find(key);
+}
+
+map<string,JSON>::iterator JSON::erase(map<string,JSON>::const_iterator it) {
+  return value->erase(it);
+}
+
+size_t JSON::erase(const string& key) {
+  return value->erase(key);
+}
+
+JSON::object_iterator JSON::oit() {
+  return object_iterator(this);
+}
+
+map<string,JSON>::iterator JSON::begin_o() {
+  return value->begin_o();
+}
+
+map<string,JSON>::iterator JSON::end_o() {
+  return value->end_o();
+}
+
+JSON::object_const_iterator JSON::oit() const {
+  return object_const_iterator(this);
+}
+
+map<string,JSON>::const_iterator JSON::begin_o() const {
+  return value->begin_o();
+}
+
+map<string,JSON>::const_iterator JSON::end_o() const {
+  return value->end_o();
+}
+
 bool JSON::isarr() const {
   return value->isarr();
 }
@@ -275,8 +601,63 @@ void JSON::push_back(const JSON& val) {
   value->push_back(val);
 }
 
-size_t JSON::erase(size_t first, size_t last) {
-  value->erase(first,last);
+void JSON::push_back(JSON&& val) {
+  value->push_back(move(val));
+}
+
+JSON& JSON::operator[](size_t i) {
+  return (*value)[i];
+}
+
+const JSON& JSON::operator[](size_t i) const {
+  return (*value)[i];
+}
+
+size_t JSON::erase(size_t L, size_t R) {
+  value->erase(L,R);
+}
+
+JSON::array_iterator JSON::ait() {
+  return array_iterator(this);
+}
+
+vector<JSON>::iterator JSON::begin_a() {
+  return value->begin_a();
+}
+
+vector<JSON>::iterator JSON::end_a() {
+  return value->end_a();
+}
+
+JSON::array_const_iterator JSON::ait() const {
+  return array_const_iterator(this);
+}
+
+vector<JSON>::const_iterator JSON::begin_a() const {
+  return value->begin_a();
+}
+
+vector<JSON>::const_iterator JSON::end_a() const {
+  return value->end_a();
+}
+
+bool JSON::istrue() const {
+  return value->isstr() && (string&)(*value) == "true";
+}
+
+bool JSON::isfalse() const {
+  return value->isstr() && (string&)(*value) == "false";
+}
+
+bool JSON::isnull() const {
+  return value->isstr() && (string&)(*value) == "null";
+}
+
+JSON::operator bool() const {
+  if (!value->isstr()) return true;
+  auto s = (string&)(*value);
+  if (s == "" || is_json_zero(s) || s == "false" || s == "null") return false;
+  return true;
 }
 
 size_t JSON::size() const {
@@ -287,204 +668,213 @@ JSON& JSON::operator()() {
   return *this;
 }
 
-const JSON* JSON::find() const {
+const JSON* JSON::find_tuple() const {
   return this;
 }
 
-static char tohex(char c) {
-  if (c < 10) return c+'0';
-  return c-10+'a';
-}
-string JSON::str(const string& val) {
-  if (
-    number_size(val) == val.size() ||
-    val == "true" || val == "false" || val == "null"
-  ) return val;
-  string ans = "\"";
-  for (char c : val) switch (c) {
-    case '"':   ans += "\\\"";  break;
-    case '\\':  ans += "\\\\";  break;
-    case '/':   ans += "\\/";   break;
-    case '\b':  ans += "\\b";   break;
-    case '\f':  ans += "\\f";   break;
-    case '\n':  ans += "\\n";   break;
-    case '\r':  ans += "\\r";   break;
-    case '\t':  ans += "\\t";   break;
-    default: {
-      int ch = c&0x0ff;
-      if (
-        // unicode C0 control characters
-        (0x0000 <= ch && ch <= 0x001f) || ch == 0x007f ||
-        // unicode C1 control characters
-        (0x0080 <= ch && ch <= 0x009f)
-      ) {
-        ans += "\\u00";
-        ans += tohex((c>>4)&0x0f);
-        ans += tohex(c&0x0f);
-      }
-      else ans += c;
-      break;
-    }
-  }
-  return ans+"\"";
+const JSON* JSON::find_tuple(const string& key) const {
+  return value->find_tuple(key);
 }
 
-size_t JSON::number_size(const string& val) {
-  const char* s = val.c_str();
-  if (*s == '-') s++;
-  if (*s < '0' || '9' < *s) return 0;
-  if (*s == '0') s++;
-  else while ('0' <= *s && *s <= '9') s++;
-  if (*s == '.') {
-    s++;
-    if (*s < '0' || '9' < *s) return 0;
-    while ('0' <= *s && *s <= '9') s++;
-  }
-  size_t backup = s-val.c_str();
-  if (*s != 'e' && *s != 'E') return backup;
-  s++;
-  if (*s == '+' || *s == '-') s++;
-  else if (*s < '0' || '9' < *s) return backup;
-  while ('0' <= *s && *s <= '9') s++;
-  return s-val.c_str();
+bool JSON::parse(const string& src) {
+  stringstream ss(src);
+  return ss >> *this;
 }
 
-bool operator==(const string& val, const JSON& json) {
-  return json == val;
+bool JSON::read_file(const string& fn) {
+  ifstream f(fn.c_str());
+  return f >> *this;
+}
+
+string JSON::generate(unsigned indent) const {
+  return value->generate(indent);
+}
+
+bool JSON::write_file(const string& fn, unsigned indent) const {
+  ofstream f(fn.c_str());
+  if (!(f << value->generate(indent))) return false;
+  if (indent) f << endl;
+  return true;
 }
 
 ostream& operator<<(ostream& os, const JSON& json) {
-  return os << json.str(1);
+  return os << json.generate(1);
 }
 
 // =============================================================================
-// JSON parser
+// functions for parsing, generating, encoding and decoding
 // =============================================================================
 
-static string unicode(const char* s, string& error) {
-  char buf[5] = {};
-  for (int i = 0; i < 4 && error == ""; i++) {
-    if (
-      ('0' <= s[i] && s[i] <= '9') ||
-      ('a' <= s[i] && s[i] <= 'f') ||
-      ('A' <= s[i] && s[i] <= 'F')
-    ) { buf[i] = s[i]; continue; }
-    error = "lexical error: expected four hexadecimal digits after '\\u'";
-  }
-  if (error != "") return "";
-  int x;
-  sscanf(&buf[2],"%x",&x);
-  if (!x) return "";
-  string ans;
-  ans += char(x);
-  buf[2] = 0;
-  sscanf(buf,"%x",&x);
-  if (!x) return ans;
-  ans += char(x);
-  return ans;
-}
-
-static string parse_string(const string& src, string& error) {
-  string ans;
-  for (auto s = src.c_str(); *s != 0 && error == ""; s++) {
-    if (*s != '\\') { ans += *s; continue; }
-    s++;
-    switch (*s) {
-      case '"':   ans += '"';   break;
-      case '\\':  ans += '\\';  break;
-      case '/':   ans += '/';   break;
-      case 'b':   ans += '\b';  break;
-      case 'f':   ans += '\f';  break;
-      case 'n':   ans += '\n';  break;
-      case 'r':   ans += '\r';  break;
-      case 't':   ans += '\t';  break;
-      case 'u':
-        ans += unicode(s+1,error);
-        s += 4;
-        break;
-      default:
-        error = "lexical error: expected escaped character after '\\'";
+// just a wrapper for vector<uint8_t> to ensure that clear() won't free memory
+class Buffer {
+  public:
+    Buffer() : sz(0) {}
+    const uint8_t& operator[](size_t i) const { return buf[i]; }
+    size_t size() const { return sz; }
+    void push(uint8_t x) {
+      if (sz < buf.size()) buf[sz++] = x;
+      else {
+        buf.push_back(x);
+        sz = buf.size();
+      }
     }
-  }
-  if (error != "") return "";
-  return ans;
-}
+    void clear() {
+      sz = 0;
+    }
+  private:
+    size_t sz;
+    vector<uint8_t> buf;
+};
 
-enum {STRING=0,NUMBER,CONST,ERROR};
+enum {STRING=1,NUMBER,LITERAL,ERROR};
 struct Token {
   char type;
   string data;
-  Token(char type, const string& data = "") : type(type), data(data) {}
-  Token(const string& str) : type(STRING), data(str) {}
+  Token(char type) : type(type) {}
+  Token(char type, string&& d) : type(type) { data = move(d); }
 };
 
-static void small_tkns(const string& big, vector<Token>& ans, string& err) {
-  auto error = [&](int i) {
-    err = "lexical error: invalid token '"+big.substr(i,big.size())+"'";
-  };
-  auto check_const = [&](int& i, const string& constant) {
-    string tmp = big.substr(i,constant.size());
-    if (tmp != constant) error(i);
-    else { ans.emplace_back(CONST,tmp); i += constant.size()-1; }
-  };
-  string tmp;
-  for (int i = 0; i < big.size() && err == ""; i++) {
-    switch (big[i]) {
-      case '{':
-      case '}':
-      case ',':
-      case ':':
-      case '[':
-      case ']':
-        ans.emplace_back(big[i]);
-        break;
-      case '-':
-      case '0':
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9': {
-        auto sz = JSON::number_size(big.substr(i,big.size()));
-        if (!sz) error(i);
-        else {
-          ans.emplace_back(NUMBER,big.substr(i,sz));
-          i += sz-1;
-        }
-        break;
-      }
-      case 't': check_const(i,"true");  break;
-      case 'f': check_const(i,"false"); break;
-      case 'n': check_const(i,"null");  break;
-      default: error(i);
-    }
-  }
-  if (err != "") ans.clear();
+static bool ishex(char c) {
+  return
+    ('0' <= c && c <= '9') ||
+    ('a' <= c && c <= 'f') ||
+    ('A' <= c && c <= 'F')
+  ;
 }
 
-static vector<Token> tokens(const string& ln, string& error) {
-  vector<Token> ans;
-  for (int i = 0; i < ln.size();) {
-    stringstream ss;
-    while (i < ln.size() && ln[i] != '"') ss << ln[i++];
-    string big;
-    while ((ss >> big) && error == "") small_tkns(big,ans,error);
-    if (error != "") return vector<Token>();
-    if (i == ln.size()) return ans;
-    string s; i++;
-    while (i < ln.size() && (ln[i-1] == '\\' || ln[i] != '"')) s += ln[i++];
-    if (i == ln.size()) {
-      error = "lexical error: expected '\"' before end of line";
-      return vector<Token>();
+static char* parse_escaped_unicode(
+  char* s, string& buf, string& error, int hi = -1
+) {
+  // check 4 hex digits
+  for (int i = 0; i < 4; i++) if (!ishex(s[i])) {
+    error = "lexical error: invalid escaping";
+    return s;
+  }
+  // read 4 hex digits
+  char tmp = s[4];
+  s[4] = 0;
+  int u;
+  sscanf(s,"%x",&u);
+  s[4] = tmp;
+  s += 3;
+  // high surrogate area
+  if (0xd800 <= u && u <= 0xdbff) {
+    if (hi != -1) { // repeated high surrogate. spec allows. ignoring.
+      return s-6;
     }
-    i++;
-    s = parse_string(s,error);
-    if (error != "") return vector<Token>();
-    ans.emplace_back(s);
+    if (s[1] != '\\') return s; // single high surrogate. spec allows. ignoring.
+    if (s[2] != 'u' ) return s; // single high surrogate. spec allows. ignoring.
+    return parse_escaped_unicode(s+3,buf,error,u); // look for a low surrogate
+  }
+  // low surrogate area
+  if (0xdc00 <= u && u <= 0xdfff) {
+    if (hi == -1) return s; // single low surrogate. spec allows. ignoring.
+    u = (((hi&0x3ff)<<10)|(u&0x3ff))+0x10000; // decoding UTF-16
+  }
+  encode_utf8(u,buf);
+  return s;
+}
+
+static const uint8_t* parse_string(
+  const uint8_t* s, vector<Token>& tks, string& error
+) {
+  string str;
+  for (; *s && *s != '"'; s++) {
+    // unescaped
+    if (*s != '\\') {
+      if (isctl(*s)) {
+        error = "lexical error: unescaped control character";
+        return s;
+      }
+      auto tmp = str.size();
+      s = decode_utf8(s,str);
+      if (tmp == str.size()) {
+        error = "lexical error: invalid encoding";
+        return s;
+      }
+      continue;
+    }
+    // escaped
+    s++;
+    switch (*s) {
+      case '"' : str += '"' ; break;
+      case '\\': str += '\\'; break;
+      case '/' : str += '/' ; break;
+      case 'b' : str += '\b'; break;
+      case 'f' : str += '\f'; break;
+      case 'n' : str += '\n'; break;
+      case 'r' : str += '\r'; break;
+      case 't' : str += '\t'; break;
+      case 'u' :
+        s = (const uint8_t*)parse_escaped_unicode((char*)s+1,str,error);
+        if (error != "") return s;
+        break;
+      default:
+        error = "lexical error: invalid escaping";
+        return s;
+    }
+  }
+  if (*s == '"') tks.emplace_back(STRING,move(str));
+  else error = "lexical error: expected '\"' before end of line";
+  return s;
+}
+
+static void lexical_error(const char* s, string& error) {
+  error  = "lexical error: invalid token '";
+  error += s;
+  error += "'";
+}
+
+static const char* parse_literal(
+  string lit,
+  const char* s, vector<Token>& tks, string& error
+) {
+  if (strncmp(lit.c_str(),s,lit.size())) { lexical_error(s,error); return s; }
+  auto ans = s+lit.size()-1;
+  tks.emplace_back(LITERAL,move(lit));
+  return ans;
+}
+
+static const char* parse_number(
+  const char* s, vector<Token>& tks, string& error
+) {
+  auto len = json_number_length(s);
+  if (!len) { lexical_error(s,error); return s; }
+  string num;
+  for (int i = 0; i < len; i++) num += s[i];
+  tks.emplace_back(NUMBER,move(num));
+  return s+len-1;
+}
+
+// NFA for lexical analysis
+static vector<Token> tokens(const char* s, string& error) {
+  vector<Token> ans;
+  for (; *s && error == ""; s++) {
+    switch (*s) {
+      // whitespaces
+      case ' ' :
+      case '\t':
+        break;
+      // structural characters
+      case '[':
+      case '{':
+      case ']':
+      case '}':
+      case ':':
+      case ',':
+        ans.emplace_back(*s);
+        break;
+      // strings
+      case '"':
+        s = (const char*)parse_string((const uint8_t*)s+1,ans,error);
+        break;
+      // literals
+      case 't': s = parse_literal("true" ,s,ans,error); break;
+      case 'f': s = parse_literal("false",s,ans,error); break;
+      case 'n': s = parse_literal("null" ,s,ans,error); break;
+      // numbers
+      default:  s = parse_number(s,ans,error);
+    }
   }
   return ans;
 }
@@ -499,43 +889,43 @@ struct PDA {
     state = OBJECT;
     S.emplace();
   }
-  void push_key(const string& key) {
+  void push_key(string&& key) {
     state = COLON;
-    S.push(key);
+    S.emplace(move(key));
   }
   void push_arr() {
     state = ARRAY;
-    S.push(JSON({}));
+    S.emplace(JSON({}));
   }
   void pop() {
-    json = S.top(); S.pop();
-    if (S.size() == 0) state = 0;
-    else value(json);
+    json = move(S.top()); S.pop();
+    settle();
   }
-  void value(const JSON& obj) {
-    if (S.size() == 0) {
-      state = 0;
-      json = obj;
-    }
+  void value(string&& val) {
+    json = move(val);
+    settle();
+  }
+  void settle() {
+    if (S.size() == 0) state = 0;
     else if (S.top().isstr()) {
       state = MEMBERS;
-      string key = S.top(); S.pop();
-      S.top()[key] = obj;
+      string key = move(S.top()); S.pop();
+      S.top()[move(key)] = move(json);
     }
     else {
       state = ELEMENTS;
-      S.top().push_back(obj);
+      S.top().push_back(move(json));
     }
   }
-  void process(const Token& token, string& error) {
+  void process(Token&& token, string& error) {
     switch (state) {
       case OBJECT:
         if (token.type == '}') pop();
-        else if (token.type == STRING) push_key(token.data);
+        else if (token.type == STRING) push_key(move(token.data));
         else error = "syntax error: expected '}' or key";
         break;
       case KEY:
-        if (token.type == STRING) push_key(token.data);
+        if (token.type == STRING) push_key(move(token.data));
         else error = "syntax error: expected key";
         break;
       case COLON:
@@ -545,7 +935,7 @@ struct PDA {
       case VALUE:
 L_VAL:  if (token.type == '{') push_obj();
         else if (token.type == '[') push_arr();
-        else if (token.type < ERROR) value(token.data);
+        else if (token.type < ERROR) value(move(token.data));
         else error = "syntax error: expected value";
         break;
       case MEMBERS:
@@ -566,27 +956,189 @@ L_VAL:  if (token.type == '{') push_obj();
   }
 };
 
-istream& operator>>(istream& is, JSON& json) {
-  int ln;
-  auto error = [&](const string& msg) -> istream& {
+// the parser
+static bool operator>>(istream& is, JSON& json) {
+  int ln = 1;
+  // function to return error
+  auto error = [&](const string& msg) {
     stringstream ss;
-    ss << ln << ": " << msg;
-    json = JSON(ss.str());
-    return is;
+    ss << "line " << ln << ": " << msg;
+    json = move(ss.str());
+    return false;
   };
+  uint8_t c = is.get();
+  if (!is) return error("empty input");
+  Buffer buf;
+  buf.push(c);
   PDA pda;
   string err;
-  for (ln = 1; pda.state && err == ""; ln++) {
-    string line;
-    if (!getline(is,line)) { pda.process(Token(ERROR),err); break; }
-    vector<Token> token = tokens(line,err);
+  for (;;ln++) { // for each line
+    // read line
+    uint8_t c = buf[0]; // first byte of a line is always at buf[0]
+    for (buf.clear(); is && c && c!='\r' && c!='\n'; c = is.get()) buf.push(c);
+    if (is) {
+      if (!c) return error("character NUL is illegal");
+      if (buf.size() == 0) continue; // empty line
+    }
+    buf.push(0);
+    // lexical analysis
+    vector<Token> tks = move(tokens((const char*)&buf[0],err));
     if (err != "") return error(err);
-    for (int i = 0; i < token.size() && pda.state && err == ""; i++) {
-      pda.process(token[i],err);
+    // parsing
+    for (int i = 0; i < tks.size() && pda.state; i++) {
+      pda.process(move(tks[i]),err);
       if (err != "") return error(err);
     }
+    if (!pda.state) break; // parsing done, there is a JSON to return
+    // fix buffer
+    buf.clear();
+    if (!is) { pda.process(Token(ERROR),err); break; }
+    if (c == '\r') { // looking for LF after CR
+      c = is.get();
+      if (!is) { pda.process(Token(ERROR),err); break; }
+      if (c != '\n') { buf.push(c); continue; } // no LF, just another char
+    }
+    // at this point, c is an LF for sure. check if there is some input left
+    c = is.get();
+    if (!is) { pda.process(Token(ERROR),err); break; } // no, there isn't
+    buf.push(c); // yes, there is
   }
   if (err != "") return error(err);
-  json = pda.json;
-  return is;
+  json = move(pda.json);
+  return true;
+}
+
+// true only if val is a JSON number with value equal to zero
+static bool is_json_zero(const string& val) {
+  const char* s = val.c_str();
+  if (*s == '-') s++;
+  if (*s != '0') return false;
+  s++;
+  if (*s == '.') {
+    s++;
+    if (*s != '0') return false;
+    while (*s == '0') s++;
+  }
+  if (*s == 0) return true;
+  if (*s != 'e' && *s != 'E') return false;
+  s++;
+  if (*s == '+' || *s == '-') s++;
+  else if (*s < '0' || '9' < *s) return false;
+  while ('0' <= *s && *s <= '9') s++;
+  return *s == 0;
+}
+
+// the n first chars that form a JSON number
+static size_t json_number_length(const char* val) {
+  const char* s = val;
+  if (*s == '-') s++;
+  if (*s < '0' || '9' < *s) return 0;
+  if (*s == '0') s++;
+  else while ('0' <= *s && *s <= '9') s++;
+  size_t backup = s-val;
+  if (*s == '.') {
+    s++;
+    if (*s < '0' || '9' < *s) return backup;
+    while ('0' <= *s && *s <= '9') s++;
+    backup = s-val;
+  }
+  if (*s != 'e' && *s != 'E') return backup;
+  s++;
+  if (*s == '+' || *s == '-') s++;
+  else if (*s < '0' || '9' < *s) return backup;
+  while ('0' <= *s && *s <= '9') s++;
+  return s-val;
+}
+
+static bool isctl(unsigned char c) {
+  return c < 0x20u; // unicode control characters (U+0000 through U+001F)
+}
+
+static char tohex(unsigned char c) {
+  c = c&0xfu;
+  if (c < 10) return c+'0';
+  return c-10+'a';
+}
+
+static const uint8_t* decode_utf8(const uint8_t* s, string& buf) {
+  if (s[0] < 0x80u) { // 1 octet
+    buf += s[0];
+    return s;
+  }
+  int cpt,n;
+  if ((s[0]>>5) == 0x6) { // 2 octets
+    cpt = s[0]&0x1f;
+    n = 1;
+  }
+  else if ((s[0]>>4) == 0xe) { // 3 octets
+    cpt = s[0]&0xf;
+    n = 2;
+  }
+  else if ((s[0]>>3) == 0x1e) { // 4 octets
+    cpt = s[0]&0x7;
+    n = 3;
+  }
+  else return s;
+  for (int i = 1; i <= n; i++) {
+    if ((s[i]>>6) != 0x2) return s;
+    cpt = (cpt<<6)|(s[i]&0x3f);
+  }
+  if (
+    (n == 1 && (0x80 <= cpt && cpt <= 0x7ff)) || // 2 octets
+    (
+      n == 2 && // 3 octets
+      ((0x800 <= cpt && cpt < 0xd800) || (0xdfff < cpt && cpt <= 0xffff))
+    ) ||
+    (n == 3 && (0x10000 <= cpt && cpt <= 0x10ffff)) // 4 octets
+  ) {
+    for (int i = 0; i <= n; i++) buf += s[i];
+    return s+n;
+  }
+  return s;
+}
+
+static void encode_utf8(unsigned cpt, string& buf) {
+  if (cpt < 0x80) { buf += char(cpt); return; } // 1 octet
+  if ((0xd800 <= cpt && cpt <= 0xdfff) || 0x10ffff < cpt) return; // not unicode
+  char cdu[8] = {};
+  cdu[0] = 0xc0;
+  cdu[7] = 1;
+  if (cpt > 0x7ff) cdu[0] >>= 1, cdu[7]++;
+  if (cpt > 0xffff) cdu[0] >>= 1, cdu[7]++;
+  for (cdu[6] = cdu[7]; 0 < cdu[6]; cdu[6]--) {
+    cdu[cdu[6]] = 0x80|((cpt>>(6*(cdu[7]-cdu[6])))&0x3f);
+  }
+  cdu[0] |= (cpt>>(6*cdu[7]));
+  cdu[7]++;
+  for (cdu[6] = 0; cdu[6] < cdu[7]; cdu[6]++) buf += cdu[cdu[6]];
+}
+
+static string to_json(const string& val) {
+  if (
+    (val.size() > 0 && json_number_length(val.c_str()) == val.size()) || // num
+    val == "true" || val == "false" || val == "null" // literal
+  ) return val;
+  // string
+  string ans = "\"";
+  for (const uint8_t* s = (const uint8_t*)val.c_str(); *s; s++) {
+    switch (*s) {
+      case '"' :  ans += "\\\"";  break; //    quotation mark mandatory escape
+      case '\\':  ans += "\\\\";  break; //   reverse solidus mandatory escape
+      case '\b':  ans += "\\b";   break; // control character mandatory escape
+      case '\f':  ans += "\\f";   break; // control character mandatory escape
+      case '\n':  ans += "\\n";   break; // control character mandatory escape
+      case '\r':  ans += "\\r";   break; // control character mandatory escape
+      case '\t':  ans += "\\t";   break; // control character mandatory escape
+      default: {
+        if (isctl(*s)) { // other control characters mandatory escape
+          ans += "\\u00";
+          ans += tohex((*s)>>4);
+          ans += tohex(*s);
+        }
+        else s = decode_utf8(s,ans); // read only valid UTF-8
+        break;
+      }
+    }
+  }
+  return ans+"\"";
 }
