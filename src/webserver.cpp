@@ -203,10 +203,9 @@ struct Request {
     auto f = cookie.find("sessionToken=");
     if (f != string::npos) {
       stringstream ss;
-      ss << cookie.substr(cookie.find("sessionToken=")+13, cookie.size());
+      ss << cookie.substr(f+13, 32);
       string token;
       ss >> token;
-      if (token[token.size()-1] == ';') token = token.substr(0,token.size()-1);
       session = get_session(token,cl.ip);
     }
   }
@@ -449,11 +448,11 @@ static void* server(void*) {
   while (Global::alive()) {
     clean_sessions();
     Client c;
-    sockaddr_in addr;
-    socklen_t alen;
-    c.sd = accept(sd, (sockaddr*)&addr, &alen);
+    sockaddr_in caddr;
+    socklen_t alen = sizeof caddr;
+    c.sd = accept(sd, (sockaddr*)&caddr, &alen);
     if (c.sd < 0) { usleep(25000); continue; }
-    c.ip = addr.sin_addr.s_addr;
+    c.ip = caddr.sin_addr.s_addr;
     c.when = time(nullptr);
     pthread_t thread;
     pthread_create(&thread, nullptr, client, new Client(c));
