@@ -62,43 +62,61 @@ class JSON {
     JSON& operator=(const JSON&);
     JSON(JSON&&);
     JSON& operator=(JSON&&);
+    // string constructors
     JSON(const char*);
     JSON& operator=(const char*);
     JSON(const std::string&);
     JSON& operator=(const std::string&);
     JSON(std::string&&);
     JSON& operator=(std::string&&);
-    JSON(const std::initializer_list<JSON>&);
-    JSON& operator=(const std::initializer_list<JSON>&);
+    // number constructors
+    template <typename T>
+    JSON(T val) : value(nullptr) {
+      std::stringstream ss;
+      ss << val;
+      operator=(move(ss.str()));
+    }
+    template <typename T>
+    JSON& operator=(T val) {
+      std::stringstream ss;
+      ss << val;
+      operator=(move(ss.str()));
+    }
+    // object constructors
+    JSON(const std::map<std::string,JSON>&);
+    JSON& operator=(const std::map<std::string,JSON>&);
+    JSON(std::map<std::string,JSON>&&);
+    JSON& operator=(std::map<std::string,JSON>&&);
+    // array constructors
     JSON(const std::vector<JSON>&);
     JSON& operator=(const std::vector<JSON>&);
     JSON(std::vector<JSON>&&);
     JSON& operator=(std::vector<JSON>&&);
-    // string
+    // string API
     bool isstr() const;
     operator std::string&();
     operator const std::string&() const;
     std::string& str();
     const std::string& str() const;
     bool operator==(const std::string&) const;
-    // number
+    // number API
     bool isnum() const;
     number num() const;
     template <typename T>
-    bool to(T& buf) const {
-      if (!isstr()) return false;
-      std::stringstream ss((const std::string&)*this);
-      return ss >> buf;
-    }
-    template <typename T>
-    T to() const {
+    operator T() const {
       if (!isstr()) return T();
       std::stringstream ss((const std::string&)*this);
       T ans;
       ss >> ans;
       return ans;
     }
-    // object
+    template <typename T>
+    bool to(T& buf) const {
+      if (!isstr()) return false;
+      std::stringstream ss((const std::string&)*this);
+      return ss >> buf;
+    }
+    // object API
     bool isobj() const;
     JSON& operator[](const char*);
     JSON& operator[](const std::string&);
@@ -115,7 +133,7 @@ class JSON {
     object_const_iterator oit() const;
     std::map<std::string,JSON>::const_iterator begin_o() const;
     std::map<std::string,JSON>::const_iterator end_o() const;
-    // array
+    // array API
     bool isarr() const;
     void push_back(const JSON&);
     void push_back(JSON&&);
@@ -132,10 +150,13 @@ class JSON {
     array_const_iterator ait() const;
     std::vector<JSON>::const_iterator begin_a() const;
     std::vector<JSON>::const_iterator end_a() const;
-    // literals
+    // literals API
     bool istrue() const;
     bool isfalse() const;
     bool isnull() const;
+    void settrue();
+    void setfalse();
+    void setnull();
     // polymorphic
     operator bool() const; // false if, and only if, = "", 0, "false" or "null"
     size_t size() const;

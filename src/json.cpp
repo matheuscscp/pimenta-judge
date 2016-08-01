@@ -481,12 +481,24 @@ JSON& JSON::operator=(string&& val) {
   return *this;
 }
 
-JSON::JSON(const initializer_list<JSON>& val) : value(nullptr) {
-  operator=(vector<JSON>(val));
+JSON::JSON(const map<string,JSON>& val) : value(nullptr) {
+  operator=(val);
 }
 
-JSON& JSON::operator=(const initializer_list<JSON>& val) {
-  return operator=(vector<JSON>(val));
+JSON& JSON::operator=(const map<string,JSON>& val) {
+  delete value;
+  value = new Object(val);
+  return *this;
+}
+
+JSON::JSON(map<string,JSON>&& val) : value(nullptr) {
+  operator=(move(val));
+}
+
+JSON& JSON::operator=(map<string,JSON>&& val) {
+  delete value;
+  value = new Object(move(val));
+  return *this;
 }
 
 JSON::JSON(const vector<JSON>& val) : value(nullptr) {
@@ -663,6 +675,18 @@ bool JSON::isfalse() const {
 
 bool JSON::isnull() const {
   return value->isstr() && (string&)(*value) == "null";
+}
+
+void JSON::settrue() {
+  operator=("true");
+}
+
+void JSON::setfalse() {
+  operator=("false");
+}
+
+void JSON::setnull() {
+  operator=("null");
 }
 
 JSON::operator bool() const {
@@ -907,7 +931,7 @@ struct PDA {
   }
   void push_arr() {
     state = ARRAY;
-    S.emplace(JSON({}));
+    S.emplace(vector<JSON>());
   }
   void pop() {
     json = move(S.top()); S.pop();
