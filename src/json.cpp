@@ -770,19 +770,11 @@ struct Token {
   Token(char type, string&& d) : type(type) { data = move(d); }
 };
 
-static bool ishex(char c) {
-  return
-    ('0' <= c && c <= '9') ||
-    ('a' <= c && c <= 'f') ||
-    ('A' <= c && c <= 'F')
-  ;
-}
-
 static char* parse_escaped_unicode(
   char* s, string& buf, string& error, int hi = -1
 ) {
   // check 4 hex digits
-  for (int i = 0; i < 4; i++) if (!ishex(s[i])) {
+  for (int i = 0; i < 4; i++) if (!isxdigit(s[i])) {
     error = "lexical error: invalid escaping";
     return s;
   }
@@ -1090,10 +1082,13 @@ static bool isctl(unsigned char c) {
   return c < 0x20u; // unicode control characters (U+0000 through U+001F)
 }
 
-static char tohex(unsigned char c) {
-  c = c&0xfu;
-  if (c < 10) return c+'0';
-  return c-10+'a';
+static string tohex(unsigned char c) {
+  string ans = "00";
+  for (int i = 0; i < 2; i++) {
+    ans[i] = ((c>>((1-i)<<2))&0xfu)+'0';
+    if ('9' < ans[i]) ans[i] += ('a'-'0'-10);
+  }
+  return ans;
 }
 
 static const uint8_t* decode_utf8(const uint8_t* s, string& buf) {
@@ -1168,7 +1163,6 @@ static string to_json(const string& val) {
       default: {
         if (isctl(*s)) { // other control characters mandatory escape
           ans += "\\u00";
-          ans += tohex((*s)>>4);
           ans += tohex(*s);
         }
         else s = decode_utf8(s,ans); // read only valid UTF-8
