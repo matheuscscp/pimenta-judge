@@ -8,6 +8,9 @@
 
 namespace HTTP {
 
+// helpers
+std::string path(const std::vector<std::string>& segments); // valid iff != ""
+
 class Session {
   public:
     virtual ~Session();
@@ -23,9 +26,11 @@ class Handler {
     // routing
     void route(
       const std::string& path,
-      const std::function<void(const std::vector<std::string>& args)>&
+      const std::function<void(const std::vector<std::string>& args)>&,
+      bool session_required = false
     );
-    virtual void notfound();
+    virtual void not_found();
+    virtual void unauthorized(); // for routes with 'session required' flag
     // socket
     time_t when() const;
     uint32_t ip() const; // network endianness
@@ -61,7 +66,7 @@ class Handler {
     // routing
     std::map<
       std::string,
-      std::function<void(const std::vector<std::string>&)>
+      std::pair<bool,std::function<void(const std::vector<std::string>&)>>
     > routes;
     // socket
     int sd;

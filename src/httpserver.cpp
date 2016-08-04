@@ -166,26 +166,30 @@ static void clean_sessions() {
 
 namespace HTTP {
 
+string path(const vector<string>& segments) {
+  if (segments.size() == 0) return "index.html";
+  string ans;
+  for (int i = 0; i < segments.size(); i++) {
+    if (segments[i] == "..") return "";
+    if (i > 0) ans += "/";
+    ans += segments[i];
+  }
+  if (!ifstream(ans.c_str()).is_open()) return "";
+  return ans;
+}
+
 Session::~Session() {}
 
 Handler::Handler() {
-  routes["/"] = [=](const vector<string>& segments) {
-    string fn;
-    if (segments.size() > 0) {
-      if (segments[0] == "..") { notfound(); return; }
-      fn = segments[0];
-      for (int i = 1; i < segments.size(); i++) {
-        if (segments[i] == "..") { notfound(); return; }
-        fn += "/"+segments[i];
-      }
-    }
-    if (fn == "") {
+  routes["/"] = make_pair(false,[=](const vector<string>& segments) {
+    string fn = move(HTTP::path(segments));
+    if (fn == "index.html") {
       if (ifstream("index.html").is_open()) file("index.html");
       else response("<h1>HTTP Server OK</h1>","text/html");
     }
-    else if (!ifstream(fn).is_open()) notfound();
+    else if (fn == "") not_found();
     else file(fn);
-  };
+  });
 }
 
 Handler::~Handler() {
@@ -201,14 +205,20 @@ Handler::~Handler() {
 
 void Handler::route(
   const string& path,
-  const function<void(const vector<string>&)>& cb
+  const function<void(const vector<string>&)>& cb,
+  bool sreq
 ) {
-  routes[path] = cb;
+  routes[path] = make_pair(sreq,cb);
 }
 
-void Handler::notfound() {
+void Handler::not_found() {
   status(404,"Not Found");
   response("<h1>Not Found</h1>","text/html");
+}
+
+void Handler::unauthorized() {
+  status(401,"Unauthorized");
+  response("<h1>Unauthorized</h1>","text/html");
 }
 
 time_t Handler::when() const {
@@ -500,9 +510,13 @@ void Handler::handle() {
       route += tmp;
     }
     vector<string> args(segments.begin()+arg,segments.end());
-    if (route != "") routes[route](args);
-    else if (path_ == "/" || segments.size() > 0) routes["/"](args);
-    else notfound();
+    if (route != "") {
+      auto& rt = routes[route];
+      if (rt.first && !sess) unauthorized();
+      else rt.second(args);
+    }
+    else if (path_ == "/" || segments.size() > 0) routes["/"].second(args);
+    else not_found();
   }
   
   // store session
