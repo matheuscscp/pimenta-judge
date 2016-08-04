@@ -1,4 +1,3 @@
-- remove network port from command line and update README.md
 - refactor web interface (extract HTML from compiled code and organize view).
 - create updater thread (scoreboard, runlist, msgqueue).
 - implement settings module with command-line reload via msgqueue (unify files settings.txt, teams.txt and http settings in a json).

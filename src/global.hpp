@@ -81,10 +81,8 @@ int system(const char* fmt, Args... args) {
 
 namespace Global {
 
-extern std::vector<std::string> arg;
-
 void install(const std::string&);
-void start(int, char**);
+void start();
 void stop();
 void rejudge(int, char);
 

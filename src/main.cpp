@@ -9,7 +9,7 @@ static void usagemode() {
     "\n"
     "Options:\n"
     "  install  <new directory name without trailing slash>\n"
-    "  start    <TCP port number>\n"
+    "  start\n"
     "  stop\n"
     "  gp       <list of problems by capital letter>\n"
     "  ga       <(possibly empty) list of problems by capital letter>\n"
@@ -35,8 +35,7 @@ int main(int argc, char** argv) {
     Global::install(argv[2]);
   }
   else if (mode == "start") {
-    if (argc < 3) { usagemode(); return 0; }
-    Global::start(argc, argv);
+    Global::start();
   }
   else if (mode == "stop") {
     Global::stop();

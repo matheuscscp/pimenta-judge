@@ -33,10 +33,10 @@ To create a contest, choose a directory name, like `mycontest`, and type:
 ```bash
 $ pjudge install mycontest
 ```
-To start the system, choose an available network port, like 8000, and type:
+To start the system, type:
 ```bash
 $ cd mycontest
-$ pjudge start 8000
+$ pjudge start
 ```
 Then access [http://localhost:8000/](http://localhost:8000/). To stop, type:
 ```bash
@@ -46,7 +46,7 @@ $ pjudge stop
 ### VERY IMPORTANT WARNINGS AND HINTS
 * (WARNING) `pjudge start` creates a file inside the folder (`mycontest/contest.bin`) to avoid future start commands from lauching the judge again and `pjudge stop` removes this file. So if the computer shuts down instantly (as in an energy cut), you should remove this file to start the judge again!
 * (WARNING) Except for web sessions, `pjudge` completely relies on its file structure (described below). Anything you change in the directory will take effect without the need of a restart!
-* (Hint) All it takes to run a `pjudge` instance is a directory and a port. So you can have multiple contests running in the same host!
+* (Hint) All it takes to run a `pjudge` instance is a directory and a network port. So you can have multiple contests running in the same host!
 * (Hint) `pjudge` do *not* supports memory limit configuration. If you need it, feel free to use GNU/Linux commands, like `ulimit -a`, `ulimit -s` and `ulimit -v`, *before* starting `pjudge`!
 
 ## Directory and file structure

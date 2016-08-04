@@ -267,8 +267,6 @@ static void term(int) {
 
 namespace Global {
 
-vector<string> arg;
-
 void install(const string& dir) {
   mkdir(dir.c_str(), 0777);
   FILE* fp = fopen((dir+"/settings.txt").c_str(), "w");
@@ -322,10 +320,8 @@ void install(const string& dir) {
   system("cp -rf /usr/local/share/pjudge/www %s/www", dir.c_str());
 }
 
-void start(int argc, char** argv) {
+void start() {
   if (Contest().pid) return;
-  arg = vector<string>(argc);
-  for (int i = 0; i < argc; i++) arg[i] = argv[i];
   daemon(1,0);
   sleep(1); // if child runs before parent... shit happens
   Contest(getpid(), msgqueue());
