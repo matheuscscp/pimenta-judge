@@ -69,24 +69,18 @@ void fire() {
   Global::fire(poller);
 }
 
-void send(const string& username, int sd) {
+string query(const string& username) {
   // make local copy of runlist
   pthread_mutex_lock(&frontbuf_mutex);
   string runlist((*frontbuf)[username]);
   pthread_mutex_unlock(&frontbuf_mutex);
   
-  // respond
-  string response =
-    "HTTP/1.1 200 OK\r\n"
-    "Connection: close\r\r"
-    "Content-Type: text/html\r\n"
-    "\r\n"
+  return
     "<h2>Attempts</h2>\n"
     "<table id=\"attempts-table\" class=\"data\">"+
     runlist+
     "</table>"
   ;
-  write(sd, response.c_str(), response.size());
 }
 
 } // namespace Runlist

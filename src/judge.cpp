@@ -13,7 +13,7 @@
 
 #include "judge.hpp"
 
-#define BSIZ (1 << 18)
+#include "global.hpp"
 
 using namespace std;
 
@@ -244,61 +244,32 @@ void fire() {
   Global::fire(judger);
 }
 
-void attempt(int sd, const std::string& file_name, int file_size, Attempt att) {
+string attempt(
+  const string& file_name,
+  const vector<uint8_t>& file,
+  Attempt att
+) {
   Settings settings;
   
   // check time
   if (att.when < settings.begin || settings.end <= att.when) {
-    if (file_size) ignoresd(sd);
-    write(sd, "The contest is not running.", 27);
-    return;
+    return "The contest is not running.";
   }
   att.when = int(round((att.when-settings.begin)/60.0));
   
   // check file name
   string lang = valid_filename(settings,file_name);
-  if (lang == "") {
-    if (file_size) ignoresd(sd);
-    write(sd, "Invalid programming language!", 29);
-    return;
-  }
+  if (lang == "") return "Invalid programming language!";
   att.problem = file_name[0];
   
   // set status
   if (settings.problems[att.problem-'A'].autojudge) att.status = "judged";
   else att.status = "tojudge";
   
-  // check file size
-  if (file_size > BSIZ) {
-    string resp =
-      "Files with more than "+to<string>(BSIZ)+" bytes are not allowed!"
-    ;
-    if (file_size) ignoresd(sd);
-    write(sd, resp.c_str(), resp.size());
-    return;
-  }
-  
-  // read data
-  char* buf = new char[BSIZ];
-  for (int i = 0, fs = file_size; fs > 0;) {
-    int rb = read(sd, &buf[i], fs);
-    if (rb < 0) {
-      write(sd, "File corrupted!", 15);
-      delete[] buf;
-      return;
-    }
-    fs -= rb;
-    i += rb;
-  }
-  
   // generate id
   Global::lock_nextid_file();
   att.id = genid();
   Global::unlock_nextid_file();
-  
-  // respond
-  string response = "Attempt "+to<string>(att.id)+" received!";
-  write(sd, response.c_str(), response.size());
   
   // save file
   string fn = "attempts/";
@@ -313,9 +284,8 @@ void attempt(int sd, const std::string& file_name, int file_size, Attempt att) {
   string path = "./"+fn;
   fn += file_name;
   FILE* fp = fopen(fn.c_str(), "wb");
-  fwrite(buf, file_size, 1, fp);
+  fwrite(&file[0], file.size(), 1, fp);
   fclose(fp);
-  delete[] buf;
   
   // push task
   QueueData qd;
@@ -327,6 +297,8 @@ void attempt(int sd, const std::string& file_name, int file_size, Attempt att) {
   pthread_mutex_lock(&judger_mutex);
   jqueue.push(qd);
   pthread_mutex_unlock(&judger_mutex);
+  
+  return "Attempt "+to<string>(att.id)+" received!";
 }
 
 } // namespace Judge

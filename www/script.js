@@ -50,9 +50,7 @@ function login() {
     }
   }
   xmlhttp.open("POST", "login", true);
-  xmlhttp.setRequestHeader("Team", team.value);
-  xmlhttp.setRequestHeader("Password", pass.value);
-  xmlhttp.send();
+  xmlhttp.send(JSON.stringify({team: team.value, password: pass.value}));
   team.value = "";
   pass.value = "";
 }
@@ -60,7 +58,6 @@ function login() {
 function init() {
   init_problems();
   init_data();
-  submission();
 }
 
 function init_problems() {
@@ -76,21 +73,23 @@ function init_problems() {
 }
 
 function init_data() {
-  show_data("teamname", "teamname", "Team: ", "", function(){});
-  var upd_rem_time_counter = function() {
-    var now = new Date().getTime()/1000;
-    var dt = now-remaining_time_json.init_time;
-    var tmp = Math.round(Math.max(0,remaining_time_json.remaining_time-dt));
-    var ans = (tmp == 0 ? "The contest is not running." : "Remaining time: " + (tmp+"").toHHMMSS());
-    document.getElementById("remaining-time").innerHTML = ans;
-  };
-  data("remaining-time", function(response) {
-    window["remaining_time_json"] = {
-      remaining_time: parseInt(response),
+  $.get("status",null,function(resp) {
+    svstatus = resp;
+    $("#teamname").html("Team: "+resp.teamname);
+    remaining_time_json = {
+      remaining_time: resp.rem_time,
       init_time: new Date().getTime()/1000
     };
-    upd_rem_time_counter();
-    setInterval(upd_rem_time_counter, 1000);
+    var upd_rem_time = function() {
+      var now = new Date().getTime()/1000;
+      var dt = now-remaining_time_json.init_time;
+      var tmp = Math.round(Math.max(0,remaining_time_json.remaining_time-dt));
+      var ans = (tmp == 0 ? "The contest is not running." : "Remaining time: " + (tmp+"").toHHMMSS());
+      $("#remaining-time").html(ans);
+    };
+    upd_rem_time();
+    setInterval(upd_rem_time, 1000);
+    submission();
   });
 }
 
@@ -105,7 +104,7 @@ function data(key, cb) {
       cb(xmlhttp.responseText);
     }
   }
-  xmlhttp.open("GET", "?"+key, true);
+  xmlhttp.open("GET", key, true);
   xmlhttp.send();
 }
 
@@ -117,18 +116,11 @@ function show_data(key, tagid, before, after, cb) {
 }
 
 function submission() {
-  document.getElementById("content").innerHTML = document.getElementById("submission").innerHTML;
-  document.getElementById("submission-problem").focus();
-  data("enabled-langs", function(response) {
-    $("#content").append($(response));
-    data("limits", function(response) {
-      $("#content").append($(response));
-      data("runlist", function(response) {
-        $("#content").append($(response));
-        fix_balloons();
-      });
-    });
-  });
+  $("#content").html($("#submission").html());
+  $("#submission-problem").focus();
+  $("#enabled-langs").html(svstatus.en_langs);
+  $("#limits").html(svstatus.limits);
+  show_data("runlist","runlist","","",fix_balloons);
 }
 function scoreboard() {
   show_data("scoreboard", "content", "", "", fix_balloons);

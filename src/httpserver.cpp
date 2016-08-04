@@ -144,9 +144,11 @@ static HTTP::Session* load_session(unsigned& id) {
 }
 static void store_session(unsigned id, HTTP::Session* sess) {
   pthread_mutex_lock(&sessions_mutex);
-  auto& sent = sessions[id];
-  delete sent.sess;
-  sent.sess = sess;
+  auto it = sessions.find(id);
+  if (it != sessions.end()) {
+    delete it->second.sess;
+    it->second.sess = sess;
+  }
   pthread_mutex_unlock(&sessions_mutex);
 }
 static void clean_sessions() {
@@ -166,29 +168,42 @@ static void clean_sessions() {
 
 namespace HTTP {
 
-string path(const vector<string>& segments) {
-  if (segments.size() == 0) return "index.html";
+string path(const vector<string>& segments, const string& dir_path) {
   string ans;
   for (int i = 0; i < segments.size(); i++) {
     if (segments[i] == "..") return "";
     if (i > 0) ans += "/";
     ans += segments[i];
   }
-  if (!ifstream(ans.c_str()).is_open()) return "";
+  if (ans == "") ans = "index.html";
+  if (dir_path != "") ans = dir_path+"/"+ans;
+  struct stat st;
+  stat(ans.c_str(),&st);
+  if (!S_ISREG(st.st_mode)) return "";
   return ans;
 }
 
 Session::~Session() {}
 
+void Session::destroy(const function<bool(const Session*)>& cb) {
+  time_t now = time(nullptr);
+  pthread_mutex_lock(&sessions_mutex);
+  for (auto it = sessions.begin(); it != sessions.end();) {
+    if (now < it->second.end && (!it->second.sess || !cb(it->second.sess))) {
+      it++;
+      continue;
+    }
+    delete it->second.sess;
+    sessions.erase(it++);
+  }
+  pthread_mutex_unlock(&sessions_mutex);
+}
+
 Handler::Handler() {
   routes["/"] = make_pair(false,[=](const vector<string>& segments) {
     string fn = move(HTTP::path(segments));
-    if (fn == "index.html") {
-      if (ifstream("index.html").is_open()) file("index.html");
-      else response("<h1>HTTP Server OK</h1>","text/html");
-    }
-    else if (fn == "") not_found();
-    else file(fn);
+    if (fn != "") file(fn);
+    else not_found();
   });
 }
 
@@ -219,6 +234,11 @@ void Handler::not_found() {
 void Handler::unauthorized() {
   status(401,"Unauthorized");
   response("<h1>Unauthorized</h1>","text/html");
+}
+
+void Handler::location(const string& uri) {
+  status(302,"Found");
+  resp_headers["Location"] = uri;
 }
 
 time_t Handler::when() const {
@@ -307,29 +327,28 @@ void Handler::response(const string& d, const string& type) {
   resp_headers["Content-Type"] = (type == "" ? "text/plain" : type);
 }
 
-void Handler::response(const JSON& json) {
+void Handler::json(const JSON& json) {
   response(json.generate(),"application/json");
 }
 
 void Handler::file(const string& path, const string& type) {
   data = path;
   isfile = true;
-  FILE* fp = fopen(data.c_str(),"rb");
-  if (!fp) {
+  struct stat st;
+  stat(data.c_str(),&st);
+  if (!S_ISREG(st.st_mode)) {
     data = "";
     isfile = false;
     resp_headers.erase("Content-Length");
     resp_headers.erase("Content-Type");
     return;
   }
-  fclose(fp);
-  struct stat st;
-  stat(data.c_str(),&st);
   stringstream ss;
   ss << st.st_size;
   resp_headers["Content-Length"] = move(ss.str());
   if (type != "") { resp_headers["Content-Type"] = type; return; }
   static const map<string,string> exts{
+    {"txt"  , "text/plain"},
     {"html" , "text/html"},
     {"css"  , "text/css"},
     {"js"   , "application/javascript"},
@@ -344,7 +363,19 @@ void Handler::file(const string& path, const string& type) {
   };
   auto it = exts.find(ext(data));
   if (it != exts.end()) resp_headers["Content-Type"] = it->second;
-  else resp_headers["Content-Type"] = "application/octet-stream";
+  else resp_headers["Content-Type"] = "text/plain";
+}
+
+void Handler::attachment(const string& path) {
+  file(path);
+  if (!isfile) return;
+  string fn = path;
+  reverse(fn.begin(),fn.end());
+  auto sol = fn.find("/");
+  if (sol != string::npos) fn.erase(sol,string::npos);
+  reverse(fn.begin(),fn.end());
+  resp_headers["Content-Type"] = "application/octet-stream";
+  resp_headers["Content-Disposition"] = "attachment; filename=\""+fn+"\"";
 }
 
 Session* Handler::session() const {
@@ -354,6 +385,10 @@ Session* Handler::session() const {
 void Handler::session(Session* nsess) {
   delete sess;
   sess = nsess;
+}
+
+bool Handler::check_session() {
+  return false;
 }
 
 void Handler::init(int sd, time_t when, uint32_t ip) {
@@ -468,6 +503,12 @@ void Handler::handle() {
       if (cookie.size() == 8 && ishex(cookie)) sscanf(cookie.c_str(),"%x",&sid);
     }
     sess = load_session(sid);
+    if (sess && check_session()) {
+      delete sess;
+      sess = nullptr;
+      sid = 0;
+      load_session(sid);
+    }
     resp_headers["Set-Cookie"] = "sessionID="+hexstr(sid)+"; Max-Age=2592000";
     resp_headers["P3P"] = // to allow cookies
       "CP=\"CURa ADMa DEVa PSAo PSDo OUR BUS UNI PUR INT "

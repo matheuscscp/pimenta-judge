@@ -20,14 +20,13 @@
             <li><a href="#" onclick="submission()">Attempts</a></li>
             <li><a href="#" onclick="scoreboard()">Scoreboard</a></li>
             <li><a href="#" onclick="clarifications()">Clarifications</a></li>
-            <li><a href="?statement">Statement</a></li>
+            <li><a href="statement">Statement</a></li>
             <li><a href="#" onclick="logout()">Logout</a></li>
           </ul>
         </div>
         <div class="clear"></div>
       </div>
-      <div id="content">
-      </div>
+      <div id="content"></div>
       <div id="submission" style="display: none;">
         <h2>Send attempt</h2>
         <h4 id="response"></h4>
@@ -36,6 +35,9 @@
           <tr><td>File:</td><td><input id="file" type="file"></td></tr>
           <tr><td><button onclick="attempt()">Send</button></td></tr>
         </table>
+        <div id="enabled-langs"></div>
+        <div id="limits"></div>
+        <div id="runlist"></div>
       </div>
       <div id="clarifications" style="display: none;">
         <h2>Clarifications</h2>

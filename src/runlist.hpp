@@ -1,12 +1,10 @@
 #ifndef RUNLIST_H
 #define RUNLIST_H
 
-#include <string>
-
 namespace Runlist {
 
 void fire();
-void send(const std::string&, int);
+std::string query(const std::string&);
 
 } // namespace Runlist
 

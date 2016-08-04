@@ -5,8 +5,8 @@
 
 namespace Clarification {
 
-void send(const std::string&, int);
-void question(int, const std::string&, const std::string&, const std::string&);
+std::string query(const std::string&);
+std::string question(const std::string&,const std::string&,const std::string&);
 
 } // namespace Clarification
 

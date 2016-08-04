@@ -98,6 +98,8 @@ void unlock_nextid_file();
 void lock_question_file();
 void unlock_question_file();
 
+time_t remaining_time();
+
 } // namespace Global
 
 #endif

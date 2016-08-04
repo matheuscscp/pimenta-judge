@@ -44,30 +44,22 @@ static string clarifications(const string& team) {
 
 namespace Clarification {
 
-void send(const string& team, int sd) {
-  string response =
-    "HTTP/1.1 200 OK\r\n"
-    "Connection: close\r\r"
-    "Content-Type: text/html\r\n"
-    "\r\n"
+string query(const string& username) {
+  return
     "<table class=\"data\">\n"
       "<tr><th>Problem</th><th>Question</th><th>Answer</th></tr>\n"+
-       clarifications(team)+
+       clarifications(username)+
     "</table>\n"
   ;
-  write(sd, response.c_str(), response.size());
 }
 
-void question(
-  int sd, const string& team, const string& problem, const string& text
-) {
+string question(const string& team, const string& problem, const string& text) {
   Settings settings;
   
   // check time
   time_t now = time(nullptr);
   if (now < settings.begin || settings.end <= now) {
-    write(sd, "The contest is not running.", 27);
-    return;
+    return "The contest is not running.";
   }
   
   // check problem
@@ -75,15 +67,11 @@ void question(
     problem.size() == 0 || problem.size() > 1 ||
     problem[0] < 'A' || problem[0] > char('A' + settings.problems.size() - 1)
   ) {
-    write(sd, "Choose a problem!", 17);
-    return;
+    return "Choose a problem!";
   }
   
   // check text
-  if (text.size() == 0) {
-    write(sd, "Write something!", 16);
-    return;
-  }
+  if (text.size() == 0) return "Write something!";
   
   // save
   mkdir("questions", 0777);

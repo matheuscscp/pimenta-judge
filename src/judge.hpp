@@ -6,7 +6,7 @@
 namespace Judge {
 
 void fire();
-void attempt(int, const std::string&, int, Attempt);
+std::string attempt(const std::string&, const std::vector<uint8_t>&, Attempt);
 
 } // namespace Judge
 

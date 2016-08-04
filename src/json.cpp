@@ -712,6 +712,11 @@ const JSON* JSON::find_tuple(const string& key) const {
   return value->find_tuple(key);
 }
 
+bool JSON::parse(void* src) {
+  stringstream ss((char*)src);
+  return ss >> *this;
+}
+
 bool JSON::parse(const string& src) {
   stringstream ss(src);
   return ss >> *this;

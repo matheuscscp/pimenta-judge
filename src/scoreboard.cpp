@@ -150,26 +150,20 @@ void fire() {
   Global::fire(poller);
 }
 
-void send(int sd, bool freeze) {
+string query(bool freeze) {
   // make local copy of scoreboard
   pthread_mutex_lock(&frontbuf_mutex);
   string scoreboard(*frontbuf);
   pthread_mutex_unlock(&frontbuf_mutex);
   
-  // respond
   string frozen;
   if (freeze) frozen = " (frozen)";
-  string response =
-    "HTTP/1.1 200 OK\r\n"
-    "Connection: close\r\r"
-    "Content-Type: text/html\r\n"
-    "\r\n"
+  return
     "<h2>Scoreboard"+frozen+"</h2>\n"
     "<table class=\"data\">"+
     scoreboard+
     "</table>"
   ;
-  write(sd, response.c_str(), response.size());
 }
 
 } // namespace Scoreboard

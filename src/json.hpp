@@ -180,6 +180,7 @@ class JSON {
       return nullptr;
     }
     // I/O
+    bool parse(void*); // null terminated byte sequence
     bool parse(const std::string&);
     bool read_file(const std::string&);
     std::string generate(unsigned indent = 0) const; // 0 generates compact JSON

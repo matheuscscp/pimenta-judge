@@ -4,7 +4,7 @@
 namespace Scoreboard {
 
 void fire();
-void send(int, bool);
+std::string query(bool);
 
 } // namespace Scoreboard
 

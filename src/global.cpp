@@ -385,4 +385,10 @@ void unlock_question_file() {
   pthread_mutex_unlock(&questionfile_mutex);
 }
 
+time_t remaining_time() {
+  Settings settings;
+  time_t now = time(nullptr);
+  return (now < settings.begin ? 0 : max(0,int(settings.end-now)));
+}
+
 } // namespace Global

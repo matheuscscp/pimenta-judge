@@ -9,12 +9,16 @@
 namespace HTTP {
 
 // helpers
-std::string path(const std::vector<std::string>& segments); // valid iff != ""
+std::string path( // valid iff != ""
+  const std::vector<std::string>& segments,
+  const std::string& dir_path = ""
+);
 
 class Session {
   public:
     virtual ~Session();
     virtual Session* clone() const = 0;
+    static void destroy(const std::function<bool(const Session*)>&);
 };
 
 class Handler {
@@ -31,6 +35,7 @@ class Handler {
     );
     virtual void not_found();
     virtual void unauthorized(); // for routes with 'session required' flag
+    void location(const std::string&); // redirect
     // socket
     time_t when() const;
     uint32_t ip() const; // network endianness
@@ -55,12 +60,14 @@ class Handler {
       const std::string& version = "HTTP/1.1"
     );
     void header(const std::string& name, const std::string& value);
-    void response(const std::string& data, const std::string& type);
-    void response(const JSON&);
+    void response(const std::string& data,const std::string& type = "");
+    void json(const JSON&);
     void file(const std::string& path, const std::string& type = "");
+    void attachment(const std::string& path);
     // session
     Session* session() const;
     void session(Session*);
+    virtual bool check_session(); // return true if must reload
   // implementation
   private:
     // routing
