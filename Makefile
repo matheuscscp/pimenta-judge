@@ -33,4 +33,4 @@ install:
 	cp pjudge /usr/local/bin
 	rm -rf /usr/local/share/pjudge
 	mkdir /usr/local/share/pjudge
-	cp -rf www /usr/local/share/pjudge/www
+	cp -rf bundle/* /usr/local/share/pjudge

@@ -1,4 +1,3 @@
-- extract programmatically creation of files from global.cpp.
 - create updater module.
 - create msgqueue module.
 - check if pjudge is alive sending msg to queue, if user starts "again".

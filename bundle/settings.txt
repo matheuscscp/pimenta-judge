@@ -1,0 +1,11 @@
+Start:    2015 09 01 19 00
+Duration: 300
+Freeze:   60
+Blind:    15
+C:        enabled
+C++:      enabled
+Java:     enabled
+Python:   disabled
+Python3:  disabled
+A:        4 autojudge
+B:        3 manual

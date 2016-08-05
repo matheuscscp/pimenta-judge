@@ -272,56 +272,7 @@ static void update_loop() {
 namespace Global {
 
 void install(const string& dir) {
-  mkdir(dir.c_str(), 0777);
-  FILE* fp = fopen((dir+"/settings.txt").c_str(), "w");
-  fprintf(fp, 
-    "Start:    2015 09 01 19 00\n"
-    "Duration: 300\n"
-    "Freeze:   60\n"
-    "Blind:    15\n"
-    "C:        enabled\n"
-    "C++:      enabled\n"
-    "Java:     enabled\n"
-    "Python:   disabled\n"
-    "Python3:  disabled\n"
-    "A:        4 autojudge\n"
-    "B:        3 manual\n"
-  );
-  fclose(fp);
-  fp = fopen((dir+"/teams.txt").c_str(), "w");
-  fprintf(fp,
-    "\"Team 1\" team1username team1password\n"
-    "\"Team 2\" team2username team2password\n"
-    "\"Team 3\" team3username team3password\n"
-  );
-  fclose(fp);
-  fp = fopen((dir+"/clarifications.txt").c_str(), "w");
-  fprintf(fp,
-    "global A \"Problem A question available to all teams\" \"Answer\"\n"
-    "team1username B \"Problem B question privately answered to Team 1\""
-    " \"Answer\"\n"
-  );
-  fclose(fp);
-  mkdir((dir+"/problems").c_str(), 0777);
-  mkdir((dir+"/problems/A").c_str(), 0777);
-  mkdir((dir+"/problems/A/input").c_str(), 0777);
-  mkdir((dir+"/problems/A/output").c_str(), 0777);
-  mkdir((dir+"/problems/B").c_str(), 0777);
-  mkdir((dir+"/problems/B/input").c_str(), 0777);
-  mkdir((dir+"/problems/B/output").c_str(), 0777);
-  fp = fopen((dir+"/problems/A/input/file1_huge_case").c_str(), "w");
-  fclose(fp);
-  fp = fopen((dir+"/problems/A/input/file2").c_str(), "w");
-  fclose(fp);
-  fp = fopen((dir+"/problems/A/output/file1_huge_case").c_str(), "w");
-  fclose(fp);
-  fp = fopen((dir+"/problems/A/output/file2").c_str(), "w");
-  fclose(fp);
-  fp = fopen((dir+"/problems/B/input/file1").c_str(), "w");
-  fclose(fp);
-  fp = fopen((dir+"/problems/B/output/file1").c_str(), "w");
-  fclose(fp);
-  system("cp -rf /usr/local/share/pjudge/www %s/www", dir.c_str());
+  system("cp -rf /usr/local/share/pjudge %s", dir.c_str());
 }
 
 void start() {
