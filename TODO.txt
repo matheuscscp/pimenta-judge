@@ -1,3 +1,4 @@
+- extract programmatically creation of files from global.cpp.
 - create updater module.
 - create msgqueue module.
 - check if pjudge is alive sending msg to queue, if user starts "again".
@@ -5,7 +6,6 @@
 - implement settings module with command-line reload via msgqueue (unify files settings.txt, teams.txt and http settings in a json).
 - migrate color settings to settings.txt.
 - refactor judge compilation and running, with limits per language and settings.
-- extract programmatically creation of files from global.cpp.
 - main() commands.
 - implement safe computation (run untrusted code safely).
 - implement HTTPS.
