@@ -1,10 +1,7 @@
-- create updater module.
-- create msgqueue module.
-- check if pjudge is alive sending msg to queue, if user starts "again".
-- refactor web interface (extract HTML from compiled code and organize view).
 - implement settings module with command-line reload via msgqueue (unify files settings.txt, teams.txt and http settings in a json).
 - migrate color settings to settings.txt.
 - refactor judge compilation and running, with limits per language and settings.
+- refactor web interface (extract HTML from compiled code and organize view).
 - main() commands.
 - implement safe computation (run untrusted code safely).
 - implement HTTPS.

@@ -84,9 +84,9 @@ namespace Global {
 void install(const std::string&);
 void start();
 void stop();
-void rejudge(int, char);
 
 bool alive();
+void shutdown();
 
 void lock_att_file();
 void unlock_att_file();

@@ -10,10 +10,10 @@
 
 #include "global.hpp"
 
+#include "message.hpp"
 #include "judge.hpp"
 #include "runlist.hpp"
 #include "scoreboard.hpp"
-#include "rejudger.hpp"
 #include "webserver.hpp"
 
 using namespace std;
@@ -228,45 +228,59 @@ string to<string, in_addr_t>(const in_addr_t& x) {
   return ret;
 }
 
-struct Contest {
-  pid_t pid;
-  key_t key;
-  Contest(pid_t pid, key_t key) : pid(pid), key(key) {
-    FILE* fp = fopen("contest.bin", "wb");
-    fwrite(this, sizeof(Contest), 1, fp);
-    fclose(fp);
-  }
-  Contest() : pid(0), key(0) {
-    FILE* fp = fopen("contest.bin", "rb");
-    if (!fp) return;
-    fread(this, sizeof(Contest), 1, fp);
-    fclose(fp);
-    // TODO send msg to check pjudge is alive
-  }
-};
-
 static bool quit = false;
 static pthread_mutex_t attfile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t nextidfile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t questionfile_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int msqid;
 
-static key_t msgqueue() {
-  key_t key = 0x713e24a;
-  while ((msqid = msgget(key, (IPC_CREAT|IPC_EXCL)|0777)) < 0) key++;
-  return key;
-}
+class Contest {
+  public:
+    Contest() {
+      key_t key = msq.key();
+      FILE* fp = fopen("contest.bin", "wb");
+      fwrite(&key,sizeof key,1,fp);
+      fclose(fp);
+    }
+    ~Contest() {
+      remove("contest.bin");
+    }
+    void update() {
+      Runlist::update();
+      Scoreboard::update();
+      msq.update();
+    }
+    static bool alive() {
+      FILE* fp = fopen("contest.bin", "rb");
+      if (!fp) return false;
+      key_t key;
+      fread(&key,sizeof key,1,fp);
+      fclose(fp);
+      MessageQueue msq;
+      Message(PING,msq.key()).send(key);
+      return msq.receive(3).mtype == IMALIVE;
+    }
+    static bool stop() {
+      FILE* fp = fopen("contest.bin", "rb");
+      if (!fp) return false;
+      key_t key;
+      fread(&key,sizeof key,1,fp);
+      fclose(fp);
+      MessageQueue msq;
+      Message ping(PING,msq.key());
+      ping.send(key);
+      if (msq.receive(3).mtype != IMALIVE) return false;
+      Message(STOP).send(key);
+      do {
+        ping.send(key);
+      } while (msq.receive(1).mtype == IMALIVE);
+      return true;
+    }
+  private:
+    MessageQueue msq;
+};
 
 static void term(int) {
-  quit = true;
-}
-
-static void update_loop() {
-  while (!quit) {
-    Runlist::update();
-    Scoreboard::update();
-    usleep(25000);
-  }
+  Global::shutdown();
 }
 
 namespace Global {
@@ -276,38 +290,40 @@ void install(const string& dir) {
 }
 
 void start() {
-  if (Contest().pid) return; // pjudge already running
-  daemon(1,0); // fork with IO redirection to /dev/null
-  sleep(1); // if child run before parent returns... shit happens
-  Contest(getpid(), msgqueue()); // create msgqueue and contest.bin
-  signal(SIGTERM, term); // quit = true;
+  if (Contest::alive()) {
+    printf("pjudge is already running.\n");
+    return;
+  }
+  printf("pjudge started.\n");
+  if (daemon(1,0) < 0) { // fork with IO redirection to /dev/null
+    perror("pjudge stopped because daemon() failed");
+    _exit(-1);
+  }
+  Contest contest; // RAII
+  signal(SIGTERM, term); // Global::shutdown();
   signal(SIGPIPE, SIG_IGN); // avoid broken pipes termination signal
   pthread_t judge, webserver;
   pthread_create(&judge,nullptr,Judge::thread,nullptr);
   pthread_create(&webserver,nullptr,WebServer::thread,nullptr);
-  update_loop();
+  while (!quit) {
+    contest.update();
+    usleep(25000);
+  }
   pthread_join(judge,nullptr);
   pthread_join(webserver,nullptr);
-  remove("contest.bin");
-  msgctl(msqid, IPC_RMID, nullptr); // remove msgqueue
 }
 
 void stop() {
-  Contest c;
-  if (c.pid) kill(c.pid, SIGTERM);
-}
-
-void rejudge(int id, char verdict) {
-  Contest c;
-  if (!c.pid) Rejudger::rejudge(id, verdict);
-  else {
-    rejudgemsg msg(id, verdict);
-    msgsnd(msgget(c.key, 0), &msg, msg.size(), 0);
-  }
+  if (Contest::stop()) printf("pjudge stopped.\n");
+  else printf("pjudge is not running.\n");
 }
 
 bool alive() {
   return !quit;
+}
+
+void shutdown() {
+  quit = true;
 }
 
 void lock_att_file() {
