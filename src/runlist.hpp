@@ -3,7 +3,7 @@
 
 namespace Runlist {
 
-void fire();
+void update();
 std::string query(const std::string&);
 
 } // namespace Runlist

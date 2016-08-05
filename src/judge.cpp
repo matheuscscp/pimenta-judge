@@ -222,7 +222,10 @@ static void load_scripts() {
   };
 }
 
-static void* judger(void*) {
+namespace Judge {
+
+void* thread(void*) {
+  load_scripts();
   while (Global::alive()) {
     pthread_mutex_lock(&judger_mutex);
     if (jqueue.empty()) {
@@ -234,14 +237,6 @@ static void* judger(void*) {
     pthread_mutex_unlock(&judger_mutex);
     judge(qd.att,qd.lang,qd.path,qd.fn,qd.settings);
   }
-  return nullptr;
-}
-
-namespace Judge {
-
-void fire() {
-  load_scripts();
-  Global::fire(judger);
 }
 
 string attempt(

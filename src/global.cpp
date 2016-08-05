@@ -241,11 +241,11 @@ struct Contest {
     if (!fp) return;
     fread(this, sizeof(Contest), 1, fp);
     fclose(fp);
+    // TODO send msg to check pjudge is alive
   }
 };
 
 static bool quit = false;
-static list<pthread_t> threads;
 static pthread_mutex_t attfile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t nextidfile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t questionfile_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -258,11 +258,15 @@ static key_t msgqueue() {
 }
 
 static void term(int) {
-  msgctl(msqid, IPC_RMID, nullptr);
-  remove("contest.bin");
   quit = true;
-  for (pthread_t& thread : threads) pthread_join(thread, nullptr);
-  exit(0);
+}
+
+static void update_loop() {
+  while (!quit) {
+    Runlist::update();
+    Scoreboard::update();
+    usleep(25000);
+  }
 }
 
 namespace Global {
@@ -321,17 +325,20 @@ void install(const string& dir) {
 }
 
 void start() {
-  if (Contest().pid) return;
-  daemon(1,0);
-  sleep(1); // if child runs before parent... shit happens
-  Contest(getpid(), msgqueue());
-  signal(SIGTERM, term);
-  signal(SIGPIPE, SIG_IGN);
-  Judge::fire();
-  Runlist::fire();
-  Scoreboard::fire();
-  WebServer::fire();
-  for (pthread_t& thread : threads) pthread_join(thread, nullptr);
+  if (Contest().pid) return; // pjudge already running
+  daemon(1,0); // fork with IO redirection to /dev/null
+  sleep(1); // if child run before parent returns... shit happens
+  Contest(getpid(), msgqueue()); // create msgqueue and contest.bin
+  signal(SIGTERM, term); // quit = true;
+  signal(SIGPIPE, SIG_IGN); // avoid broken pipes termination signal
+  pthread_t judge, webserver;
+  pthread_create(&judge,nullptr,Judge::thread,nullptr);
+  pthread_create(&webserver,nullptr,WebServer::thread,nullptr);
+  update_loop();
+  pthread_join(judge,nullptr);
+  pthread_join(webserver,nullptr);
+  remove("contest.bin");
+  msgctl(msqid, IPC_RMID, nullptr); // remove msgqueue
 }
 
 void stop() {
@@ -350,11 +357,6 @@ void rejudge(int id, char verdict) {
 
 bool alive() {
   return !quit;
-}
-
-void fire(void* (*thread)(void*)) {
-  threads.emplace_back();
-  pthread_create(&threads.back(), nullptr, thread, nullptr);
 }
 
 void lock_att_file() {

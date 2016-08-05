@@ -22,7 +22,7 @@ namespace Rejudger {
 
 void fire(int msq) {
   msqid = msq;
-  Global::fire(rejudger);
+  //Global::fire(rejudger); FIXME
 }
 
 void rejudge(int id, char verdict) {

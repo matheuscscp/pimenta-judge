@@ -87,7 +87,6 @@ void stop();
 void rejudge(int, char);
 
 bool alive();
-void fire(void* (*)(void*));
 
 void lock_att_file();
 void unlock_att_file();

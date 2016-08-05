@@ -3,7 +3,7 @@
 
 namespace Scoreboard {
 
-void fire();
+void update();
 std::string query(bool);
 
 } // namespace Scoreboard

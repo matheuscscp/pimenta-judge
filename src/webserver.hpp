@@ -3,7 +3,7 @@
 
 namespace WebServer {
 
-void fire();
+void* thread(void*);
 
 } // namespace WebServer
 

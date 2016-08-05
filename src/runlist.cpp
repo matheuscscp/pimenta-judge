@@ -54,19 +54,13 @@ static void update() {
   pthread_mutex_unlock(&frontbuf_mutex);
 }
 
-static void* poller(void*) {
-  for (time_t nextupd = 0; Global::alive();) {
-    if (time(nullptr) < nextupd) { usleep(25000); continue; }
-    update();
-    nextupd = time(nullptr) + 5;
-  }
-  return nullptr;
-}
-
 namespace Runlist {
 
-void fire() {
-  Global::fire(poller);
+void update() {
+  static time_t nextupd = 0;
+  if (time(nullptr) < nextupd) return;
+  ::update();
+  nextupd = time(nullptr)+5;
 }
 
 string query(const string& username) {
