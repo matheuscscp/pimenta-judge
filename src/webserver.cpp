@@ -132,7 +132,9 @@ route("/runlist",[=](const vector<string>&) {
 },true);
 
 route("/scoreboard",[=](const vector<string>&) {
-  response(Scoreboard::query(Settings().freeze <= time(nullptr)));
+  response(Scoreboard::query(
+    time_t(Global::settings("contest","freeze")) <= time(nullptr)
+  ));
 },true);
 
 route("/clarifications",[=](const vector<string>&) {
@@ -140,16 +142,18 @@ route("/clarifications",[=](const vector<string>&) {
 },true);
 
 route("/statement",[=](const vector<string>&) {
-  if (time(nullptr) < Settings().begin) unauthorized();
+  if (time(nullptr)<time_t(Global::settings("contest","begin"))) unauthorized();
   else attachment("statement.pdf");
 },true);
 
 route("/status",[=](const vector<string>&) {
+  JSON contest(move(Global::settings("contest")));
+  for (auto& p : contest("problems").ait()) p.erase("autojudge");
   json(map<string,JSON>{
     {"teamname", castsess().teamname},
     {"rem_time", Global::remaining_time()},
-    {"en_langs", Settings().enabled_langs()},
-    {"limits"  , Settings().limits()}
+    {"en_langs", move(contest("languages"))},
+    {"limits"  , move(contest("problems"))}
   });
 },true);
 

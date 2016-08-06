@@ -58,89 +58,6 @@ string balloon_img(char p) {
   return ret + "\" />";
 }
 
-Settings::Settings() {
-  memset(this, 0, sizeof(::Settings));
-  fstream f("settings.txt");
-  if (!f.is_open()) return;
-  string tmp,tmp2;
-  {
-    int Y, M, D, h, m;
-    f >> tmp >> Y >> M >> D >> h >> m;
-    begin = time(nullptr);
-    tm ti;
-    localtime_r(&begin,&ti);
-    ti.tm_year = Y - 1900;
-    ti.tm_mon  = M - 1;
-    ti.tm_mday = D;
-    ti.tm_hour = h;
-    ti.tm_min  = m;
-    ti.tm_sec  = 0;
-    begin = mktime(&ti);
-  }
-  f >> tmp >> end;
-  end = begin + 60*end;
-  f >> tmp >> freeze;
-  freeze = end - 60*freeze;
-  f >> tmp >> blind;
-  blind = end - 60*blind;
-  set<string> langs;
-  f >> tmp >> tmp2;
-  if (tmp2 == "enabled") langs.insert(".c");
-  f >> tmp >> tmp2;
-  if (tmp2 == "enabled") langs.insert(".cpp");
-  f >> tmp >> tmp2;
-  if (tmp2 == "enabled") langs.insert(".java");
-  f >> tmp >> tmp2;
-  if (tmp2 == "enabled") langs.insert(".py");
-  f >> tmp >> tmp2;
-  if (tmp2 == "enabled") langs.insert(".py3");
-  this->langs = langs;
-  for (Problem p; f >> tmp >> p.timelimit >> tmp2;) {
-    p.autojudge = (tmp2 == "autojudge");
-    problems.push_back(p);
-  }
-}
-
-string Settings::enabled_langs() const {
-  string ans =
-    "<table class=\"data\">"
-      "<tr><th>Language</th><th>File extension</th><th>Flags</th></tr>"
-  ;
-  if (langs.find(".c") != langs.end())
-    ans += "<tr><td>C</td><td>.c</td><td>-std=c11 -lm</td></tr>";
-  if (langs.find(".cpp") != langs.end())
-    ans += "<tr><td>C++</td><td>.cpp</td><td>-std=c++1y</td></tr>";
-  if (langs.find(".java") != langs.end())
-    ans += "<tr><td>Java</td><td>.java</td><td></td></tr>";
-  if (langs.find(".py") != langs.end())
-    ans += "<tr><td>Python</td><td>.py</td><td></td></tr>";
-  if (langs.find(".py3") != langs.end())
-    ans += "<tr><td>Python 3</td><td>.py3</td><td></td></tr>";
-  return ans+"</table>";
-}
-
-string Settings::limits() const {
-  string ans =
-    "<table class=\"data\">"
-      "<tr><th>Problem</th>"
-  ;
-  for (int i = 0; i < problems.size(); i++) {
-    ans += "<th>"+to<string>(char(i+'A'))+"</th>";
-  }
-  ans +=
-      "</tr>"
-      "<tr><th>Time limit (s)</th>"
-  ;
-  for (int i = 0; i < problems.size(); i++) {
-    ans += "<td>"+to<string>(problems[i].timelimit)+"</td>";
-  }
-  ans +=
-      "</tr>"
-    "</table>"
-  ;
-  return ans;
-}
-
 bool Attempt::read(FILE* fp) {
   vector<string> fields;
   for (int i = 0; i < 8 && !feof(fp); i++) {
@@ -185,7 +102,6 @@ string Attempt::toHTMLtr(bool blind, bool is_first) const {
   ans += "<td>"+to<string>(id)+"</td>";
   ans += "<td>"+to<string>(problem)+"</td>";
   ans += "<td>"+to<string>(when)+"</td>";
-  ans += "<td>"+(verdict == TLE ? verdict_tolongs(TLE) : runtime)+"</td>";
   if (blind) ans += "<td>Blind attempt</td>";
   else {
     ans += "<td>";
@@ -203,16 +119,10 @@ string Attempt::getHTMLtrheader() {
       "<th>ID</th>"
       "<th>Problem</th>"
       "<th>Time (m)</th>"
-      "<th>Execution time (s)</th>"
       "<th>Answer</th>"
     "</tr>"
   ;
 }
-
-rejudgemsg::rejudgemsg(int id, char verdict)
-: mtype(1), id(id), verdict(verdict) {}
-
-size_t rejudgemsg::size() const { return sizeof(rejudgemsg)-sizeof(long); }
 
 static bool quit = false;
 static JSON settings;
@@ -359,13 +269,57 @@ void shutdown() {
 void load_settings() {
   pthread_mutex_lock(&settings_mutex);
   ::settings.read_file("settings.json");
+  JSON& contest = ::settings("contest");
+  // begin
+  auto& start = contest("start");
+  int Y = start("year");
+  int M = start("month");
+  int D = start("day");
+  int h = start("hour");
+  int m = start("minute");
+  contest.erase("start");
+  time_t begin = time(nullptr);
+  tm ti;
+  localtime_r(&begin,&ti);
+  ti.tm_year = Y - 1900;
+  ti.tm_mon  = M - 1;
+  ti.tm_mday = D;
+  ti.tm_hour = h;
+  ti.tm_min  = m;
+  ti.tm_sec  = 0;
+  begin = mktime(&ti);
+  contest("begin") = begin;
+  // end
+  time_t end = contest("duration");
+  contest.erase("duration");
+  end = begin + 60*end;
+  contest("end") = end;
+  // freeze
+  time_t freeze = contest("freeze");
+  freeze = end - 60*freeze;
+  contest("freeze") = freeze;
+  // blind
+  time_t blind = contest("blind");
+  blind = end - 60*blind;
+  contest("blind") = blind;
+  // languages
+  JSON& langs = contest("languages");
+  for (auto it = langs.begin_o(); it != langs.end_o();) {
+    if (!it->second("enabled")) langs.erase(it++);
+    else {
+      it->second.erase("enabled");
+      it++;
+    }
+  }
   pthread_mutex_unlock(&settings_mutex);
 }
 
 time_t remaining_time() {
-  Settings settings;
+  JSON contest(move(Global::settings("contest")));
+  time_t begin = contest("begin");
+  time_t end = contest("end");
   time_t now = time(nullptr);
-  return (now < settings.begin ? 0 : max(0,int(settings.end-now)));
+  return (now < begin ? 0 : max(0,int(end-now)));
 }
 
 } // namespace Global

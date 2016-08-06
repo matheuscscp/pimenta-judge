@@ -59,15 +59,18 @@ static void update() {
   };
   
   // read file
-  Settings settings;
+  JSON contest(move(Global::settings("contest")));
+  time_t begin = contest("begin");
+  time_t freeze = contest("freeze");
+  time_t blind = contest("blind");
+  auto nproblems = contest("problems").size();
   vector<Attempt> atts; Attempt att;
   Global::lock_att_file();
   FILE* fp = fopen("attempts.txt", "r");
   if (fp) {
     while (att.read(fp)) {
-      time_t when = settings.begin + 60*att.when;
-      if (settings.freeze <= when) continue;
-      if (settings.blind <= when) continue;
+      time_t when = begin + 60*att.when;
+      if (freeze <= when || blind <= when) continue;
       if (att.status == "judged") atts.push_back(att);
     }
     fclose(fp);
@@ -82,9 +85,7 @@ static void update() {
     if (it == entriesmap.end()) {
       Entry& entry = entriesmap[att.teamname];
       entry.team = att.teamname;
-      entry.problems = vector<problem_t>(
-        settings.problems.size(), make_pair(0, 0)
-      );
+      entry.problems = vector<problem_t>(nproblems,make_pair(0,0));
       if (att.verdict != AC) entry.problems[att.problem-'A'].first = -1;
       else {
         entry.problems[att.problem-'A'].first = 1;
@@ -114,7 +115,7 @@ static void update() {
   
   // update back buffer
   (*backbuf) = "<tr><th>#</th><th>Team</th>";
-  for (int i = 0; i < int(settings.problems.size()); i++) {
+  for (int i = 0; i < nproblems; i++) {
     (*backbuf) += "<th>";
     (*backbuf) += char(i+'A');
     (*backbuf) += "</th>";

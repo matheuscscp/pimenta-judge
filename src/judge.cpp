@@ -17,13 +17,12 @@
 
 using namespace std;
 
-typedef function<char(char, char*, char*, Settings&, int&)> Script;
+typedef function<char(char, char*, char*, int, int&)> Script;
 struct QueueData {
   Attempt att;
   string lang;
   string path;
   string fn;
-  Settings settings;
 };
 
 static map<string, Script> scripts;
@@ -31,14 +30,16 @@ static queue<QueueData> jqueue;
 static pthread_mutex_t judger_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void judge(
-  Attempt& att,
-  const string& lang, const string& path, const string& fn,
-  Settings& settings
+  Attempt& att, const string& lang, const string& path, const string& fn
 ) {
   // run
   int maxms = 0;
   att.verdict = scripts[lang](
-    att.problem, (char*)path.c_str(), (char*)fn.c_str(), settings, maxms
+    att.problem,
+    (char*)path.c_str(),
+    (char*)fn.c_str(),
+    Global::settings("contest","problems",att.problem-'A',"timelimit"),
+    maxms
   );
   att.runtime = stringf("%.3lf",maxms/1000.0);
   
@@ -81,12 +82,13 @@ static void judge(
   Global::unlock_att_file();
 }
 
-static string valid_filename(Settings& settings, const string& fn) {
-  if (!(('A' <= fn[0]) && (fn[0] <= ('A' + int(settings.problems.size())-1)))) {
+static string valid_filename(JSON& contest, const string& fn) {
+  if (!(('A' <= fn[0]) && (fn[0] <= ('A' + contest("problems").size()-1)))) {
     return "";
   }
+  auto& langs = contest("languages");
   string lang = fn.substr(1,fn.size());
-  return (settings.langs.find(lang) != settings.langs.end() ? lang : "");
+  return (langs.find(lang) != langs.end_o() ? lang : "");
 }
 
 static int genid() {
@@ -169,56 +171,26 @@ static char run(
   return ans;
 }
 static void load_scripts() {
-  scripts[".c"] = [](char p, char* path, char* fn, Settings& sets, int& ms) {
+  scripts[".c"] = [](char p, char* path, char* fn, int tl, int& ms) {
     int status = system("gcc -std=c11 %s -o %s%c -lm", fn, path, p);
     if (WEXITSTATUS(status)) return char(CE);
-    return run(
-      sets.problems[p-'A'].timelimit,
-      stringf("%s%c", path, p),
-      p,
-      path,
-      ms
-    );
+    return run(tl,stringf("%s%c",path,p),p,path,ms);
   };
-  scripts[".cpp"] = [](char p, char* path, char* fn, Settings& sets, int& ms) {
+  scripts[".cpp"] = [](char p, char* path, char* fn, int tl, int& ms) {
     int status = system("g++ -std=c++1y %s -o %s%c", fn, path, p);
     if (WEXITSTATUS(status)) return char(CE);
-    return run(
-      sets.problems[p-'A'].timelimit,
-      stringf("%s%c", path, p),
-      p,
-      path,
-      ms
-    );
+    return run(tl,stringf("%s%c",path,p),p,path,ms);
   };
-  scripts[".java"] = [](char p, char* path, char* fn, Settings& sets, int& ms) {
+  scripts[".java"] = [](char p, char* path, char* fn, int tl, int& ms) {
     int status = system("javac %s", fn);
     if (WEXITSTATUS(status)) return char(CE);
-    return run(
-      sets.problems[p-'A'].timelimit,
-      stringf("java -cp %s %c", path, p),
-      p,
-      path,
-      ms
-    );
+    return run(tl,stringf("java -cp %s %c",path,p),p,path,ms);
   };
-  scripts[".py"] = [](char p, char* path, char* fn, Settings& sets, int& ms) {
-    return run(
-      sets.problems[p-'A'].timelimit,
-      stringf("python %s", fn),
-      p,
-      path,
-      ms
-    );
+  scripts[".py"] = [](char p, char* path, char* fn, int tl, int& ms) {
+    return run(tl,stringf("python %s", fn),p,path,ms);
   };
-  scripts[".py3"] = [](char p, char* path, char* fn, Settings& sets, int& ms) {
-    return run(
-      sets.problems[p-'A'].timelimit,
-      stringf("python3 %s", fn),
-      p,
-      path,
-      ms
-    );
+  scripts[".py3"] = [](char p, char* path, char* fn, int tl, int& ms) {
+    return run(tl,stringf("python3 %s",fn),p,path,ms);
   };
 }
 
@@ -235,7 +207,7 @@ void* thread(void*) {
     }
     QueueData qd = jqueue.front(); jqueue.pop();
     pthread_mutex_unlock(&judger_mutex);
-    judge(qd.att,qd.lang,qd.path,qd.fn,qd.settings);
+    judge(qd.att,qd.lang,qd.path,qd.fn);
   }
 }
 
@@ -244,21 +216,23 @@ string attempt(
   const vector<uint8_t>& file,
   Attempt att
 ) {
-  Settings settings;
+  JSON contest(move(Global::settings("contest")));
+  time_t begin = contest("begin");
+  time_t end = contest("end");
   
   // check time
-  if (att.when < settings.begin || settings.end <= att.when) {
+  if (att.when < begin || end <= att.when) {
     return "The contest is not running.";
   }
-  att.when = int(round((att.when-settings.begin)/60.0));
+  att.when = int(round((att.when-begin)/60.0));
   
   // check file name
-  string lang = valid_filename(settings,file_name);
+  string lang = valid_filename(contest,file_name);
   if (lang == "") return "Invalid programming language!";
   att.problem = file_name[0];
   
   // set status
-  if (settings.problems[att.problem-'A'].autojudge) att.status = "judged";
+  if (contest("problems",att.problem-'A',"autojudge")) att.status = "judged";
   else att.status = "tojudge";
   
   // generate id
@@ -288,7 +262,6 @@ string attempt(
   qd.lang = lang;
   qd.path = path;
   qd.fn = fn;
-  qd.settings = settings;
   pthread_mutex_lock(&judger_mutex);
   jqueue.push(qd);
   pthread_mutex_unlock(&judger_mutex);

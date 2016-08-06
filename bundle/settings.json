@@ -1,0 +1,67 @@
+{
+  "webserver": {
+    "port": 8000,
+    "client_threads": 4,
+    "request": {
+      "timeout": 5,
+      "max_uri_size": 1024,
+      "max_header_size": 1024,
+      "max_headers": 1024,
+      "max_payload_size": 1048576
+    },
+    "session": {
+      "clean_period": 86400
+    }
+  },
+  "contest": {
+    "start": {
+      "year": 2016,
+      "month": 8,
+      "day": 6,
+      "hour": 1,
+      "minute": 0
+    },
+    "duration": 300,
+    "freeze": 60,
+    "blind": 15,
+    "languages": {
+      ".c": {
+        "name": "C",
+        "flags": "-std=c11 -lm",
+        "enabled": true
+      },
+      ".cpp": {
+        "name": "C++",
+        "flags": "-std=c++1y",
+        "enabled": true
+      },
+      ".java": {
+        "name": "Java",
+        "flags": "",
+        "enabled": true
+      },
+      ".py": {
+        "name": "Python",
+        "flags": "",
+        "enabled": false
+      },
+      ".py3": {
+        "name": "Python 3",
+        "flags": "",
+        "enabled": false
+      }
+    },
+    "problems": [
+      {
+        "name": "A",
+        "timelimit": 4,
+        "autojudge": true
+      },
+      {
+        "name": "B",
+        "timelimit": 3,
+        "autojudge": false
+      }
+    ]
+  }
+}

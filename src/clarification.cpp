@@ -54,18 +54,21 @@ string query(const string& username) {
 }
 
 string question(const string& team, const string& problem, const string& text) {
-  Settings settings;
+  JSON contest(move(Global::settings("contest")));
+  time_t begin = contest("begin");
+  time_t end = contest("end");
+  auto nproblems = contest("problems").size();
   
   // check time
   time_t now = time(nullptr);
-  if (now < settings.begin || settings.end <= now) {
+  if (now < begin || end <= now) {
     return "The contest is not running.";
   }
   
   // check problem
   if (
     problem.size() == 0 || problem.size() > 1 ||
-    problem[0] < 'A' || problem[0] > char('A' + settings.problems.size() - 1)
+    problem[0] < 'A' || problem[0] > char('A' + nproblems - 1)
   ) {
     return "Choose a problem!";
   }

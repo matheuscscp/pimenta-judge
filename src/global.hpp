@@ -14,19 +14,6 @@ std::string verdict_tos(int);
 std::string verdict_tolongs(int);
 std::string balloon_img(char);
 
-struct Settings {
-  struct Problem {
-    int timelimit;
-    bool autojudge;
-  };
-  time_t begin, end, freeze, blind;
-  std::set<std::string> langs;
-  std::vector<Problem> problems;
-  Settings();
-  std::string enabled_langs() const;
-  std::string limits() const;
-};
-
 struct Attempt {
   int id;
   char problem;
@@ -42,14 +29,6 @@ struct Attempt {
   bool operator<(const Attempt&) const;
   std::string toHTMLtr(bool, bool) const;
   static std::string getHTMLtrheader();
-};
-
-struct rejudgemsg {
-  long mtype;
-  int id;
-  char verdict;
-  rejudgemsg(int, char);
-  size_t size() const;
 };
 
 template <typename NewType, typename T>

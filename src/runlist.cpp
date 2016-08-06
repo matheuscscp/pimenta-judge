@@ -16,7 +16,9 @@ static pthread_mutex_t frontbuf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void update() {
   // read file
-  Settings settings;
+  JSON contest(move(Global::settings("contest")));
+  time_t begin = contest("begin");
+  time_t blind = contest("blind");
   vector<Attempt> atts;
   Global::lock_att_file();
   FILE* fp = fopen("attempts.txt", "r");
@@ -36,13 +38,12 @@ static void update() {
     string& s = buf[att.username];
     if (s == "") s = Attempt::getHTMLtrheader();
     auto& S = ACs[att.username];
-    bool blind = settings.blind <= settings.begin + 60*att.when;
     bool is_first =
       S.find(att.problem) == S.end() &&
       att.verdict == AC &&
       att.status == "judged"
     ;
-    s += att.toHTMLtr(blind,is_first);
+    s += att.toHTMLtr(blind <= begin + 60*att.when,is_first);
     if (is_first) S.insert(att.problem);
   }
   

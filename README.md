@@ -14,7 +14,7 @@ The currently supported programming languages are:
 ## Table of contents
 * [Installation](#installation)
 * [Usage](#usage)
-  * [VERY IMPORTANT WARNINGS AND HINTS](#very-important-warnings-and-hints)
+  * [Hints](#hints)
 * [Directory and file structure](#directory-and-file-structure)
   * [Automatically generated at contest creation](#automatically-generated-at-contest-creation)
   * [Optionally added by contest owner](#optionally-added-by-contest-owner)
@@ -43,10 +43,9 @@ Then access [http://localhost:8000/](http://localhost:8000/). To stop, type:
 $ pjudge stop
 ```
 
-### VERY IMPORTANT WARNINGS AND HINTS
-* (WARNING) Except for web sessions, `pjudge` completely relies on its file structure (described below). Anything you change in the directory will take effect without the need of a restart!
-* (Hint) All it takes to run a `pjudge` instance is a directory and a network port. So you can have multiple contests running in the same host!
-* (Hint) `pjudge` do *not* supports memory limit configuration. If you need it, feel free to use GNU/Linux commands, like `ulimit -a`, `ulimit -s` and `ulimit -v`, *before* starting `pjudge`!
+### Hints
+* All it takes to run a `pjudge` instance is a directory and a network port. So you can have multiple contests running in the same host!
+* `pjudge` do *not* supports memory limit configuration. If you need it, feel free to use GNU/Linux commands, like `ulimit -a`, `ulimit -s` and `ulimit -v`, *before* starting `pjudge`!
 
 ## Directory and file structure
 
@@ -55,7 +54,7 @@ $ pjudge stop
 | --------- | ----------------------------------------------- | --------------------- |
 | Directory | [`problems`](#directory-problems)               | Secret test cases     |
 | Directory | [`www`](#directory-www)                         | Web interface         |
-| File      | [`settings.txt`](#file-settingstxt)             | Time settings         |
+| File      | [`settings.json`](#file-settingsjson)           | General settings      |
 | File      | [`teams.txt`](#file-teamstxt)                   | User accounts         |
 | File      | [`clarifications.txt`](#file-clarificationstxt) | Clarification answers |
 
@@ -79,25 +78,76 @@ problems/
 #### Directory `www`
 Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of your contest! Just remember that some parts of the web stuff are C++ hard-coded. Whatever you don't find in the `www` folder, you will find in the C++ source code!
 
-#### File `settings.txt`
+#### File `settings.json`
+```json
+{
+  "webserver": {
+    "port": 8000,
+    "client_threads": 4,
+    "request": {
+      "timeout": 5,
+      "max_uri_size": 1024,
+      "max_header_size": 1024,
+      "max_headers": 1024,
+      "max_payload_size": 1048576
+    },
+    "session": {
+      "clean_period": 86400
+    }
+  },
+  "contest": {
+    "start": {
+      "year": 2016,
+      "month": 8,
+      "day": 6,
+      "hour": 1,
+      "minute": 0
+    },
+    "duration": 300,
+    "freeze": 60,
+    "blind": 15,
+    "languages": {
+      ".c": {
+        "name": "C",
+        "flags": "-std=c11 -lm",
+        "enabled": true
+      },
+      ".cpp": {
+        "name": "C++",
+        "flags": "-std=c++1y",
+        "enabled": true
+      },
+      ".java": {
+        "name": "Java",
+        "flags": "",
+        "enabled": true
+      },
+      ".py": {
+        "name": "Python",
+        "flags": "",
+        "enabled": false
+      },
+      ".py3": {
+        "name": "Python 3",
+        "flags": "",
+        "enabled": false
+      }
+    },
+    "problems": [
+      {
+        "name": "A",
+        "timelimit": 4,
+        "autojudge": true
+      },
+      {
+        "name": "B",
+        "timelimit": 3,
+        "autojudge": false
+      }
+    ]
+  }
+}
 ```
-Start:    2015 09 01 19 00
-Duration: 300
-Freeze:   60
-Blind:    15
-C:        enabled
-C++:      enabled
-Java:     enabled
-Python:   disabled
-Python3:  disabled
-A:        4 autojudge
-B:        3 manual
-```
-* `Start` follows the format YYYY MM DD hh mm.
-* `Duration`, `Freeze` and `Blind` are time in minutes.
-* `Duration` is relative to the beginning of the contest.
-* `Freeze` and `Blind` are relative to the end of the contest.
-* The first setting of a problem (the number) is the time limit in seconds.
 
 ##### WARNING
 Problems must be A, B, C and so on. No letter can be skipped! And remember to keep the alphabetical order!
@@ -156,4 +206,4 @@ where:
 * `Status` may be `judged` or `tojudge`. Only `judged` attempts will affect the scoreboard.
 
 ##### WARNING
-Problems with the `autojudge` setting will produce `judged` attempts, while problems with the `manual` setting will produce `tojudge` attempts.
+Problems with `autojudge` set to `true` will produce `judged` attempts. If `autojudge` is set to `false`, `tojudge` attempts will be produced instead.

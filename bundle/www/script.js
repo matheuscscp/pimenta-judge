@@ -72,9 +72,48 @@ function init_problems() {
   $("#clarification-problem").html(opts);
 }
 
+function lang_table(obj) {
+  var ans =
+    "<table class=\"data\">"+
+      "<tr><th>Language</th><th>File extension</th><th>Flags</th></tr>"
+  ;
+  for (var ext in obj) {
+    ans +=
+      "<tr><td>"+obj[ext].name+"</td>"+
+      "<td>"+ext+"</td>"+
+      "<td>"+obj[ext].flags+"</td></tr>"
+    ;
+  }
+  return ans+"</table>";
+}
+
+function limits_table(obj) {
+  var ans =
+    "<table class=\"data\">"+
+      "<tr><th>Problem</th>"
+  ;
+  for (var i = 0; i < obj.length; i++) {
+    ans += "<th>"+obj[i].name+"</th>";
+  }
+  ans +=
+    "</tr>"+
+    "<tr><th>Time limit (s)</th>"
+  ;
+  for (var i = 0; i < obj.length; i++) {
+    ans += "<td>"+obj[i].timelimit+"</td>";
+  }
+  ans +=
+      "</tr>"+
+    "</table>"
+  ;
+  return ans;
+}
+
 function init_data() {
   $.get("status",null,function(resp) {
     svstatus = resp;
+    svstatus.en_langs = lang_table(svstatus.en_langs);
+    svstatus.limits = limits_table(svstatus.limits);
     $("#teamname").html("Team: "+resp.teamname);
     remaining_time_json = {
       remaining_time: resp.rem_time,
