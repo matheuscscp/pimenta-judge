@@ -127,7 +127,7 @@ route("/scoreboard",[=](const vector<string>&) {
 },true);
 
 route("/clarifications",[=](const vector<string>&) {
-  response(Clarification::query(castsess().username));
+  json(Clarification::query(castsess().username));
 },true);
 
 route("/statement",[=](const vector<string>&) {

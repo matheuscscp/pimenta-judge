@@ -9,48 +9,41 @@
 
 using namespace std;
 
-static string clarifications(const string& team) {
+namespace Clarification {
+
+JSON query(const string& team) {
   struct clarification {
-    string str;
+    JSON obj;
     bool read(FILE* fp, const string& team) {
+      obj = JSON();
       string tmp;
       for (char c; fscanf(fp, "%c", &c) == 1 && c != ' '; tmp += c);
       if (tmp == "") return false;
       char problem;
       if (fscanf(fp, "%c", &problem) != 1) return false;
-      str  = "<tr>";
-      str += ("<td>"+to<string>(problem)+"</td><td>");
+      obj["problem"] = to<string>(problem);
       fgetc(fp);
       fgetc(fp);
+      string str;
       for (char c = fgetc(fp); c != '"' && c != EOF; str += c, c = fgetc(fp));
+      obj["question"] = str;
       fgetc(fp);
       fgetc(fp);
-      str += "</td><td>";
+      str = "";
       for (char c = fgetc(fp); c != '"' && c != EOF; str += c, c = fgetc(fp));
+      obj["answer"] = str;
       fgetc(fp);
-      str += "</td></tr>";
-      if (tmp != "global" && tmp != team) str = "";
+      if (tmp != "global" && tmp != team) obj = "false";
       return true;
     }
   };
   
+  JSON ans(vector<JSON>({}));
   FILE* fp = fopen("clarifications.txt", "r");
-  if (!fp) return "";
-  string buf;
-  for (clarification c; c.read(fp, team); buf += c.str);
+  if (!fp) return ans;
+  for (clarification c; c.read(fp, team);) if (c.obj) ans.push_back(c.obj);
   fclose(fp);
-  return buf;
-}
-
-namespace Clarification {
-
-string query(const string& username) {
-  return
-    "<table class=\"data\">\n"
-      "<tr><th>Problem</th><th>Question</th><th>Answer</th></tr>\n"+
-       clarifications(username)+
-    "</table>\n"
-  ;
+  return ans;
 }
 
 string question(const string& team, const string& problem, const string& text) {
