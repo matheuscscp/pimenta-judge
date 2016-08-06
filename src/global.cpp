@@ -214,20 +214,6 @@ rejudgemsg::rejudgemsg(int id, char verdict)
 
 size_t rejudgemsg::size() const { return sizeof(rejudgemsg)-sizeof(long); }
 
-void ignoresd(int sd) {
-  char* buf = new char[1 << 10];
-  while (read(sd, buf, 1 << 10) == (1 << 10));
-  delete[] buf;
-}
-
-template <>
-string to<string, in_addr_t>(const in_addr_t& x) {
-  char* ptr = (char*)&x;
-  string ret = to<string>(int(ptr[0])&0x0ff);
-  for (int i = 1; i < 4; i++) ret += ("."+to<string>(int(ptr[i])&0x0ff));
-  return ret;
-}
-
 static bool quit = false;
 static JSON settings;
 static pthread_mutex_t settings_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -268,6 +254,18 @@ class Contest {
 
 static void term(int) {
   Global::shutdown();
+}
+
+void lock_settings() {
+  pthread_mutex_lock(&settings_mutex);
+}
+
+void unlock_settings() {
+  pthread_mutex_unlock(&settings_mutex);
+}
+
+JSON& settings_ref() {
+  return settings;
 }
 
 namespace Global {
@@ -362,13 +360,6 @@ void load_settings() {
   pthread_mutex_lock(&settings_mutex);
   ::settings.read_file("settings.json");
   pthread_mutex_unlock(&settings_mutex);
-}
-
-JSON settings() {
-  pthread_mutex_lock(&settings_mutex);
-  JSON ans(::settings);
-  pthread_mutex_unlock(&settings_mutex);
-  return ans;
 }
 
 time_t remaining_time() {

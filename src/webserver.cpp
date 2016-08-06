@@ -55,13 +55,13 @@ class Session : public HTTP::Session {
       time_t now = time(nullptr);
       tm ti;
       char buf[20];
-      strftime(buf,20,"%d/%m/%Y %H:%M:%S",localtime_r(&now,&ti));
+      strftime(buf,20,"%H:%M:%S %d/%m/%Y",localtime_r(&now,&ti));
       log(stringf(
         "%s at %s: IP %s logged in while IP %s was already logged in.",
         username.c_str(),
         buf,
-        to<string>(ip).c_str(),
-        to<string>(oip).c_str()
+        HTTP::iptostr(ip).c_str(),
+        HTTP::iptostr(oip).c_str()
       ));
     }
     HTTP::Session* clone() const { return new Session(*this); }
@@ -115,7 +115,7 @@ route("/attempt",[=](const vector<string>&) {
   Attempt att;
   att.when = when();
   att.username = castsess().username;
-  att.ip = to<string>(ip());
+  att.ip = HTTP::iptostr(ip());
   att.teamname = castsess().teamname;
   response(Judge::attempt(header("file-name"),payload(),att));
 },true);
@@ -168,13 +168,13 @@ bool check_session() {
   time_t now = time(nullptr);
   tm ti;
   char buf[20];
-  strftime(buf,20,"%d/%m/%Y %H:%M:%S",localtime_r(&now,&ti));
+  strftime(buf,20,"%H:%M:%S %d/%m/%Y",localtime_r(&now,&ti));
   log(stringf(
     "%s at %s: IP %s tried to hack IP %s.",
     castsess().username.c_str(),
     buf,
-    to<string>(ip()).c_str(),
-    to<string>(castsess().ip).c_str()
+    HTTP::iptostr(ip()).c_str(),
+    HTTP::iptostr(castsess().ip).c_str()
   ));
   return true;
 }
@@ -185,9 +185,7 @@ namespace WebServer {
 
 void* thread(void*) {
   HTTP::server(
-    Global::alive,
-    Global::settings()["webserver"],
-    []() { return new Handler; }
+    Global::alive, Global::settings("webserver"), []() { return new Handler; }
   );
 }
 

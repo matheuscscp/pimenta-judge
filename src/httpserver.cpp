@@ -14,7 +14,7 @@
 
 using namespace std;
 
-// helpers
+// private helpers
 static bool hasws(const string& s) {
   for (char c : s) if (isspace(c)) return true;
   return false;
@@ -181,6 +181,14 @@ string path(const vector<string>& segments, const string& dir_path) {
   stat(ans.c_str(),&st);
   if (!S_ISREG(st.st_mode)) return "";
   return ans;
+}
+
+string iptostr(uint32_t ip) {
+  uint8_t* arr = (uint8_t*)&ip;
+  stringstream ss;
+  ss << int(arr[0]);
+  for (int i = 1; i < 4; i++) ss << "." << int(arr[i]);
+  return ss.str();
 }
 
 Session::~Session() {}

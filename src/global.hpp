@@ -6,8 +6,6 @@
 #include <vector>
 #include <sstream>
 
-#include <netinet/in.h>
-
 #include "json.hpp"
 
 enum {AC = 0, CE, RTE, TLE, WA, PE};
@@ -54,16 +52,12 @@ struct rejudgemsg {
   size_t size() const;
 };
 
-void ignoresd(int);
-
 template <typename NewType, typename T>
 NewType to(const T& x) {
   std::stringstream ss; ss << x;
   NewType ret; ss >> ret;
   return ret;
 }
-template <>
-std::string to<std::string, in_addr_t>(const in_addr_t&);
 
 template <typename... Args>
 std::string stringf(const char* fmt, Args... args) {
@@ -80,6 +74,10 @@ template <typename... Args>
 int system(const char* fmt, Args... args) {
   return ::system(stringf(fmt, args...).c_str());
 }
+
+void lock_settings();
+void unlock_settings();
+JSON& settings_ref();
 
 namespace Global {
 
@@ -99,8 +97,15 @@ bool alive();
 void shutdown();
 void load_settings();
 
-JSON settings();
 time_t remaining_time();
+
+template <typename... Args>
+JSON settings(Args... args) {
+  lock_settings();
+  JSON ans(settings_ref()(args...));
+  unlock_settings();
+  return ans;
+}
 
 } // namespace Global
 

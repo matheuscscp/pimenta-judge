@@ -9,6 +9,7 @@
 namespace HTTP {
 
 // helpers
+std::string iptostr(uint32_t netorderip);
 std::string path( // valid iff != ""
   const std::vector<std::string>& segments,
   const std::string& dir_path = ""
