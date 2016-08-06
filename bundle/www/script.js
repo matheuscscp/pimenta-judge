@@ -112,23 +112,8 @@ function init() {
   });
 }
 
-function data(key, cb) {
-  var xmlhttp;
-  if (window.XMLHttpRequest)
-    xmlhttp = new XMLHttpRequest();
-  else
-    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-  xmlhttp.onreadystatechange = function() {
-    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-      cb(xmlhttp.responseText);
-    }
-  }
-  xmlhttp.open("GET", key, true);
-  xmlhttp.send();
-}
-
 function show_data(key, tagid, before, after, cb) {
-  data(key, function(response) {
+  $.get(key,null,function(response) {
     document.getElementById(tagid).innerHTML = before+response+after;
     cb();
   });
@@ -141,14 +126,31 @@ function submission() {
   $("#limits").html(svstatus.limits);
   show_data("runlist","runlist","","",fix_balloons);
 }
+
 function scoreboard() {
   show_data("scoreboard", "content", "", "", fix_balloons);
 }
+
 function clarifications() {
-  show_data("clarifications", "content", document.getElementById("clarifications").innerHTML, "", function() {
-    document.getElementById("clarification-problem").focus();
+  $.get("clarifications",null,function(resp) {
+    var text = 
+      "<table class=\"data\">"+
+        "<tr><th>Problem</th><th>Question</th><th>Answer</th></tr>"
+    ;
+    for (var i = 0; i < resp.length; i++) {
+      text +=
+        "<tr>"+
+          "<td>"+resp[i].problem+"</td>"+
+          "<td>"+resp[i].question+"</td>"+
+          "<td>"+resp[i].answer+"</td>"+
+        "</tr>"
+      ;
+    }
+    $("#content").html($("#clarifications").html()+text);
+    $("#clarification-problem").focus();
   });
 }
+
 function logout() {
   var xmlhttp;
   if (window.XMLHttpRequest)
