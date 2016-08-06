@@ -1,17 +1,3 @@
-
-// keep the alphabetical order!
-var problems = [];
-problems["A"] = "#FF0000";
-problems["B"] = "#00FF00";
-problems["C"] = "#0000FF";
-problems["D"] = "#FF6600";
-problems["E"] = "#006600";
-problems["F"] = "#003399";
-problems["G"] = "#FFCC00";
-problems["H"] = "#FFFFFF";
-problems["I"] = "#000000";
-problems["J"] = "#FFFF00";
-
 function fix_balloons() {
   jQuery.get(jQuery("img.svg").attr("src"), function(data) {
     var $svg = jQuery(data).find("svg");
@@ -21,8 +7,8 @@ function fix_balloons() {
       $svgtmp.attr("class", $img.attr("class"));
       $img.replaceWith($svgtmp);
     });
-    for (p in problems) {
-      $(".balloon."+p+" > path.balloonfill").css("fill", problems[p]);
+    for (var i = 0; i < svstatus.problems.length; i++) {
+      $(".balloon."+svstatus.problems[i].name+" > path.balloonfill").css("fill",svstatus.problems[i].color);
     }
   });
 }
@@ -53,23 +39,6 @@ function login() {
   xmlhttp.send(JSON.stringify({team: team.value, password: pass.value}));
   team.value = "";
   pass.value = "";
-}
-
-function init() {
-  init_problems();
-  init_data();
-}
-
-function init_problems() {
-  totalproblems = 0;
-  for (p in problems) totalproblems++;
-  opts = "<option></option>";
-  for (i = 0; i < totalproblems; i++) {
-    prob = String.fromCharCode(65+i);
-    opts += ("<option value=\""+prob+"\">"+prob+"</option>");
-  }
-  $("#submission-problem").html(opts);
-  $("#clarification-problem").html(opts);
 }
 
 function lang_table(obj) {
@@ -109,11 +78,22 @@ function limits_table(obj) {
   return ans;
 }
 
-function init_data() {
+function init_problems() {
+  opts = "<option></option>";
+  for (i = 0; i < svstatus.problems.length; i++) {
+    prob = String.fromCharCode(65+i);
+    opts += ("<option value=\""+prob+"\">"+prob+"</option>");
+  }
+  $("#submission-problem").html(opts);
+  $("#clarification-problem").html(opts);
+}
+
+function init() {
   $.get("status",null,function(resp) {
     svstatus = resp;
-    svstatus.en_langs = lang_table(svstatus.en_langs);
-    svstatus.limits = limits_table(svstatus.limits);
+    svstatus.languages = lang_table(svstatus.languages);
+    svstatus.limits = limits_table(svstatus.problems);
+    init_problems();
     $("#teamname").html("Team: "+resp.teamname);
     remaining_time_json = {
       remaining_time: resp.rem_time,
@@ -157,7 +137,7 @@ function show_data(key, tagid, before, after, cb) {
 function submission() {
   $("#content").html($("#submission").html());
   $("#submission-problem").focus();
-  $("#enabled-langs").html(svstatus.en_langs);
+  $("#enabled-langs").html(svstatus.languages);
   $("#limits").html(svstatus.limits);
   show_data("runlist","runlist","","",fix_balloons);
 }

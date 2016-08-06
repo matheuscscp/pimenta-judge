@@ -38,7 +38,11 @@ struct JSONValue {
   virtual void push_back(const JSON&) = 0;
   virtual void push_back(JSON&&) = 0;
   virtual JSON& operator[](size_t i) = 0;
-  virtual size_t erase(size_t, size_t) = 0;
+  virtual vector<JSON>::iterator erase(vector<JSON>::iterator) = 0;
+  virtual vector<JSON>::iterator erase(
+    vector<JSON>::iterator,
+    vector<JSON>::iterator
+  ) = 0;
   virtual vector<JSON>::iterator begin_a() = 0;
   virtual vector<JSON>::iterator end_a() = 0;
   virtual vector<JSON>::const_iterator begin_a() const = 0;
@@ -106,7 +110,10 @@ struct String : public JSONValue {
   JSON& operator[](size_t) {
     
   }
-  size_t erase(size_t, size_t) {
+  vector<JSON>::iterator erase(vector<JSON>::iterator) {
+    
+  }
+  vector<JSON>::iterator erase(vector<JSON>::iterator,vector<JSON>::iterator) {
     
   }
   vector<JSON>::iterator begin_a() {
@@ -190,7 +197,10 @@ struct Object : public JSONValue {
   JSON& operator[](size_t) {
     
   }
-  size_t erase(size_t, size_t) {
+  vector<JSON>::iterator erase(vector<JSON>::iterator) {
+    
+  }
+  vector<JSON>::iterator erase(vector<JSON>::iterator,vector<JSON>::iterator) {
     
   }
   vector<JSON>::iterator begin_a() {
@@ -289,13 +299,14 @@ struct Array : public JSONValue {
   JSON& operator[](size_t i) {
     return v[i];
   }
-  size_t erase(size_t L, size_t R) {
-    auto it = (
-      R ?
-      v.erase(v.begin()+L,v.begin()+min(R,v.size())) :
-      v.erase(v.begin()+L)
-    );
-    return it-v.begin();
+  vector<JSON>::iterator erase(vector<JSON>::iterator position) {
+    return v.erase(position);
+  }
+  vector<JSON>::iterator erase(
+    vector<JSON>::iterator first,
+    vector<JSON>::iterator last
+  ) {
+    return v.erase(first,last);
   }
   vector<JSON>::iterator begin_a() {
     return v.begin();
@@ -637,8 +648,15 @@ const JSON& JSON::operator[](size_t i) const {
   return (*value)[i];
 }
 
-size_t JSON::erase(size_t L, size_t R) {
-  value->erase(L,R);
+vector<JSON>::iterator JSON::erase(vector<JSON>::iterator position) {
+  return value->erase(position);
+}
+
+vector<JSON>::iterator JSON::erase(
+  vector<JSON>::iterator first,
+  vector<JSON>::iterator last
+) {
+  return value->erase(first,last);
 }
 
 JSON::array_iterator JSON::ait() {

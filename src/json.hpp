@@ -143,7 +143,11 @@ class JSON {
     }
     JSON& operator[](size_t i);
     const JSON& operator[](size_t i) const;
-    size_t erase(size_t L, size_t R = 0); // [L, R) or just L if R = 0
+    std::vector<JSON>::iterator erase(std::vector<JSON>::iterator position);
+    std::vector<JSON>::iterator erase( // remove range [first, last)
+      std::vector<JSON>::iterator first,
+      std::vector<JSON>::iterator last
+    );
     array_iterator ait();
     std::vector<JSON>::iterator begin_a();
     std::vector<JSON>::iterator end_a();

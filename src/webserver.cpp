@@ -139,10 +139,10 @@ route("/status",[=](const vector<string>&) {
   JSON contest(move(Global::settings("contest")));
   for (auto& p : contest("problems").ait()) p.erase("autojudge");
   json(map<string,JSON>{
-    {"teamname", castsess().teamname},
-    {"rem_time", Global::remaining_time()},
-    {"en_langs", move(contest("languages"))},
-    {"limits"  , move(contest("problems"))}
+    {"teamname" , castsess().teamname},
+    {"rem_time" , Global::remaining_time()},
+    {"languages", move(contest("languages"))},
+    {"problems" , move(contest("problems"))}
   });
 },true);
 

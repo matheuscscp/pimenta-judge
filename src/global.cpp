@@ -311,6 +311,15 @@ void load_settings() {
       it++;
     }
   }
+  // problems
+  JSON& probs = contest("problems");
+  for (int i = 0; i < probs.size();) {
+    if (!probs[i]("enabled")) probs.erase(probs.begin_a()+i);
+    else {
+      probs[i].erase("enabled");
+      i++;
+    }
+  }
   pthread_mutex_unlock(&settings_mutex);
 }
 
