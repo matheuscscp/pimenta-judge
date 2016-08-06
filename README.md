@@ -55,7 +55,6 @@ $ pjudge stop
 | Directory | [`problems`](#directory-problems)               | Secret test cases     |
 | Directory | [`www`](#directory-www)                         | Web interface         |
 | File      | [`settings.json`](#file-settingsjson)           | General settings      |
-| File      | [`teams.txt`](#file-teamstxt)                   | User accounts         |
 | File      | [`clarifications.txt`](#file-clarificationstxt) | Clarification answers |
 
 #### Directory `problems`
@@ -145,19 +144,26 @@ Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify t
         "autojudge": false
       }
     ]
+  },
+  "teams": {
+    "team1username": {
+      "fullname": "Team 1 Name",
+      "password": "team1password"
+    },
+    "team2username": {
+      "fullname": "Team 2 Name",
+      "password": "team2password"
+    },
+    "team3username": {
+      "fullname": "Team 3 Name",
+      "password": "team3password"
+    }
   }
 }
 ```
 
 ##### WARNING
 Problems must be A, B, C and so on. No letter can be skipped! And remember to keep the alphabetical order!
-
-#### File `teams.txt`
-```
-"Team 1" team1username team1password
-"Team 2" team2username team2password
-"Team 3" team3username team3password
-```
 
 #### File `clarifications.txt`
 ```

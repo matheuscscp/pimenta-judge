@@ -21,21 +21,10 @@ static bool eqip(uint32_t a, uint32_t b) {
 }
 
 static string find_teamname(const string& username, const string& password) {
-  FILE* fp = fopen("teams.txt", "r");
-  if (!fp) return "";
-  string name;
-  for (fgetc(fp); name == "" && !feof(fp); fgetc(fp)) {
-    string ntmp;
-    for (char c = fgetc(fp); c != '"' && !feof(fp); c = fgetc(fp)) ntmp += c;
-    fgetc(fp);
-    string tmp;
-    for (char c = fgetc(fp); c != ' ' && !feof(fp); c = fgetc(fp)) tmp += c;
-    string pass;
-    for (char c = fgetc(fp); c != '\n' && !feof(fp); c = fgetc(fp)) pass += c;
-    if (username == tmp && password == pass) name = ntmp;
-  }
-  fclose(fp);
-  return name;
+  JSON teams(move(Global::settings("teams")));
+  JSON* user = (JSON*)teams.find_tuple(username);
+  if (!user || (*user)("password").str() != password) return "";
+  return (*user)("fullname");
 }
 
 class Session : public HTTP::Session {

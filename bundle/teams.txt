@@ -1,3 +1,0 @@
-"Team 1" team1username team1password
-"Team 2" team2username team2password
-"Team 3" team3username team3password
