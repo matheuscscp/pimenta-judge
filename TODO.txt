@@ -1,9 +1,10 @@
+- migrate attempt data from txt to json with periodic writes to a file.
 - refactor web interface (extract HTML from compiled code and organize view).
 - refactor judge compilation and running. add limits per language. use settings.
 - implement flexible problem names (remove char-'A' based indexes).
 - main() commands.
-- implement safe computation (run untrusted code safely).
-- implement HTTPS.
 - web system for judges (manual judging and clarifications).
 - web system for staff (balloons and prints).
+- implement safe computation (run untrusted code safely).
+- implement HTTPS.
 - ulimit -s and ulimit -v.
