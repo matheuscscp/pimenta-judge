@@ -8,6 +8,8 @@
 
 #include <netinet/in.h>
 
+#include "json.hpp"
+
 enum {AC = 0, CE, RTE, TLE, WA, PE};
 int verdict_toi(const std::string&);
 std::string verdict_tos(int);
@@ -84,9 +86,7 @@ namespace Global {
 void install(const std::string&);
 void start();
 void stop();
-
-bool alive();
-void shutdown();
+void reload_settings();
 
 void lock_att_file();
 void unlock_att_file();
@@ -95,6 +95,11 @@ void unlock_nextid_file();
 void lock_question_file();
 void unlock_question_file();
 
+bool alive();
+void shutdown();
+void load_settings();
+
+JSON settings();
 time_t remaining_time();
 
 } // namespace Global

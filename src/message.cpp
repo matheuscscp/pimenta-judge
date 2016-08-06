@@ -23,6 +23,9 @@ void Message::process() {
     case STOP:
       Global::shutdown();
       break;
+    case RELOAD:
+      Global::load_settings();
+      break;
   }
 }
 

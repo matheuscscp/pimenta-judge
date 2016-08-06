@@ -184,9 +184,11 @@ bool check_session() {
 namespace WebServer {
 
 void* thread(void*) {
-  JSON j;
-  j.read_file("settings.json");
-  HTTP::server(Global::alive,j["webserver"],[]() { return new Handler; });
+  HTTP::server(
+    Global::alive,
+    Global::settings()["webserver"],
+    []() { return new Handler; }
+  );
 }
 
 } // namespace WebServer

@@ -3,7 +3,7 @@
 
 #include <sys/types.h>
 
-enum {NOMSG=0,PING,IMALIVE,STOP};
+enum {NOMSG=0,PING,IMALIVE,STOP,RELOAD};
 struct Message {
   long mtype;
   struct {

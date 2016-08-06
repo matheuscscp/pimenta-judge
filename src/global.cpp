@@ -229,6 +229,8 @@ string to<string, in_addr_t>(const in_addr_t& x) {
 }
 
 static bool quit = false;
+static JSON settings;
+static pthread_mutex_t settings_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t attfile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t nextidfile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t questionfile_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -249,31 +251,16 @@ class Contest {
       Scoreboard::update();
       msq.update();
     }
-    static bool alive() {
+    static key_t alive() {
       FILE* fp = fopen("contest.bin", "rb");
-      if (!fp) return false;
+      if (!fp) return 0;
       key_t key;
       fread(&key,sizeof key,1,fp);
       fclose(fp);
       MessageQueue msq;
       Message(PING,msq.key()).send(key);
-      return msq.receive(3).mtype == IMALIVE;
-    }
-    static bool stop() {
-      FILE* fp = fopen("contest.bin", "rb");
-      if (!fp) return false;
-      key_t key;
-      fread(&key,sizeof key,1,fp);
-      fclose(fp);
-      MessageQueue msq;
-      Message ping(PING,msq.key());
-      ping.send(key);
-      if (msq.receive(3).mtype != IMALIVE) return false;
-      Message(STOP).send(key);
-      do {
-        ping.send(key);
-      } while (msq.receive(1).mtype == IMALIVE);
-      return true;
+      if (msq.receive(3).mtype != IMALIVE) return 0;
+      return key;
     }
   private:
     MessageQueue msq;
@@ -302,6 +289,7 @@ void start() {
   Contest contest; // RAII
   signal(SIGTERM, term); // Global::shutdown();
   signal(SIGPIPE, SIG_IGN); // avoid broken pipes termination signal
+  load_settings();
   pthread_t judge, webserver;
   pthread_create(&judge,nullptr,Judge::thread,nullptr);
   pthread_create(&webserver,nullptr,WebServer::thread,nullptr);
@@ -314,16 +302,28 @@ void start() {
 }
 
 void stop() {
-  if (Contest::stop()) printf("pjudge stopped.\n");
-  else printf("pjudge is not running.\n");
+  key_t key = Contest::alive();
+  if (!key) {
+    printf("pjudge is not running.\n");
+    return;
+  }
+  Message(STOP).send(key);
+  MessageQueue msq;
+  Message ping(PING,msq.key());
+  do {
+    ping.send(key);
+  } while (msq.receive(1).mtype == IMALIVE);
+  printf("pjudge stopped.\n");
 }
 
-bool alive() {
-  return !quit;
-}
-
-void shutdown() {
-  quit = true;
+void reload_settings() {
+  key_t key = Contest::alive();
+  if (!key) {
+    printf("pjudge is not running.\n");
+    return;
+  }
+  Message(RELOAD).send(key);
+  printf("pjudge reloaded settings.\n");
 }
 
 void lock_att_file() {
@@ -348,6 +348,27 @@ void lock_question_file() {
 
 void unlock_question_file() {
   pthread_mutex_unlock(&questionfile_mutex);
+}
+
+bool alive() {
+  return !quit;
+}
+
+void shutdown() {
+  quit = true;
+}
+
+void load_settings() {
+  pthread_mutex_lock(&settings_mutex);
+  ::settings.read_file("settings.json");
+  pthread_mutex_unlock(&settings_mutex);
+}
+
+JSON settings() {
+  pthread_mutex_lock(&settings_mutex);
+  JSON ans(::settings);
+  pthread_mutex_unlock(&settings_mutex);
+  return ans;
 }
 
 time_t remaining_time() {

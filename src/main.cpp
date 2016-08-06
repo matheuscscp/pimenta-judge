@@ -8,20 +8,21 @@ static void usagemode() {
     "Usage mode: %s [options...]\n"
     "\n"
     "Options:\n"
-    "  install  <new directory name without trailing slash>\n"
+    "  install <new directory name without trailing slash>\n"
     "  start\n"
     "  stop\n"
-    "  gp       <list of problems by capital letter>\n"
-    "  ga       <(possibly empty) list of problems by capital letter>\n"
-    "  rid      <attempt id>\n"
-    "  rp       <list of problems by capital letter>\n"
-    "  ra       <(possibly empty) list of problems by capital letter>\n"
+    "  reload-settings (does not work for webserver settings)\n"
+    "  gp <list of problems by capital letter>\n"
+    "  ga <(possibly empty) list of problems by capital letter>\n"
+    "  rid <attempt id>\n"
+    "  rp <list of problems by capital letter>\n"
+    "  ra <(possibly empty) list of problems by capital letter>\n"
     "\n"
-    "gp:  Generate expected outputs for a set of problems.\n"
-    "ga   Generate expected outputs for ALL problems, except for a set.\n"
+    "gp: Generate expected outputs for a subset of problems.\n"
+    "ga: Generate expected outputs for ALL problems, except for a subset.\n"
     "rid: Re-run attempt by id.\n"
-    "rp:  Re-run ALL attempts for a set of problems.\n"
-    "ra:  Re-run ALL attempts, except for a set of problems.\n",
+    "rp: Re-run ALL attempts for a set of problems.\n"
+    "ra: Re-run ALL attempts, except for a set of problems.\n",
     exe
   );
 }
@@ -39,6 +40,9 @@ int main(int argc, char** argv) {
   }
   else if (mode == "stop") {
     Global::stop();
+  }
+  else if (mode == "reload-settings") {
+    Global::reload_settings();
   }
   else usagemode();
   return 0;
