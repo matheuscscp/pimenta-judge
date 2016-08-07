@@ -11,6 +11,7 @@
 
 #include "judge.hpp"
 
+#include "helper.hpp"
 #include "global.hpp"
 
 using namespace std;

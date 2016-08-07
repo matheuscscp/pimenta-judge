@@ -2,6 +2,7 @@
 
 #include "scoreboard.hpp"
 
+#include "helper.hpp"
 #include "global.hpp"
 #include "attempt.hpp"
 
