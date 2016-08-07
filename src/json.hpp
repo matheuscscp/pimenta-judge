@@ -133,6 +133,8 @@ class JSON {
     object_const_iterator oit() const;
     std::map<std::string,JSON>::const_iterator begin_o() const;
     std::map<std::string,JSON>::const_iterator end_o() const;
+    std::map<std::string,JSON>& obj();
+    const std::map<std::string,JSON>& obj() const;
     // array API
     bool isarr() const;
     void push_back(const JSON&);

@@ -11,25 +11,6 @@
 enum {AC = 0, CE, RTE, TLE, WA, PE};
 int verdict_toi(const std::string&);
 std::string verdict_tos(int);
-std::string verdict_tolongs(int);
-std::string balloon_img(char);
-
-struct Attempt {
-  int id;
-  char problem;
-  char verdict;
-  int when;
-  std::string runtime;
-  std::string username;
-  std::string ip;
-  std::string teamname;
-  std::string status;
-  bool read(FILE*);
-  void write(FILE*) const;
-  bool operator<(const Attempt&) const;
-  std::string toHTMLtr(bool, bool) const;
-  static std::string getHTMLtrheader();
-};
 
 template <typename NewType, typename T>
 NewType to(const T& x) {
@@ -60,15 +41,15 @@ JSON& settings_ref();
 
 namespace Global {
 
+extern JSON attempts;
+
 void install(const std::string&);
 void start();
 void stop();
 void reload_settings();
 
-void lock_att_file();
-void unlock_att_file();
-void lock_nextid_file();
-void unlock_nextid_file();
+void lock_attempts();
+void unlock_attempts();
 void lock_question_file();
 void unlock_question_file();
 
@@ -77,7 +58,6 @@ void shutdown();
 void load_settings();
 
 time_t remaining_time();
-
 template <typename... Args>
 JSON settings(Args... args) {
   lock_settings();

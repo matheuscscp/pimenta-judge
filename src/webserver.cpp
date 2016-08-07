@@ -20,9 +20,9 @@ static bool eqip(uint32_t a, uint32_t b) {
   return a == b;
 }
 
-static string find_teamname(const string& username, const string& password) {
-  JSON teams(move(Global::settings("teams")));
-  JSON* user = (JSON*)teams.find_tuple(username);
+static string find_fullname(const string& username, const string& password) {
+  JSON users(move(Global::settings("users")));
+  JSON* user = (JSON*)users.find_tuple(username);
   if (!user || (*user)("password").str() != password) return "";
   return (*user)("fullname");
 }
@@ -30,9 +30,9 @@ static string find_teamname(const string& username, const string& password) {
 class Session : public HTTP::Session {
   public:
     uint32_t ip;
-    string username,teamname;
-    Session(uint32_t ip, const string& u, const string& t) :
-    ip(ip), username(u), teamname(t) {
+    string username,fullname;
+    Session(uint32_t ip, const string& u, const string& f) :
+    ip(ip), username(u), fullname(f) {
       uint32_t oip = -1;
       destroy([&](const HTTP::Session* sess) {
         auto& ref = *(Session*)sess;
@@ -81,16 +81,16 @@ route("/login",[=](const vector<string>&) {
   data.push_back(0);
   JSON json;
   json.parse(&data[0]);
-  if (!json.find_tuple("team") || !json.find_tuple("password")) {
-    response("Invalid team/password!");
+  if (!json.find_tuple("username") || !json.find_tuple("password")) {
+    response("Invalid username/password!");
     return;
   }
-  string tname = find_teamname(json["team"],json["password"]);
-  if (tname == "") {
-    response("Invalid team/password!");
+  string fullname = find_fullname(json["username"],json["password"]);
+  if (fullname == "") {
+    response("Invalid username/password!");
     return;
   }
-  session(new Session(ip(),json["team"],tname));
+  session(new Session(ip(),json["username"],fullname));
   response("ok");
 });
 
@@ -101,12 +101,10 @@ route("/logout",[=](const vector<string>&) {
 
 route("/attempt",[=](const vector<string>&) {
   if (method() != "POST") { location("/"); return; }
-  Attempt att;
-  att.when = when();
-  att.username = castsess().username;
-  att.ip = HTTP::iptostr(ip());
-  att.teamname = castsess().teamname;
-  response(Judge::attempt(header("file-name"),payload(),att));
+  Attempt* att  = new Attempt;
+  att->username = castsess().username;
+  att->ip       = HTTP::iptostr(ip());
+  response(Judge::attempt(header("file-name"),payload(),att,when()));
 },true);
 
 route("/question",[=](const vector<string>&) {
@@ -117,13 +115,11 @@ route("/question",[=](const vector<string>&) {
 },true);
 
 route("/runlist",[=](const vector<string>&) {
-  response(Runlist::query(castsess().username));
+  response(Runlist::query(castsess().username),"application/json");
 },true);
 
 route("/scoreboard",[=](const vector<string>&) {
-  response(Scoreboard::query(
-    time_t(Global::settings("contest","freeze")) <= time(nullptr)
-  ));
+  response(Scoreboard::query(),"application/json");
 },true);
 
 route("/clarifications",[=](const vector<string>&) {
@@ -139,7 +135,7 @@ route("/status",[=](const vector<string>&) {
   JSON contest(move(Global::settings("contest")));
   for (auto& p : contest("problems").ait()) p.erase("autojudge");
   json(map<string,JSON>{
-    {"teamname" , castsess().teamname},
+    {"fullname" , castsess().fullname},
     {"rem_time" , Global::remaining_time()},
     {"languages", move(contest("languages"))},
     {"problems" , move(contest("problems"))}

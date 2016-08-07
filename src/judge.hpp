@@ -1,12 +1,17 @@
 #ifndef JUDGE_H
 #define JUDGE_H
 
-#include "global.hpp"
+#include "attempt.hpp"
 
 namespace Judge {
 
 void* thread(void*);
-std::string attempt(const std::string&, const std::vector<uint8_t>&, Attempt);
+std::string attempt(
+  const std::string&,
+  const std::vector<uint8_t>&,
+  Attempt*,
+  time_t
+);
 
 } // namespace Judge
 

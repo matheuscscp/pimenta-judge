@@ -1,10 +1,12 @@
 #ifndef SCOREBOARD_H
 #define SCOREBOARD_H
 
+#include "json.hpp"
+
 namespace Scoreboard {
 
-void update();
-std::string query(bool);
+void update(JSON&);
+std::string query();
 
 } // namespace Scoreboard
 

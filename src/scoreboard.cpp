@@ -1,23 +1,21 @@
-#include <map>
 #include <algorithm>
-
-#include <unistd.h>
 
 #include "scoreboard.hpp"
 
 #include "global.hpp"
+#include "attempt.hpp"
 
 using namespace std;
 
-static string buf1, buf2;
-static string* frontbuf = &buf1;
-static string* backbuf = &buf2;
-static pthread_mutex_t frontbuf_mutex = PTHREAD_MUTEX_INITIALIZER;
+static string scoreboard;
+static pthread_mutex_t scoreboard_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static void update() {
-  typedef pair<int, time_t> problem_t;
+namespace Scoreboard {
+
+void update(JSON& attempts) {
+  typedef pair<int,int> problem_t;
   struct Entry {
-    string team;
+    string fullname;
     vector<problem_t> problems;
     int solved;
     int penalty;
@@ -39,14 +37,26 @@ static void update() {
       }
       return false;
     }
+    JSON json() const {
+      JSON ans;
+      ans("fullname") = fullname;
+      ans("problems") = vector<JSON>({});
+      for (auto& p : problems) ans("problems").emplace_back(map<string,JSON>{
+        {"cnt" , p.first},
+        {"time", p.second}
+      });
+      ans("solved") = solved;
+      ans("penalty") = penalty;
+      return ans;
+    }
     string str() const {
       string ret;
-      ret += ("<td>"+team+"</td>");
+      ret += ("<td>"+fullname+"</td>");
       char i = 'A';
       for (const problem_t& p : problems) {
         ret += "<td class=\"problem\">";
         if (p.first > 0) {
-          ret += balloon_img(i) + to<string>(p.first)+"/";
+          //ret += balloon_img(i) + to<string>(p.first)+"/";
           ret += to<string>(p.second);
         }
         else if (p.first < 0) ret += to<string>(-p.first)+"/-";
@@ -58,43 +68,45 @@ static void update() {
     }
   };
   
-  // read file
-  JSON contest(move(Global::settings("contest")));
-  time_t begin = contest("begin");
-  time_t freeze = contest("freeze");
-  time_t blind = contest("blind");
-  auto nproblems = contest("problems").size();
-  vector<Attempt> atts; Attempt att;
-  Global::lock_att_file();
-  FILE* fp = fopen("attempts.txt", "r");
-  if (fp) {
-    while (att.read(fp)) {
-      time_t when = begin + 60*att.when;
-      if (freeze <= when || blind <= when) continue;
-      if (att.status == "judged") atts.push_back(att);
-    }
-    fclose(fp);
+  // get necessary settings
+  int freeze, blind;
+  {
+    time_t beg = Global::settings("contest","begin");
+    time_t frz = Global::settings("contest","freeze");
+    time_t bld = Global::settings("contest","blind");
+    freeze = (frz-beg)/60;
+    blind = (bld-beg)/60;
   }
-  Global::unlock_att_file();
-  stable_sort(atts.begin(),atts.end());
+  auto nproblems = Global::settings("contest").size();
+  JSON users(move(Global::settings("users")));
+  
+  // convert to struct and sort
+  vector<Attempt> atts;
+  for (auto& kv : attempts.oit()) {
+    Attempt att(to<int>(kv.first),kv.second);
+    if (freeze <= att.when || blind <= att.when || !att.judged) continue;
+    atts.push_back(move(att));
+  }
+  sort(atts.begin(),atts.end());
   
   // compute entries
   map<string, Entry> entriesmap;
   for (Attempt& att : atts) {
-    auto it = entriesmap.find(att.teamname);
+    int prob = att.problem[0]-'A';
+    auto it = entriesmap.find(att.username);
     if (it == entriesmap.end()) {
-      Entry& entry = entriesmap[att.teamname];
-      entry.team = att.teamname;
+      Entry& entry = entriesmap[att.username];
+      entry.fullname = users(att.username,"fullname").str();
       entry.problems = vector<problem_t>(nproblems,make_pair(0,0));
-      if (att.verdict != AC) entry.problems[att.problem-'A'].first = -1;
+      if (att.verdict != AC) entry.problems[prob].first = -1;
       else {
-        entry.problems[att.problem-'A'].first = 1;
-        entry.problems[att.problem-'A'].second = att.when;
+        entry.problems[prob].first = 1;
+        entry.problems[prob].second = att.when;
         entry.ACs.push_back(att.when);
       }
     }
     else {
-      problem_t& p = it->second.problems[att.problem-'A'];
+      problem_t& p = it->second.problems[prob];
       if (p.first > 0) continue;
       if (att.verdict != AC) p.first--;
       else {
@@ -111,54 +123,23 @@ static void update() {
     kv.second.compute_score();
     entries.push_back(kv.second);
   }
-  sort(entries.begin(), entries.end());
+  sort(entries.begin(),entries.end());
   
-  // update back buffer
-  (*backbuf) = "<tr><th>#</th><th>Team</th>";
-  for (int i = 0; i < nproblems; i++) {
-    (*backbuf) += "<th>";
-    (*backbuf) += char(i+'A');
-    (*backbuf) += "</th>";
-  }
-  (*backbuf) += "<th>Score</th></tr>";
-  int place = 1;
-  for (Entry& x : entries) {
-    (*backbuf) += ("<tr><td>"+to<string>(place++)+"</td>");
-    (*backbuf) += x.str();
-    (*backbuf) += "</tr>";
-  }
+  // compute json
+  JSON buf(vector<JSON>({}));
+  for (auto& e : entries) buf.push_back(move(e.json()));
   
-  // swap buffers
-  string* tmp = backbuf;
-  backbuf = frontbuf;
-  pthread_mutex_lock(&frontbuf_mutex);
-  frontbuf = tmp;
-  pthread_mutex_unlock(&frontbuf_mutex);
+  // update scoreboard
+  pthread_mutex_lock(&scoreboard_mutex);
+  scoreboard = buf.generate();
+  pthread_mutex_unlock(&scoreboard_mutex);
 }
 
-namespace Scoreboard {
-
-void update() {
-  static time_t nextupd = 0;
-  if (time(nullptr) < nextupd) return;
-  ::update();
-  nextupd = time(nullptr)+5;
-}
-
-string query(bool freeze) {
-  // make local copy of scoreboard
-  pthread_mutex_lock(&frontbuf_mutex);
-  string scoreboard(*frontbuf);
-  pthread_mutex_unlock(&frontbuf_mutex);
-  
-  string frozen;
-  if (freeze) frozen = " (frozen)";
-  return
-    "<h2>Scoreboard"+frozen+"</h2>\n"
-    "<table class=\"data\">"+
-    scoreboard+
-    "</table>"
-  ;
+string query() {
+  pthread_mutex_lock(&scoreboard_mutex);
+  string ans(scoreboard);
+  pthread_mutex_unlock(&scoreboard_mutex);
+  return ans;
 }
 
 } // namespace Scoreboard

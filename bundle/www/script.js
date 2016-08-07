@@ -14,10 +14,10 @@ function fix_balloons() {
 }
 
 function login() {
-  team = document.getElementById("team");
+  user = document.getElementById("user");
   pass = document.getElementById("pass");
-  if (team.value == "" || pass.value == "") {
-    document.getElementById("response").innerHTML = "Invalid team/password!";
+  if (user.value == "" || pass.value == "") {
+    document.getElementById("response").innerHTML = "Invalid username/password!";
     return;
   }
   var xmlhttp;
@@ -36,8 +36,8 @@ function login() {
     }
   }
   xmlhttp.open("POST", "login", true);
-  xmlhttp.send(JSON.stringify({team: team.value, password: pass.value}));
-  team.value = "";
+  xmlhttp.send(JSON.stringify({username: user.value, password: pass.value}));
+  user.value = "";
   pass.value = "";
 }
 
@@ -94,7 +94,7 @@ function init() {
     svstatus.languages = lang_table(svstatus.languages);
     svstatus.limits = limits_table(svstatus.problems);
     init_problems();
-    $("#teamname").html("Team: "+resp.teamname);
+    $("#fullname").html(resp.fullname);
     remaining_time_json = {
       remaining_time: resp.rem_time,
       init_time: new Date().getTime()/1000
@@ -114,17 +114,58 @@ function init() {
 
 function show_data(key, tagid, before, after, cb) {
   $.get(key,null,function(response) {
-    document.getElementById(tagid).innerHTML = before+response+after;
+    document.getElementById(tagid).innerHTML = before+JSON.stringify(response)+after;
     cb();
   });
 }
+
+/*
+string verdict_tolongs(int verd) {
+  switch (verd) {
+    case  AC: return "Accepted";
+    case  CE: return "Compile Error";
+    case RTE: return "Runtime Error";
+    case TLE: return "Time Limit Exceeded";
+    case  WA: return "Wrong Answer";
+    case  PE: return "Presentation Error";
+  }
+  return "";
+}
+
+string balloon_img(char p) {
+  string ret = "<img src=\"balloon.svg\" class=\"svg balloon ";
+  ret += p;
+  return ret + "\" />";
+}
+*/
 
 function submission() {
   $("#content").html($("#submission").html());
   $("#submission-problem").focus();
   $("#enabled-langs").html(svstatus.languages);
   $("#limits").html(svstatus.limits);
-  show_data("runlist","runlist","","",fix_balloons);
+  $.get("runlist",null,function(resp) {
+    var html =
+      "<h2>Attempts</h2>"+
+      "<table id=\"attempts-table\" class=\"data\">"+
+        "<tr><th>ID</th><th>Problem</th><th>Time (m)</th><th>Answer</th></tr>"
+    ;
+    for (var i = 0; i < resp.length; i++) {
+      html +=
+        "<tr>"+
+          "<td>"+resp[i].id+"</td>"+
+          "<td>"+resp[i].problem+"</td>"+
+          "<td>"+resp[i].time+"</td>"+
+          "<td>"+resp[i].answer+"</td>"+
+        "</tr>"
+      ;
+    }
+    html +=
+      "</table>"
+    ;
+    $("#runlist").html(html);
+    fix_balloons();
+  });
 }
 
 function scoreboard() {

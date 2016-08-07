@@ -40,95 +40,10 @@ string verdict_tos(int verd) {
   return "";
 }
 
-string verdict_tolongs(int verd) {
-  switch (verd) {
-    case  AC: return "Accepted";
-    case  CE: return "Compile Error";
-    case RTE: return "Runtime Error";
-    case TLE: return "Time Limit Exceeded";
-    case  WA: return "Wrong Answer";
-    case  PE: return "Presentation Error";
-  }
-  return "";
-}
-
-string balloon_img(char p) {
-  string ret = "<img src=\"balloon.svg\" class=\"svg balloon ";
-  ret += p;
-  return ret + "\" />";
-}
-
-bool Attempt::read(FILE* fp) {
-  vector<string> fields;
-  for (int i = 0; i < 8 && !feof(fp); i++) {
-    fields.emplace_back();
-    string& s = fields.back();
-    for (char c = fgetc(fp); c != ',' && !feof(fp); c = fgetc(fp)) s += c;
-  }
-  status = "";
-  for (char c = fgetc(fp); c != '\n' && !feof(fp); c = fgetc(fp)) status += c;
-  if (feof(fp)) return false;
-  int f = 0;
-  id = to<int>(fields[f++]);
-  problem = fields[f++][0];
-  verdict = verdict_toi(fields[f++]);
-  when = to<int>(fields[f++]);
-  runtime = fields[f++];
-  username = fields[f++];
-  ip = fields[f++];
-  teamname = fields[f++];
-  return true;
-}
-
-void Attempt::write(FILE* fp) const {
-  fprintf(fp,"%d,",id);
-  fprintf(fp,"%c,",problem);
-  fprintf(fp,"%s,",verdict_tos(verdict).c_str());
-  fprintf(fp,"%d,",when);
-  fprintf(fp,"%s,",runtime.c_str());
-  fprintf(fp,"%s,",username.c_str());
-  fprintf(fp,"%s,",ip.c_str());
-  fprintf(fp,"%s,",teamname.c_str());
-  fprintf(fp,"%s\n",status.c_str());
-}
-
-bool Attempt::operator<(const Attempt& other) const {
-  if (when != other.when) return when < other.when;
-  return id < other.id;
-}
-
-string Attempt::toHTMLtr(bool blind, bool is_first) const {
-  string ans = "<tr>";
-  ans += "<td>"+to<string>(id)+"</td>";
-  ans += "<td>"+to<string>(problem)+"</td>";
-  ans += "<td>"+to<string>(when)+"</td>";
-  if (blind) ans += "<td>Blind attempt</td>";
-  else {
-    ans += "<td>";
-    if (is_first) ans += balloon_img(problem);
-    else if (status != "judged") ans += "Not answered yet";
-    else ans += verdict_tolongs(verdict);
-    ans += "</td>";
-  }
-  return ans+"</tr>";
-}
-
-string Attempt::getHTMLtrheader() {
-  return
-    "<tr>"
-      "<th>ID</th>"
-      "<th>Problem</th>"
-      "<th>Time (m)</th>"
-      "<th>Answer</th>"
-    "</tr>"
-  ;
-}
-
 static bool quit = false;
 static JSON settings;
 static pthread_mutex_t settings_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t attfile_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t nextidfile_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t attempts_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t questionfile_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 class Contest {
@@ -143,9 +58,16 @@ class Contest {
       remove("contest.bin");
     }
     void update() {
-      Runlist::update();
-      Scoreboard::update();
       msq.update();
+      static time_t nxtupd = 0;
+      if (time(nullptr) < nxtupd) return;
+      pthread_mutex_lock(&attempts_mutex);
+      JSON atts(Global::attempts);
+      pthread_mutex_unlock(&attempts_mutex);
+      atts.write_file("attempts.json");
+      Runlist::update(atts);
+      Scoreboard::update(atts);
+      nxtupd = time(nullptr)+5;
     }
     static key_t alive() {
       FILE* fp = fopen("contest.bin", "rb");
@@ -180,6 +102,8 @@ JSON& settings_ref() {
 
 namespace Global {
 
+JSON attempts;
+
 void install(const string& dir) {
   system("cp -rf /usr/local/share/pjudge %s", dir.c_str());
 }
@@ -198,6 +122,7 @@ void start() {
   signal(SIGTERM, term); // Global::shutdown();
   signal(SIGPIPE, SIG_IGN); // avoid broken pipes termination signal
   load_settings();
+  if (!attempts.read_file("attempts.json")) attempts = JSON();
   pthread_t judge, webserver;
   pthread_create(&judge,nullptr,Judge::thread,nullptr);
   pthread_create(&webserver,nullptr,WebServer::thread,nullptr);
@@ -234,20 +159,12 @@ void reload_settings() {
   printf("pjudge reloaded settings.\n");
 }
 
-void lock_att_file() {
-  pthread_mutex_lock(&attfile_mutex);
+void lock_attempts() {
+  pthread_mutex_lock(&attempts_mutex);
 }
 
-void unlock_att_file() {
-  pthread_mutex_unlock(&attfile_mutex);
-}
-
-void lock_nextid_file() {
-  pthread_mutex_lock(&nextidfile_mutex);
-}
-
-void unlock_nextid_file() {
-  pthread_mutex_unlock(&nextidfile_mutex);
+void unlock_attempts() {
+  pthread_mutex_unlock(&attempts_mutex);
 }
 
 void lock_question_file() {

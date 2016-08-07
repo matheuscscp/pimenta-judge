@@ -1,7 +1,5 @@
 #include <cstring>
 #include <cmath>
-#include <set>
-#include <map>
 #include <functional>
 #include <queue>
 
@@ -19,7 +17,7 @@ using namespace std;
 
 typedef function<char(char, char*, char*, int, int&)> Script;
 struct QueueData {
-  Attempt att;
+  Attempt* attptr;
   string lang;
   string path;
   string fn;
@@ -30,28 +28,27 @@ static queue<QueueData> jqueue;
 static pthread_mutex_t judger_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void judge(
-  Attempt& att, const string& lang, const string& path, const string& fn
+  Attempt* attptr, const string& lang, const string& path, const string& fn
 ) {
+  Attempt& att = *attptr;
+  char prob = att.problem[0];
+  
   // run
   int maxms = 0;
-  att.verdict = scripts[lang](
-    att.problem,
+  char verd = scripts[lang](
+    prob,
     (char*)path.c_str(),
     (char*)fn.c_str(),
-    Global::settings("contest","problems",att.problem-'A',"timelimit"),
+    Global::settings("contest","problems",prob-'A',"timelimit"),
     maxms
   );
   att.runtime = stringf("%.3lf",maxms/1000.0);
   
   // diff files
-  if (att.verdict == AC) {
-    string dn = stringf("problems/%c/output/",att.problem);
+  if (verd == AC) {
+    string dn = stringf("problems/%c/output/",prob);
     DIR* dir = opendir(dn.c_str());
-    for (
-      dirent* ent = readdir(dir);
-      ent && att.verdict == AC;
-      ent = readdir(dir)
-    ) {
+    for (dirent* ent = readdir(dir); ent && verd == AC; ent = readdir(dir)) {
       string fn = dn+ent->d_name;
       
       // check if dirent is regular file
@@ -63,47 +60,36 @@ static void judge(
       int status = system(
         "diff -wB %s %soutput/%s", fn.c_str(), path.c_str(), ent->d_name
       );
-      if (WEXITSTATUS(status)) att.verdict = WA;
+      if (WEXITSTATUS(status)) verd = WA;
       else {
         status = system(
           "diff %s %soutput/%s", fn.c_str(), path.c_str(), ent->d_name
         );
-        if (WEXITSTATUS(status)) att.verdict = PE;
+        if (WEXITSTATUS(status)) verd = PE;
       }
     }
     closedir(dir);
   }
+  att.verdict = verd;
+  
+  // status
+  att.judged = Global::settings("contest","problems",prob-'A',"autojudge");
   
   // save attempt info
-  Global::lock_att_file();
-  FILE* fp = fopen("attempts.txt", "a");
-  att.write(fp);
-  fclose(fp);
-  Global::unlock_att_file();
+  Global::lock_attempts();
+  Global::attempts(to<string>(att.id)) = move(att.json());
+  Global::unlock_attempts();
+  delete attptr;
 }
 
-static string valid_filename(JSON& contest, const string& fn) {
+static string valid_filename(const string& fn) {
+  JSON contest(move(Global::settings("contest")));
   if (!(('A' <= fn[0]) && (fn[0] <= ('A' + contest("problems").size()-1)))) {
     return "";
   }
   auto& langs = contest("languages");
   string lang = fn.substr(1,fn.size());
   return (langs.find(lang) != langs.end_o() ? lang : "");
-}
-
-static int genid() {
-  FILE* fp = fopen("nextid.bin", "rb");
-  int current, next;
-  if (!fp) current = 1, next = 2;
-  else {
-    fread(&current, sizeof current, 1, fp);
-    fclose(fp);
-    next = current + 1;
-  }
-  fp = fopen("nextid.bin", "wb");
-  fwrite(&next, sizeof next, 1, fp);
-  fclose(fp);
-  return current;
 }
 
 static __suseconds_t dt(const timeval& start) {
@@ -207,45 +193,44 @@ void* thread(void*) {
     }
     QueueData qd = jqueue.front(); jqueue.pop();
     pthread_mutex_unlock(&judger_mutex);
-    judge(qd.att,qd.lang,qd.path,qd.fn);
+    judge(qd.attptr,qd.lang,qd.path,qd.fn);
   }
 }
 
 string attempt(
   const string& file_name,
   const vector<uint8_t>& file,
-  Attempt att
+  Attempt* attptr,
+  time_t when
 ) {
-  JSON contest(move(Global::settings("contest")));
-  time_t begin = contest("begin");
-  time_t end = contest("end");
+  Attempt& att = *attptr;
+  time_t begin = Global::settings("contest","begin");
+  time_t end   = Global::settings("contest","end");
   
   // check time
-  if (att.when < begin || end <= att.when) {
-    return "The contest is not running.";
-  }
-  att.when = int(round((att.when-begin)/60.0));
+  if (when < begin || end <= when) return "The contest is not running.";
+  att.when = int(round((when-begin)/60.0));
   
   // check file name
-  string lang = valid_filename(contest,file_name);
+  string lang = valid_filename(file_name);
   if (lang == "") return "Invalid programming language!";
-  att.problem = file_name[0];
-  
-  // set status
-  if (contest("problems",att.problem-'A',"autojudge")) att.status = "judged";
-  else att.status = "tojudge";
+  att.problem = to<string>(file_name[0]);
   
   // generate id
-  Global::lock_nextid_file();
-  att.id = genid();
-  Global::unlock_nextid_file();
+  att.id = 1;
+  Global::lock_attempts();
+  auto& atts = Global::attempts.obj();
+  auto it = atts.rbegin();
+  if (it != atts.rend()) att.id = to<int>(it->first)+1;
+  atts[move(to<string>(att.id))] = move(att.json());
+  Global::unlock_attempts();
   
   // save file
   string fn = "attempts/";
   mkdir(fn.c_str(), 0777);
   fn += (att.username+"/");
   mkdir(fn.c_str(), 0777);
-  fn += att.problem; fn += "/";
+  fn += (att.problem+"/");
   mkdir(fn.c_str(), 0777);
   fn += (to<string>(att.id)+"/");
   mkdir(fn.c_str(), 0777);
@@ -258,7 +243,7 @@ string attempt(
   
   // push task
   QueueData qd;
-  qd.att = att;
+  qd.attptr = attptr;
   qd.lang = lang;
   qd.path = path;
   qd.fn = fn;

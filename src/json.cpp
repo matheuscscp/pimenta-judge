@@ -8,7 +8,7 @@
 
 using namespace std;
 
-static string to_json(const string& val);
+static string to_json(const string& val, bool force = false);
 static size_t json_number_length(const char* val);
 static bool is_json_zero(const string& val);
 static bool operator>>(istream& is, JSON& json);
@@ -34,6 +34,7 @@ struct JSONValue {
   virtual map<string,JSON>::iterator end_o() = 0;
   virtual map<string,JSON>::const_iterator begin_o() const = 0;
   virtual map<string,JSON>::const_iterator end_o() const = 0;
+  virtual map<string,JSON>& obj() = 0;
   virtual bool isarr() const = 0;
   virtual void push_back(const JSON&) = 0;
   virtual void push_back(JSON&&) = 0;
@@ -96,6 +97,9 @@ struct String : public JSONValue {
     
   }
   map<string,JSON>::const_iterator end_o() const {
+    
+  }
+  map<string,JSON>& obj() {
     
   }
   bool isarr() const {
@@ -185,6 +189,9 @@ struct Object : public JSONValue {
   map<string,JSON>::const_iterator end_o() const {
     return v.end();
   }
+  map<string,JSON>& obj() {
+    return v;
+  }
   bool isarr() const {
     return false;
   }
@@ -227,7 +234,7 @@ struct Object : public JSONValue {
     auto cnt = v.size();
     for (auto it = v.begin(); it != v.end(); it++) {
       for (int i = 0; i < indent; i++) ans += "  ";
-      ans += to_json(it->first);
+      ans += to_json(it->first,true);
       ans += ": ";
       ans += it->second.generate(indent ? indent+1 : 0);
       cnt--;
@@ -284,6 +291,9 @@ struct Array : public JSONValue {
     
   }
   map<string,JSON>::const_iterator end_o() const {
+    
+  }
+  map<string,JSON>& obj() {
     
   }
   bool isarr() const {
@@ -626,6 +636,14 @@ map<string,JSON>::const_iterator JSON::begin_o() const {
 
 map<string,JSON>::const_iterator JSON::end_o() const {
   return value->end_o();
+}
+
+map<string,JSON>& JSON::obj() {
+  return value->obj();
+}
+
+const map<string,JSON>& JSON::obj() const {
+  return value->obj();
 }
 
 bool JSON::isarr() const {
@@ -1167,8 +1185,9 @@ static void encode_utf8(unsigned cpt, string& buf) {
   for (cdu[6] = 0; cdu[6] < cdu[7]; cdu[6]++) buf += cdu[cdu[6]];
 }
 
-static string to_json(const string& val) {
+static string to_json(const string& val, bool force) {
   if (
+    !force &&
     (val.size() > 0 && json_number_length(val.c_str()) == val.size()) || // num
     val == "true" || val == "false" || val == "null" // literal
   ) return val;

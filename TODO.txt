@@ -1,7 +1,7 @@
-- migrate attempt data from txt to json with periodic writes to a file.
 - refactor web interface (extract HTML from compiled code and organize view).
-- refactor judge compilation and running. add limits per language. use settings.
+- create helper module (verdict_tos and toi, to<T>, stringf, and system).
 - implement flexible problem names (remove char-'A' based indexes).
+- refactor judge compilation and running. add limits per language. use settings.
 - main() commands.
 - web system for judges (manual judging and clarifications).
 - web system for staff (balloons and prints).

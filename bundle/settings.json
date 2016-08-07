@@ -17,8 +17,8 @@
     "start": {
       "year": 2016,
       "month": 8,
-      "day": 6,
-      "hour": 1,
+      "day": 7,
+      "hour": 0,
       "minute": 0
     },
     "duration": 300,
@@ -124,7 +124,7 @@
       }
     ]
   },
-  "teams": {
+  "users": {
     "team1username": {
       "fullname": "Team 1 Name",
       "password": "team1password"

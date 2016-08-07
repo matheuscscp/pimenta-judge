@@ -75,7 +75,7 @@ problems/
 ```
 
 #### Directory `www`
-Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of your contest! Just remember that some parts of the web stuff are C++ hard-coded. Whatever you don't find in the `www` folder, you will find in the C++ source code!
+Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify the web interface of your contest!
 
 #### File `settings.json`
 ```json
@@ -98,8 +98,8 @@ Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify t
     "start": {
       "year": 2016,
       "month": 8,
-      "day": 6,
-      "hour": 1,
+      "day": 7,
+      "hour": 0,
       "minute": 0
     },
     "duration": 300,
@@ -205,7 +205,7 @@ Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify t
       }
     ]
   },
-  "teams": {
+  "users": {
     "team1username": {
       "fullname": "Team 1 Name",
       "password": "team1password"
@@ -240,36 +240,10 @@ team1username B "Problem B question privately answered to Team 1" "Answer"
 Contest owner may add `statement.pdf` PDF file containing the problems' statements. It will be available in the web interface!
 
 ### Automatically generated during contest execution
-| Type      | Name                                | Function                                   |
-| --------- | ----------------------------------- | ------------------------------------------ |
-| Directory | `attempts`                          | All files related to contestants' attempts |
-| Directory | `questions`                         | Clarification requests                     |
-| File      | `contest.bin`                       | System usage (don't touch)                 |
-| File      | `nextid.bin`                        | System usage (don't touch)                 |
-| File      | [`attempts.txt`](#file-attemptstxt) | Attempts data                              |
-| File      | `log.txt`                           | Logs of important web session events       |
-
-#### File `attempts.txt`
-Each line in this file stands for one attempt and follows the format:
-```
-ID,Problem,Verdict,Time,Runtime,Username,IP,Fullname,Status
-```
-where:
-* `ID` is a unique integer to identify the attempt.
-* `Problem` is a capital letter to identify the problem of the attempt.
-* `Verdict` may be:
-  * `AC` — Accepted. The only "yes" answer.
-  * `CE` — Compile Error.
-  * `RTE` — Runtime Error.
-  * `TLE` — Time Limit Exceeded.
-  * `WA` — Wrong Answer.
-  * `PE` — Presentation Error.
-* `Time` is the number of minutes passed since the beginning of the contest when the attempt was made.
-* `Runtime` is the maximum time in seconds that the attempt took to execute.
-* `Username` is the user name.
-* `IP` is the IP address that sent the attempt.
-* `Fullname` is the full name of the user.
-* `Status` may be `judged` or `tojudge`. Only `judged` attempts will affect the scoreboard.
-
-##### WARNING
-Problems with `autojudge` set to `true` will produce `judged` attempts. If `autojudge` is set to `false`, `tojudge` attempts will be produced instead.
+| Type      | Name            | Function                                   |
+| --------- | --------------- | ------------------------------------------ |
+| Directory | `attempts`      | All files related to contestants' attempts |
+| Directory | `questions`     | Clarification requests                     |
+| File      | `contest.bin`   | System usage (don't touch)                 |
+| File      | `attempts.json` | Attempts data                              |
+| File      | `log.txt`       | Logs of important web session events       |
