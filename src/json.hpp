@@ -23,38 +23,6 @@ class JSON {
         bool is_num,is_neg,is_exp_neg;
         std::string int_,frac_,exp_;
     };
-    class object_iterator { // immutable
-      public:
-        object_iterator(JSON*);
-        std::map<std::string,JSON>::iterator begin();
-        std::map<std::string,JSON>::iterator end();
-      private:
-        JSON* obj;
-    };
-    class object_const_iterator { // immutable
-      public:
-        object_const_iterator(const JSON*);
-        std::map<std::string,JSON>::const_iterator begin() const;
-        std::map<std::string,JSON>::const_iterator end() const;
-      private:
-        const JSON* obj;
-    };
-    class array_iterator { // immutable
-      public:
-        array_iterator(JSON*);
-        std::vector<JSON>::iterator begin();
-        std::vector<JSON>::iterator end();
-      private:
-        JSON* arr;
-    };
-    class array_const_iterator { // immutable
-      public:
-        array_const_iterator(const JSON*);
-        std::vector<JSON>::const_iterator begin() const;
-        std::vector<JSON>::const_iterator end() const;
-      private:
-        const JSON* arr;
-    };
     // special members
     JSON();
     ~JSON();
@@ -94,10 +62,10 @@ class JSON {
     JSON& operator=(std::vector<JSON>&&);
     // string API
     bool isstr() const;
-    operator std::string&();
-    operator const std::string&() const;
     std::string& str();
     const std::string& str() const;
+    operator std::string&();
+    operator const std::string&() const;
     bool operator==(const std::string&) const;
     // number API
     bool isnum() const;
@@ -105,7 +73,7 @@ class JSON {
     template <typename T>
     operator T() const {
       if (!isstr()) return T();
-      std::stringstream ss((const std::string&)*this);
+      std::stringstream ss(str());
       T ans;
       ss >> ans;
       return ans;
@@ -113,11 +81,13 @@ class JSON {
     template <typename T>
     bool to(T& buf) const {
       if (!isstr()) return false;
-      std::stringstream ss((const std::string&)*this);
+      std::stringstream ss(str());
       return ss >> buf;
     }
     // object API
     bool isobj() const;
+    std::map<std::string,JSON>& obj();
+    const std::map<std::string,JSON>& obj() const;
     JSON& operator[](const char*);
     JSON& operator[](const std::string&);
     JSON& operator[](std::string&&);
@@ -127,16 +97,10 @@ class JSON {
       std::map<std::string,JSON>::const_iterator
     );
     size_t erase(const std::string&);
-    object_iterator oit();
-    std::map<std::string,JSON>::iterator begin_o();
-    std::map<std::string,JSON>::iterator end_o();
-    object_const_iterator oit() const;
-    std::map<std::string,JSON>::const_iterator begin_o() const;
-    std::map<std::string,JSON>::const_iterator end_o() const;
-    std::map<std::string,JSON>& obj();
-    const std::map<std::string,JSON>& obj() const;
     // array API
     bool isarr() const;
+    std::vector<JSON>& arr();
+    const std::vector<JSON>& arr() const;
     void push_back(const JSON&);
     void push_back(JSON&&);
     template <typename... Args>
@@ -146,16 +110,10 @@ class JSON {
     JSON& operator[](size_t i);
     const JSON& operator[](size_t i) const;
     std::vector<JSON>::iterator erase(std::vector<JSON>::iterator position);
-    std::vector<JSON>::iterator erase( // remove range [first, last)
+    std::vector<JSON>::iterator erase(
       std::vector<JSON>::iterator first,
       std::vector<JSON>::iterator last
     );
-    array_iterator ait();
-    std::vector<JSON>::iterator begin_a();
-    std::vector<JSON>::iterator end_a();
-    array_const_iterator ait() const;
-    std::vector<JSON>::const_iterator begin_a() const;
-    std::vector<JSON>::const_iterator end_a() const;
     // literals API
     bool istrue() const;
     bool isfalse() const;

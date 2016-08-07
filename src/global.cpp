@@ -220,8 +220,8 @@ void load_settings() {
   blind = end - 60*blind;
   contest("blind") = blind;
   // languages
-  JSON& langs = contest("languages");
-  for (auto it = langs.begin_o(); it != langs.end_o();) {
+  auto& langs = contest("languages").obj();
+  for (auto it = langs.begin(); it != langs.end();) {
     if (!it->second("enabled")) langs.erase(it++);
     else {
       it->second.erase("enabled");
@@ -229,9 +229,9 @@ void load_settings() {
     }
   }
   // problems
-  JSON& probs = contest("problems");
+  auto& probs = contest("problems").arr();
   for (int i = 0; i < probs.size();) {
-    if (!probs[i]("enabled")) probs.erase(probs.begin_a()+i);
+    if (!probs[i]("enabled")) probs.erase(probs.begin()+i);
     else {
       probs[i].erase("enabled");
       i++;

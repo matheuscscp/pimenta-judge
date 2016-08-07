@@ -82,7 +82,7 @@ void update(JSON& attempts) {
   
   // convert to struct and sort
   vector<Attempt> atts;
-  for (auto& kv : attempts.oit()) {
+  for (auto& kv : attempts.obj()) {
     Attempt att(to<int>(kv.first),kv.second);
     if (freeze <= att.when || blind <= att.when || !att.judged) continue;
     atts.push_back(move(att));

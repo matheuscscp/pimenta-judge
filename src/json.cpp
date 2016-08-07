@@ -1,8 +1,6 @@
 #include <cstring>
 #include <stack>
-#include <sstream>
 #include <fstream>
-#include <algorithm>
 
 #include "json.hpp"
 
@@ -20,8 +18,9 @@ struct JSONValue {
   virtual ~JSONValue() {}
   virtual JSONValue* clone() const = 0;
   virtual bool isstr() const = 0;
-  virtual operator string&() = 0;
+  virtual string& str() = 0;
   virtual bool isobj() const = 0;
+  virtual map<string,JSON>& obj() = 0;
   virtual JSON& operator[](const string&) = 0;
   virtual JSON& operator[](string&&) = 0;
   virtual map<string,JSON>::iterator find(const string&) = 0;
@@ -30,12 +29,8 @@ struct JSONValue {
     map<string,JSON>::const_iterator
   ) = 0;
   virtual size_t erase(const string&) = 0;
-  virtual map<string,JSON>::iterator begin_o() = 0;
-  virtual map<string,JSON>::iterator end_o() = 0;
-  virtual map<string,JSON>::const_iterator begin_o() const = 0;
-  virtual map<string,JSON>::const_iterator end_o() const = 0;
-  virtual map<string,JSON>& obj() = 0;
   virtual bool isarr() const = 0;
+  virtual vector<JSON>& arr() = 0;
   virtual void push_back(const JSON&) = 0;
   virtual void push_back(JSON&&) = 0;
   virtual JSON& operator[](size_t i) = 0;
@@ -44,10 +39,6 @@ struct JSONValue {
     vector<JSON>::iterator,
     vector<JSON>::iterator
   ) = 0;
-  virtual vector<JSON>::iterator begin_a() = 0;
-  virtual vector<JSON>::iterator end_a() = 0;
-  virtual vector<JSON>::const_iterator begin_a() const = 0;
-  virtual vector<JSON>::const_iterator end_a() const = 0;
   virtual size_t size() const = 0;
   virtual const JSON* find_tuple(const string&) const = 0;
   virtual string generate(unsigned) const = 0;
@@ -63,11 +54,14 @@ struct String : public JSONValue {
   bool isstr() const {
     return true;
   }
-  operator string&() {
+  string& str() {
     return v;
   }
   bool isobj() const {
     return false;
+  }
+  map<string,JSON>& obj() {
+    
   }
   JSON& operator[](const string&) {
     
@@ -87,23 +81,11 @@ struct String : public JSONValue {
   size_t erase(const string&) {
     
   }
-  map<string,JSON>::iterator begin_o() {
-    
-  }
-  map<string,JSON>::iterator end_o() {
-    
-  }
-  map<string,JSON>::const_iterator begin_o() const {
-    
-  }
-  map<string,JSON>::const_iterator end_o() const {
-    
-  }
-  map<string,JSON>& obj() {
-    
-  }
   bool isarr() const {
     return false;
+  }
+  vector<JSON>& arr() {
+    
   }
   void push_back(const JSON&) {
     
@@ -118,18 +100,6 @@ struct String : public JSONValue {
     
   }
   vector<JSON>::iterator erase(vector<JSON>::iterator,vector<JSON>::iterator) {
-    
-  }
-  vector<JSON>::iterator begin_a() {
-    
-  }
-  vector<JSON>::iterator end_a() {
-    
-  }
-  vector<JSON>::const_iterator begin_a() const {
-    
-  }
-  vector<JSON>::const_iterator end_a() const {
     
   }
   size_t size() const {
@@ -153,11 +123,14 @@ struct Object : public JSONValue {
   bool isstr() const {
     return false;
   }
-  operator string&() {
+  string& str() {
     
   }
   bool isobj() const {
     return true;
+  }
+  map<string,JSON>& obj() {
+    return v;
   }
   JSON& operator[](const string& key) {
     return v[key];
@@ -177,23 +150,11 @@ struct Object : public JSONValue {
   size_t erase(const string& key) {
     return v.erase(key);
   }
-  map<string,JSON>::iterator begin_o() {
-    return v.begin();
-  }
-  map<string,JSON>::iterator end_o() {
-    return v.end();
-  }
-  map<string,JSON>::const_iterator begin_o() const {
-    return v.begin();
-  }
-  map<string,JSON>::const_iterator end_o() const {
-    return v.end();
-  }
-  map<string,JSON>& obj() {
-    return v;
-  }
   bool isarr() const {
     return false;
+  }
+  vector<JSON>& arr() {
+    
   }
   void push_back(const JSON&) {
     
@@ -208,18 +169,6 @@ struct Object : public JSONValue {
     
   }
   vector<JSON>::iterator erase(vector<JSON>::iterator,vector<JSON>::iterator) {
-    
-  }
-  vector<JSON>::iterator begin_a() {
-    
-  }
-  vector<JSON>::iterator end_a() {
-    
-  }
-  vector<JSON>::const_iterator begin_a() const {
-    
-  }
-  vector<JSON>::const_iterator end_a() const {
     
   }
   size_t size() const {
@@ -257,11 +206,14 @@ struct Array : public JSONValue {
   bool isstr() const {
     return false;
   }
-  operator string&() {
+  string& str() {
     
   }
   bool isobj() const {
     return false;
+  }
+  map<string,JSON>& obj() {
+    
   }
   JSON& operator[](const string&) {
     
@@ -281,23 +233,11 @@ struct Array : public JSONValue {
   size_t erase(const string&) {
     
   }
-  map<string,JSON>::iterator begin_o() {
-    
-  }
-  map<string,JSON>::iterator end_o() {
-    
-  }
-  map<string,JSON>::const_iterator begin_o() const {
-    
-  }
-  map<string,JSON>::const_iterator end_o() const {
-    
-  }
-  map<string,JSON>& obj() {
-    
-  }
   bool isarr() const {
     return true;
+  }
+  vector<JSON>& arr() {
+    return v;
   }
   void push_back(const JSON& val) {
     v.push_back(val);
@@ -317,18 +257,6 @@ struct Array : public JSONValue {
     vector<JSON>::iterator last
   ) {
     return v.erase(first,last);
-  }
-  vector<JSON>::iterator begin_a() {
-    return v.begin();
-  }
-  vector<JSON>::iterator end_a() {
-    return v.end();
-  }
-  vector<JSON>::const_iterator begin_a() const {
-    return v.begin();
-  }
-  vector<JSON>::const_iterator end_a() const {
-    return v.end();
   }
   size_t size() const {
     return v.size();
@@ -397,54 +325,6 @@ string JSON::number::frac() const {
 
 string JSON::number::exp() const {
   return exp_;
-}
-
-JSON::object_iterator::object_iterator(JSON* obj) : obj(obj) {
-  
-}
-
-map<string,JSON>::iterator JSON::object_iterator::begin() {
-  return obj->begin_o();
-}
-
-map<string,JSON>::iterator JSON::object_iterator::end() {
-  return obj->end_o();
-}
-
-JSON::object_const_iterator::object_const_iterator(const JSON* obj) : obj(obj) {
-  
-}
-
-map<string,JSON>::const_iterator JSON::object_const_iterator::begin() const {
-  return obj->begin_o();
-}
-
-map<string,JSON>::const_iterator JSON::object_const_iterator::end() const {
-  return obj->end_o();
-}
-
-JSON::array_iterator::array_iterator(JSON* arr) : arr(arr) {
-  
-}
-
-vector<JSON>::iterator JSON::array_iterator::begin() {
-  return arr->begin_a();
-}
-
-vector<JSON>::iterator JSON::array_iterator::end() {
-  return arr->end_a();
-}
-
-JSON::array_const_iterator::array_const_iterator(const JSON* arr) : arr(arr) {
-  
-}
-
-vector<JSON>::const_iterator JSON::array_const_iterator::begin() const {
-  return arr->begin_a();
-}
-
-vector<JSON>::const_iterator JSON::array_const_iterator::end() const {
-  return arr->end_a();
 }
 
 JSON::JSON() : value(new Object) {
@@ -546,24 +426,24 @@ bool JSON::isstr() const {
   return value->isstr();
 }
 
-JSON::operator string&() {
-  return (string&)(*value);
-}
-
-JSON::operator const string&() const {
-  return (string&)(*value);
-}
-
 string& JSON::str() {
-  return (string&)(*value);
+  return value->str();
 }
 
 const string& JSON::str() const {
-  return (string&)(*value);
+  return value->str();
+}
+
+JSON::operator string&() {
+  return value->str();
+}
+
+JSON::operator const string&() const {
+  return value->str();
 }
 
 bool JSON::operator==(const string& val) const {
-  return value->isstr() && val == (string&)(*value);
+  return value->isstr() && val == value->str();
 }
 
 bool operator==(const string& val, const JSON& json) {
@@ -584,6 +464,14 @@ JSON::number JSON::num() const {
 
 bool JSON::isobj() const {
   return value->isobj();
+}
+
+map<string,JSON>& JSON::obj() {
+  return value->obj();
+}
+
+const map<string,JSON>& JSON::obj() const {
+  return value->obj();
 }
 
 JSON& JSON::operator[](const char* key) {
@@ -614,40 +502,16 @@ size_t JSON::erase(const string& key) {
   return value->erase(key);
 }
 
-JSON::object_iterator JSON::oit() {
-  return object_iterator(this);
-}
-
-map<string,JSON>::iterator JSON::begin_o() {
-  return value->begin_o();
-}
-
-map<string,JSON>::iterator JSON::end_o() {
-  return value->end_o();
-}
-
-JSON::object_const_iterator JSON::oit() const {
-  return object_const_iterator(this);
-}
-
-map<string,JSON>::const_iterator JSON::begin_o() const {
-  return value->begin_o();
-}
-
-map<string,JSON>::const_iterator JSON::end_o() const {
-  return value->end_o();
-}
-
-map<string,JSON>& JSON::obj() {
-  return value->obj();
-}
-
-const map<string,JSON>& JSON::obj() const {
-  return value->obj();
-}
-
 bool JSON::isarr() const {
   return value->isarr();
+}
+
+vector<JSON>& JSON::arr() {
+  return value->arr();
+}
+
+const vector<JSON>& JSON::arr() const {
+  return value->arr();
 }
 
 void JSON::push_back(const JSON& val) {
@@ -677,40 +541,16 @@ vector<JSON>::iterator JSON::erase(
   return value->erase(first,last);
 }
 
-JSON::array_iterator JSON::ait() {
-  return array_iterator(this);
-}
-
-vector<JSON>::iterator JSON::begin_a() {
-  return value->begin_a();
-}
-
-vector<JSON>::iterator JSON::end_a() {
-  return value->end_a();
-}
-
-JSON::array_const_iterator JSON::ait() const {
-  return array_const_iterator(this);
-}
-
-vector<JSON>::const_iterator JSON::begin_a() const {
-  return value->begin_a();
-}
-
-vector<JSON>::const_iterator JSON::end_a() const {
-  return value->end_a();
-}
-
 bool JSON::istrue() const {
-  return value->isstr() && (string&)(*value) == "true";
+  return value->isstr() && value->str() == "true";
 }
 
 bool JSON::isfalse() const {
-  return value->isstr() && (string&)(*value) == "false";
+  return value->isstr() && value->str() == "false";
 }
 
 bool JSON::isnull() const {
-  return value->isstr() && (string&)(*value) == "null";
+  return value->isstr() && value->str() == "null";
 }
 
 void JSON::settrue() {
@@ -727,7 +567,7 @@ void JSON::setnull() {
 
 JSON::operator bool() const {
   if (!value->isstr()) return true;
-  auto s = (string&)(*value);
+  auto s = value->str();
   if (s == "" || is_json_zero(s) || s == "false" || s == "null") return false;
   return true;
 }

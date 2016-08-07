@@ -23,7 +23,7 @@ void update(JSON& attempts) {
   
   // convert to struct and sort
   vector<Attempt> atts;
-  for (auto& kv : attempts.oit())atts.emplace_back(to<int>(kv.first),kv.second);
+  for (auto& kv : attempts.obj())atts.emplace_back(to<int>(kv.first),kv.second);
   sort(atts.begin(),atts.end());
   
   // compute jsons

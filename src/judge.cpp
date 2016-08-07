@@ -87,9 +87,9 @@ static string valid_filename(const string& fn) {
   if (!(('A' <= fn[0]) && (fn[0] <= ('A' + contest("problems").size()-1)))) {
     return "";
   }
-  auto& langs = contest("languages");
+  auto& langs = contest("languages").obj();
   string lang = fn.substr(1,fn.size());
-  return (langs.find(lang) != langs.end_o() ? lang : "");
+  return (langs.find(lang) != langs.end() ? lang : "");
 }
 
 static __suseconds_t dt(const timeval& start) {

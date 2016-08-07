@@ -133,7 +133,7 @@ route("/statement",[=](const vector<string>&) {
 
 route("/status",[=](const vector<string>&) {
   JSON contest(move(Global::settings("contest")));
-  for (auto& p : contest("problems").ait()) p.erase("autojudge");
+  for (auto& p : contest("problems").arr()) p.erase("autojudge");
   json(map<string,JSON>{
     {"fullname" , castsess().fullname},
     {"rem_time" , Global::remaining_time()},
