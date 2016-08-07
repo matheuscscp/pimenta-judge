@@ -246,4 +246,4 @@ Contest owner may add `statement.pdf` PDF file containing the problems' statemen
 | Directory | `questions`     | Clarification requests                     |
 | File      | `contest.bin`   | System usage (don't touch)                 |
 | File      | `attempts.json` | Attempts data                              |
-| File      | `log.txt`       | Logs of important web session events       |
+| File      | `log.txt`       | Log of web session events                  |
