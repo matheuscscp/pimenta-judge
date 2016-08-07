@@ -91,6 +91,7 @@ function init_problems() {
 function init() {
   $.get("status",null,function(resp) {
     svstatus = resp;
+    svstatus.frozen = false;
     svstatus.languages = lang_table(svstatus.languages);
     svstatus.limits = limits_table(svstatus.problems);
     init_problems();
@@ -103,6 +104,7 @@ function init() {
       var now = new Date().getTime()/1000;
       var dt = now-remaining_time_json.init_time;
       var tmp = Math.round(Math.max(0,remaining_time_json.remaining_time-dt));
+      if (tmp/60 <= svstatus.freeze) svstatus.frozen = true;
       var ans = (tmp == 0 ? "The contest is not running." : "Remaining time: " + (tmp+"").toHHMMSS());
       $("#remaining-time").html(ans);
     };
@@ -112,32 +114,24 @@ function init() {
   });
 }
 
-function show_data(key, tagid, before, after, cb) {
-  $.get(key,null,function(response) {
-    document.getElementById(tagid).innerHTML = before+JSON.stringify(response)+after;
-    cb();
-  });
+function balloon_img(p) {
+  return "<img src=\"balloon.svg\" class=\"svg balloon "+p+"\" />";
 }
 
-/*
-string verdict_tolongs(int verd) {
+function verdict_tolongs(verd,p) {
   switch (verd) {
-    case  AC: return "Accepted";
-    case  CE: return "Compile Error";
-    case RTE: return "Runtime Error";
-    case TLE: return "Time Limit Exceeded";
-    case  WA: return "Wrong Answer";
-    case  PE: return "Presentation Error";
+    case      "AC": return "Accepted";
+    case      "CE": return "Compile Error";
+    case     "RTE": return "Runtime Error";
+    case     "TLE": return "Time Limit Exceeded";
+    case      "WA": return "Wrong Answer";
+    case      "PE": return "Presentation Error";
+    case   "blind": return "Blind Attempt";
+    case "tojudge": return "Not Answered Yet";
+    case   "first": return balloon_img(p);
   }
   return "";
 }
-
-string balloon_img(char p) {
-  string ret = "<img src=\"balloon.svg\" class=\"svg balloon ";
-  ret += p;
-  return ret + "\" />";
-}
-*/
 
 function submission() {
   $("#content").html($("#submission").html());
@@ -156,7 +150,7 @@ function submission() {
           "<td>"+resp[i].id+"</td>"+
           "<td>"+resp[i].problem+"</td>"+
           "<td>"+resp[i].time+"</td>"+
-          "<td>"+resp[i].answer+"</td>"+
+          "<td>"+verdict_tolongs(resp[i].answer,resp[i].problem)+"</td>"+
         "</tr>"
       ;
     }
@@ -169,7 +163,46 @@ function submission() {
 }
 
 function scoreboard() {
-  show_data("scoreboard", "content", "", "", fix_balloons);
+  $.get("scoreboard",null,function(resp) {
+    var html =
+      "<h2>Scoreboard"+(svstatus.frozen ? " (frozen)" : "")+"</h2>"+
+      "<table class=\"data\">"+
+        "<tr><th>#</th><th>Name</th>"
+    ;
+    for (var i = 0; i < svstatus.problems.length; i++) {
+      html += "<th>"+String.fromCharCode(i+65)+"</th>";
+    }
+    html += "<th>Score</th></tr>";
+    for (var i = 0; i < resp.length; i++) {
+      html +=
+        "<tr>"+
+          "<td>"+(i+1)+"</td>"+
+          "<td>"+resp[i].fullname+"</td>"
+      ;
+      for (var j = 0; j < resp[i].problems.length; j++) {
+        html +=
+          "<td class=\"problem\">"
+        ;
+        var p = resp[i].problems[j];
+        if (p.cnt > 0) {
+          html += balloon_img(String.fromCharCode(j+65))+p.cnt+"/"+p.time;
+        }
+        else if (p.cnt < 0) html += (-p.cnt)+"/-";
+        html +=
+          "</td>"
+        ;
+      }
+      html +=
+          "<td>"+resp[i].solved+" ("+resp[i].penalty+")</td>"+
+        "</tr>"
+      ;
+    }
+    html +=
+      "</table>"
+    ;
+    $("#content").html(html);
+    fix_balloons();
+  });
 }
 
 function clarifications() {

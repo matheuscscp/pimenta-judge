@@ -49,23 +49,6 @@ void update(JSON& attempts) {
       ans("penalty") = penalty;
       return ans;
     }
-    string str() const {
-      string ret;
-      ret += ("<td>"+fullname+"</td>");
-      char i = 'A';
-      for (const problem_t& p : problems) {
-        ret += "<td class=\"problem\">";
-        if (p.first > 0) {
-          //ret += balloon_img(i) + to<string>(p.first)+"/";
-          ret += to<string>(p.second);
-        }
-        else if (p.first < 0) ret += to<string>(-p.first)+"/-";
-        ret += "</td>";
-        i++;
-      }
-      ret += ("<td>"+to<string>(solved)+" ("+to<string>(penalty)+")"+"</td>");
-      return ret;
-    }
   };
   
   // get necessary settings
@@ -77,7 +60,7 @@ void update(JSON& attempts) {
     freeze = (frz-beg)/60;
     blind = (bld-beg)/60;
   }
-  auto nproblems = Global::settings("contest").size();
+  auto nproblems = Global::settings("contest","problems").size();
   JSON users(move(Global::settings("users")));
   
   // convert to struct and sort

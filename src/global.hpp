@@ -57,7 +57,6 @@ bool alive();
 void shutdown();
 void load_settings();
 
-time_t remaining_time();
 template <typename... Args>
 JSON settings(Args... args) {
   lock_settings();

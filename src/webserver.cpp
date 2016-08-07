@@ -133,10 +133,15 @@ route("/statement",[=](const vector<string>&) {
 
 route("/status",[=](const vector<string>&) {
   JSON contest(move(Global::settings("contest")));
+  time_t begin  = contest("begin");
+  time_t end    = contest("end");
+  time_t freeze = contest("freeze");
+  time_t now    = time(nullptr);
   for (auto& p : contest("problems").arr()) p.erase("autojudge");
   json(map<string,JSON>{
     {"fullname" , castsess().fullname},
-    {"rem_time" , Global::remaining_time()},
+    {"rem_time" , now < begin ? 0 : max(0,int(end-now))},
+    {"freeze"   , int((end-freeze)/60)},
     {"languages", move(contest("languages"))},
     {"problems" , move(contest("problems"))}
   });

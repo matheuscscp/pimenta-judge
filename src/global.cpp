@@ -240,12 +240,4 @@ void load_settings() {
   pthread_mutex_unlock(&settings_mutex);
 }
 
-time_t remaining_time() {
-  JSON contest(move(Global::settings("contest")));
-  time_t begin = contest("begin");
-  time_t end = contest("end");
-  time_t now = time(nullptr);
-  return (now < begin ? 0 : max(0,int(end-now)));
-}
-
 } // namespace Global

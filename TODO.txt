@@ -1,4 +1,3 @@
-- refactor web interface (extract HTML from compiled code and organize view).
 - create helper module (verdict_tos and toi, to<T>, stringf, and system).
 - implement flexible problem names (remove char-'A' based indexes).
 - refactor judge compilation and running. add limits per language. use settings.
