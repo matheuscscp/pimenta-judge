@@ -10,6 +10,7 @@ Attempt::Attempt() : judged(false) {
 
 Attempt::Attempt(int id, JSON& json) : id(id) {
   problem  = json("problem").str();
+  language = json("language").str();
   verdict  = verdict_toi(json("verdict"));
   judged   = json("judged");
   when     = json("when");
@@ -21,6 +22,7 @@ Attempt::Attempt(int id, JSON& json) : id(id) {
 JSON Attempt::json() const {
   return JSON(move(map<string,JSON>{
     {"problem" , problem},
+    {"language", language},
     {"verdict" , verdict_tos(verdict)},
     {"judged"  , judged ? "true" : "false"},
     {"when"    , when},

@@ -18,7 +18,7 @@
       "year": 2016,
       "month": 8,
       "day": 7,
-      "hour": 0,
+      "hour": 21,
       "minute": 0
     },
     "duration": 300,
@@ -53,70 +53,70 @@
     },
     "problems": [
       {
-        "name": "A",
+        "dirname": "A",
         "timelimit": 4,
         "autojudge": true,
         "color": "#ff0000",
         "enabled": true
       },
       {
-        "name": "B",
+        "dirname": "B",
         "timelimit": 3,
         "autojudge": false,
         "color": "#00ff00",
         "enabled": true
       },
       {
-        "name": "C",
+        "dirname": "C",
         "timelimit": 1,
         "autojudge": true,
         "color": "#0000ff",
         "enabled": false
       },
       {
-        "name": "D",
+        "dirname": "D",
         "timelimit": 1,
         "autojudge": true,
         "color": "#ff6600",
         "enabled": false
       },
       {
-        "name": "E",
+        "dirname": "E",
         "timelimit": 1,
         "autojudge": true,
         "color": "#006600",
         "enabled": false
       },
       {
-        "name": "F",
+        "dirname": "F",
         "timelimit": 1,
         "autojudge": true,
         "color": "#003399",
         "enabled": false
       },
       {
-        "name": "G",
+        "dirname": "G",
         "timelimit": 1,
         "autojudge": true,
         "color": "#ffcc00",
         "enabled": false
       },
       {
-        "name": "H",
+        "dirname": "H",
         "timelimit": 1,
         "autojudge": true,
         "color": "#ffffff",
         "enabled": false
       },
       {
-        "name": "I",
+        "dirname": "I",
         "timelimit": 1,
         "autojudge": true,
         "color": "#000000",
         "enabled": false
       },
       {
-        "name": "J",
+        "dirname": "J",
         "timelimit": 1,
         "autojudge": true,
         "color": "#ffff00",

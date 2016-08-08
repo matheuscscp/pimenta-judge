@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "webserver.hpp"
 
 #include "helper.hpp"
@@ -44,12 +46,12 @@ class Session : public HTTP::Session {
       if (oip == -1) return;
       time_t now = time(nullptr);
       tm ti;
-      char buf[20];
-      strftime(buf,20,"%H:%M:%S %d/%m/%Y",localtime_r(&now,&ti));
+      char buf[26];
+      strftime(buf,26,"At %H:%M:%S on %d/%m/%Y",localtime_r(&now,&ti));
       log(stringf(
-        "%s at %s: IP %s logged in while IP %s was already logged in.",
-        username.c_str(),
+        "%s, username %s: IP %s logged in while IP %s was already logged in.",
         buf,
+        username.c_str(),
         HTTP::iptostr(ip).c_str(),
         HTTP::iptostr(oip).c_str()
       ));
@@ -102,10 +104,13 @@ route("/logout",[=](const vector<string>&) {
 
 route("/attempt",[=](const vector<string>&) {
   if (method() != "POST") { location("/"); return; }
+  time_t begin = Global::settings("contest","begin");
+  if (when() < begin) { response("The contest has not started yet!"); return; }
   Attempt* att  = new Attempt;
+  att->when     = int(round((when()-begin)/60.0));
   att->username = castsess().username;
   att->ip       = HTTP::iptostr(ip());
-  response(Judge::attempt(header("file-name"),payload(),att,when()));
+  response(Judge::attempt(header("file-name"),payload(),att));
 },true);
 
 route("/question",[=](const vector<string>&) {
@@ -134,17 +139,23 @@ route("/statement",[=](const vector<string>&) {
 
 route("/status",[=](const vector<string>&) {
   JSON contest(move(Global::settings("contest")));
-  time_t begin  = contest("begin");
-  time_t end    = contest("end");
-  time_t freeze = contest("freeze");
-  time_t now    = time(nullptr);
-  for (auto& p : contest("problems").arr()) p.erase("autojudge");
+  time_t begin = contest("begin");
+  time_t end   = contest("end");
+  time_t now   = time(nullptr);
+  auto& probs = contest("problems").obj();
+  JSON problems(vector<JSON>(probs.size()));
+  for (auto& p : probs) {
+    problems[int(p.second("index"))] = move(JSON(move(map<string,JSON>{
+      {"name"     , p.first},
+      {"timelimit", move(p.second("timelimit"))},
+      {"color"    , move(p.second("color"))}
+    })));
+  }
   json(map<string,JSON>{
     {"fullname" , castsess().fullname},
     {"rem_time" , now < begin ? 0 : max(0,int(end-now))},
-    {"freeze"   , int((end-freeze)/60)},
     {"languages", move(contest("languages"))},
-    {"problems" , move(contest("problems"))}
+    {"problems" , move(problems)}
   });
 },true);
 
@@ -162,14 +173,14 @@ bool check_session() {
   if (eqip(castsess().ip,ip())) return false;
   time_t now = time(nullptr);
   tm ti;
-  char buf[20];
-  strftime(buf,20,"%H:%M:%S %d/%m/%Y",localtime_r(&now,&ti));
+  char buf[26];
+  strftime(buf,26,"At %H:%M:%S on %d/%m/%Y",localtime_r(&now,&ti));
   log(stringf(
-    "%s at %s: IP %s tried to hack IP %s.",
-    castsess().username.c_str(),
+    "%s: %s had a session with IP %s and made a request with IP %s.",
     buf,
-    HTTP::iptostr(ip()).c_str(),
-    HTTP::iptostr(castsess().ip).c_str()
+    castsess().username.c_str(),
+    HTTP::iptostr(castsess().ip).c_str(),
+    HTTP::iptostr(ip()).c_str()
   ));
   return true;
 }

@@ -41,7 +41,7 @@ void update(JSON& attempts) {
     JSON json() const {
       JSON ans;
       ans("fullname") = fullname;
-      ans("problems") = vector<JSON>({});
+      ans("problems") = vector<JSON>{};
       for (auto& p : problems) ans("problems").emplace_back(map<string,JSON>{
         {"cnt" , p.first},
         {"time", p.second}
@@ -53,22 +53,25 @@ void update(JSON& attempts) {
   };
   
   // get necessary settings
-  int freeze, blind;
+  int freeze;
+  bool frozen;
   {
     time_t beg = Global::settings("contest","begin");
+    time_t end = Global::settings("contest","end");
     time_t frz = Global::settings("contest","freeze");
     time_t bld = Global::settings("contest","blind");
+    frz = min(frz,bld);
     freeze = (frz-beg)/60;
-    blind = (bld-beg)/60;
+    frozen = (frz <= time(nullptr) && frz < end);
   }
-  auto nproblems = Global::settings("contest","problems").size();
+  JSON problems(move(Global::settings("contest","problems")));
   JSON users(move(Global::settings("users")));
   
   // convert to struct and sort
   vector<Attempt> atts;
   for (auto& kv : attempts.obj()) {
     Attempt att(to<int>(kv.first),kv.second);
-    if (freeze <= att.when || blind <= att.when || !att.judged) continue;
+    if (freeze <= att.when || !att.judged) continue;
     atts.push_back(move(att));
   }
   sort(atts.begin(),atts.end());
@@ -76,12 +79,12 @@ void update(JSON& attempts) {
   // compute entries
   map<string, Entry> entriesmap;
   for (Attempt& att : atts) {
-    int prob = att.problem[0]-'A';
+    int prob = problems(att.problem,"index");
     auto it = entriesmap.find(att.username);
     if (it == entriesmap.end()) {
       Entry& entry = entriesmap[att.username];
       entry.fullname = users(att.username,"fullname").str();
-      entry.problems = vector<problem_t>(nproblems,make_pair(0,0));
+      entry.problems = vector<problem_t>(problems.size(),make_pair(0,0));
       if (att.verdict != AC) entry.problems[prob].first = -1;
       else {
         entry.problems[prob].first = 1;
@@ -110,8 +113,11 @@ void update(JSON& attempts) {
   sort(entries.begin(),entries.end());
   
   // compute json
-  JSON buf(vector<JSON>({}));
-  for (auto& e : entries) buf.push_back(move(e.json()));
+  JSON buf(map<string,JSON>{
+    {"frozen"    , frozen ? "true" : "false"},
+    {"scoreboard", vector<JSON>{}}
+  });
+  for (auto& e : entries) buf("scoreboard").push_back(move(e.json()));
   
   // update scoreboard
   pthread_mutex_lock(&scoreboard_mutex);

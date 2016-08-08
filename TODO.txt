@@ -1,8 +1,8 @@
-- implement flexible problem names (remove char-'A' based indexes).
 - refactor judge compilation and running. add limits per language. use settings.
+- implement flexible problem names (remove char-'A' based indexes).
 - main() commands.
 - web system for judges (manual judging and clarifications).
 - web system for staff (balloons and prints).
-- implement safe computation (run untrusted code safely).
 - implement HTTPS.
+- implement safe computation (run untrusted code safely).
 - ulimit -s and ulimit -v.

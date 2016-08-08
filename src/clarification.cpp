@@ -12,10 +12,10 @@ using namespace std;
 
 namespace Clarification {
 
-JSON query(const string& team) {
+JSON query(const string& username) {
   struct clarification {
     JSON obj;
-    bool read(FILE* fp, const string& team) {
+    bool read(FILE* fp, const string& username) {
       obj = JSON();
       string tmp;
       for (char c; fscanf(fp, "%c", &c) == 1 && c != ' '; tmp += c);
@@ -34,7 +34,7 @@ JSON query(const string& team) {
       for (char c = fgetc(fp); c != '"' && c != EOF; str += c, c = fgetc(fp));
       obj["answer"] = str;
       fgetc(fp);
-      if (tmp != "global" && tmp != team) obj = "false";
+      if (tmp != "global" && tmp != username) obj = "false";
       return true;
     }
   };
@@ -42,28 +42,25 @@ JSON query(const string& team) {
   JSON ans(vector<JSON>({}));
   FILE* fp = fopen("clarifications.txt", "r");
   if (!fp) return ans;
-  for (clarification c; c.read(fp, team);) if (c.obj) ans.push_back(c.obj);
+  for (clarification c; c.read(fp, username);) if (c.obj) ans.push_back(c.obj);
   fclose(fp);
   return ans;
 }
 
-string question(const string& team, const string& problem, const string& text) {
-  JSON contest(move(Global::settings("contest")));
-  time_t begin = contest("begin");
-  time_t end = contest("end");
-  auto nproblems = contest("problems").size();
+string question(
+  const string& username,
+  const string& problem,
+  const string& text
+) {
+  time_t begin = Global::settings("contest","begin");
+  time_t end   = Global::settings("contest","end");
   
   // check time
   time_t now = time(nullptr);
-  if (now < begin || end <= now) {
-    return "The contest is not running.";
-  }
+  if (now < begin || end <= now) return "The contest is not running.";
   
   // check problem
-  if (
-    problem.size() == 0 || problem.size() > 1 ||
-    problem[0] < 'A' || problem[0] > char('A' + nproblems - 1)
-  ) {
+  if (!Global::settings("contest","problems").find_tuple(problem)) {
     return "Choose a problem!";
   }
   
@@ -76,8 +73,8 @@ string question(const string& team, const string& problem, const string& text) {
   strcpy(fn, "questions/XXXXXX");
   Global::lock_question_file();
   int fd = mkstemp(fn);
-  dprintf(fd, "Team: %s\n", team.c_str());
-  dprintf(fd, "Problem: %c\n", problem[0]);
+  dprintf(fd, "Username: %s\n", username.c_str());
+  dprintf(fd, "Problem: %s\n", problem.c_str());
   dprintf(fd, "Question: %s\n", text.c_str());
   close(fd);
   Global::unlock_question_file();

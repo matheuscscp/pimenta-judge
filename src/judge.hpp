@@ -6,12 +6,7 @@
 namespace Judge {
 
 void* thread(void*);
-std::string attempt(
-  const std::string&,
-  const std::vector<uint8_t>&,
-  Attempt*,
-  time_t
-);
+std::string attempt(const std::string&,const std::vector<uint8_t>&,Attempt*);
 
 } // namespace Judge
 

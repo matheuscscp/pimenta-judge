@@ -16,11 +16,15 @@ namespace Runlist {
 void update(JSON& attempts) {
   // get necessary settings
   int blind;
+  bool blinded;
   {
     time_t beg = Global::settings("contest","begin");
+    time_t end = Global::settings("contest","end");
     time_t bld = Global::settings("contest","blind");
     blind = (bld-beg)/60;
+    blinded = (bld < end);
   }
+  JSON langs = move(Global::settings("contest","languages"));
   
   // convert to struct and sort
   vector<Attempt> atts;
@@ -33,7 +37,7 @@ void update(JSON& attempts) {
   for (auto& att : atts) {
     // answer
     string answer = verdict_tos(att.verdict);
-    if (blind <= att.when) answer = "blind";
+    if (blind <= att.when && blinded) answer = "blind";
     else if (!att.judged) answer = "tojudge";
     else if (att.verdict == AC) {
       auto& S = ACs[att.username];
@@ -45,10 +49,11 @@ void update(JSON& attempts) {
     // json
     JSON& useratts = buf.emplace(att.username,vector<JSON>({})).first->second;
     useratts.emplace_back(map<string,JSON>{
-      {"id"     , att.id},
-      {"problem", att.problem},
-      {"time"   , att.when},
-      {"answer" , answer}
+      {"id"      , att.id},
+      {"problem" , att.problem},
+      {"time"    , att.when},
+      {"language", langs(att.language,"name")},
+      {"answer"  , answer}
     });
   }
   

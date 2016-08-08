@@ -56,20 +56,20 @@ function lang_table(obj) {
   return ans+"</table>";
 }
 
-function limits_table(obj) {
+function limits_table(arr) {
   var ans =
     "<table class=\"data\">"+
       "<tr><th>Problem</th>"
   ;
-  for (var i = 0; i < obj.length; i++) {
-    ans += "<th>"+obj[i].name+"</th>";
+  for (var i = 0; i < arr.length; i++) {
+    ans += "<th>"+arr[i].name+"</th>";
   }
   ans +=
     "</tr>"+
     "<tr><th>Time limit (s)</th>"
   ;
-  for (var i = 0; i < obj.length; i++) {
-    ans += "<td>"+obj[i].timelimit+"</td>";
+  for (var i = 0; i < arr.length; i++) {
+    ans += "<td>"+arr[i].timelimit+"</td>";
   }
   ans +=
       "</tr>"+
@@ -81,7 +81,7 @@ function limits_table(obj) {
 function init_problems() {
   opts = "<option></option>";
   for (i = 0; i < svstatus.problems.length; i++) {
-    prob = String.fromCharCode(65+i);
+    prob = svstatus.problems[i].name;
     opts += ("<option value=\""+prob+"\">"+prob+"</option>");
   }
   $("#submission-problem").html(opts);
@@ -91,7 +91,6 @@ function init_problems() {
 function init() {
   $.get("status",null,function(resp) {
     svstatus = resp;
-    svstatus.frozen = false;
     svstatus.languages = lang_table(svstatus.languages);
     svstatus.limits = limits_table(svstatus.problems);
     init_problems();
@@ -104,7 +103,6 @@ function init() {
       var now = new Date().getTime()/1000;
       var dt = now-remaining_time_json.init_time;
       var tmp = Math.round(Math.max(0,remaining_time_json.remaining_time-dt));
-      if (tmp/60 <= svstatus.freeze) svstatus.frozen = true;
       var ans = (tmp == 0 ? "The contest is not running." : "Remaining time: " + (tmp+"").toHHMMSS());
       $("#remaining-time").html(ans);
     };
@@ -142,7 +140,13 @@ function submission() {
     var html =
       "<h2>Attempts</h2>"+
       "<table id=\"attempts-table\" class=\"data\">"+
-        "<tr><th>ID</th><th>Problem</th><th>Time (m)</th><th>Answer</th></tr>"
+        "<tr>"+
+          "<th>#</th>"+
+          "<th>Problem</th>"+
+          "<th>When</th>"+
+          "<th>Language</th>"+
+          "<th>Answer</th>"+
+        "</tr>"
     ;
     for (var i = 0; i < resp.length; i++) {
       html +=
@@ -150,6 +154,7 @@ function submission() {
           "<td>"+resp[i].id+"</td>"+
           "<td>"+resp[i].problem+"</td>"+
           "<td>"+resp[i].time+"</td>"+
+          "<td>"+resp[i].language+"</td>"+
           "<td>"+verdict_tolongs(resp[i].answer,resp[i].problem)+"</td>"+
         "</tr>"
       ;
@@ -163,14 +168,15 @@ function submission() {
 }
 
 function scoreboard() {
-  $.get("scoreboard",null,function(resp) {
+  $.get("scoreboard",null,function(ans) {
+    var resp = ans.scoreboard;
     var html =
-      "<h2>Scoreboard"+(svstatus.frozen ? " (frozen)" : "")+"</h2>"+
+      "<h2>Scoreboard"+(ans.frozen ? " (frozen)" : "")+"</h2>"+
       "<table class=\"data\">"+
         "<tr><th>#</th><th>Name</th>"
     ;
     for (var i = 0; i < svstatus.problems.length; i++) {
-      html += "<th>"+String.fromCharCode(i+65)+"</th>";
+      html += "<th>"+svstatus.problems[i].name+"</th>";
     }
     html += "<th>Score</th></tr>";
     for (var i = 0; i < resp.length; i++) {
@@ -185,7 +191,7 @@ function scoreboard() {
         ;
         var p = resp[i].problems[j];
         if (p.cnt > 0) {
-          html += balloon_img(String.fromCharCode(j+65))+p.cnt+"/"+p.time;
+          html += balloon_img(svstatus.problems[j].name)+p.cnt+"/"+p.time;
         }
         else if (p.cnt < 0) html += (-p.cnt)+"/-";
         html +=

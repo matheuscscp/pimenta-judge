@@ -208,14 +208,18 @@ void load_settings() {
     }
   }
   // problems
-  auto& probs = contest("problems").arr();
-  for (int i = 0; i < probs.size();) {
-    if (!probs[i]("enabled")) probs.erase(probs.begin()+i);
-    else {
-      probs[i].erase("enabled");
-      i++;
-    }
+  JSON problems;
+  for (auto& p : contest("problems").arr()) {
+    if (!p("enabled") || problems.find_tuple(p("dirname"))) continue;
+    int j = problems.size();
+    problems(move(p("dirname").str())) = move(JSON(move(map<string,JSON>{
+      {"index"    , j},
+      {"timelimit", move(p("timelimit"))},
+      {"autojudge", move(p("autojudge"))},
+      {"color"    , move(p("color"))}
+    })));
   }
+  contest("problems") = move(problems);
   pthread_mutex_unlock(&settings_mutex);
 }
 

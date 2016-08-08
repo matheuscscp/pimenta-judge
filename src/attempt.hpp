@@ -6,6 +6,7 @@
 struct Attempt {
   int id;
   std::string problem;
+  std::string language;
   char verdict;
   bool judged;
   int when;
