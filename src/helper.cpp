@@ -7,6 +7,7 @@ int verdict_toi(const string& verd) {
   if (verd ==  "CE") return CE;
   if (verd == "RTE") return RTE;
   if (verd == "TLE") return TLE;
+  if (verd == "MLE") return MLE;
   if (verd ==  "WA") return WA;
   if (verd ==  "PE") return PE;
   return -1;
@@ -18,6 +19,7 @@ string verdict_tos(int verd) {
     case  CE: return "CE";
     case RTE: return "RTE";
     case TLE: return "TLE";
+    case MLE: return "MLE";
     case  WA: return "WA";
     case  PE: return "PE";
   }

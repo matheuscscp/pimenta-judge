@@ -122,6 +122,7 @@ function verdict_tolongs(verd,p) {
     case      "CE": return "Compile Error";
     case     "RTE": return "Runtime Error";
     case     "TLE": return "Time Limit Exceeded";
+    case     "MLE": return "Memory Limit Exceeded";
     case      "WA": return "Wrong Answer";
     case      "PE": return "Presentation Error";
     case   "blind": return "Blind Attempt";

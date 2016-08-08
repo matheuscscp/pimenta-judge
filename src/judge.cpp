@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/resource.h>
 
 #include "judge.hpp"
 
@@ -24,7 +25,7 @@ struct QueueData {
 
 static map<string, Script> scripts;
 static queue<QueueData> jqueue;
-static pthread_mutex_t judger_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t judge_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void judge(QueueData& qd) {
   Attempt& att = *qd.att;
@@ -79,7 +80,7 @@ static void judge(QueueData& qd) {
   delete qd.att;
 }
 
-static __suseconds_t dt(const timeval& start) {
+static __suseconds_t dtt(const timeval& start) {
   timeval end;
   gettimeofday(&end, nullptr);
   return
@@ -129,14 +130,14 @@ static char run(
     // judge
     int status;
     while (waitpid(proc, &status, WNOHANG) != proc && ans == AC) {
-      if (dt(start) > us) {
+      if (dtt(start) > us) {
         kill(-proc, SIGKILL); // the minus kills the whole group rooted at proc
         waitpid(proc, &status, 0);
         ans = TLE;
       }
       if (ans == AC) usleep(10000);
     }
-    ms = (ans == TLE ? tle_secs*1000 : max(ms,int(dt(start)/1000)));
+    ms = (ans == TLE ? tle_secs*1000 : max(ms,int(dtt(start)/1000)));
     if (WEXITSTATUS(status)) ans = RTE;
   }
   closedir(dir);
@@ -167,19 +168,77 @@ static void load_scripts() {
   };
 }
 
+static long long dt(const timeval& start) {
+  timeval end;
+  gettimeofday(&end,nullptr);
+  long long ans = end.tv_sec;
+  ans *= 1000000;
+  ans += end.tv_usec;
+  ans -= start.tv_usec;
+  ans -= 1000000*(long long)start.tv_sec;
+  return ans;
+}
+static char run(const char* c, int tls, int mlkB, int& mtms, int& mmkB) {
+  // init time
+  timeval start;
+  gettimeofday(&start,nullptr);
+  // child
+  pid_t pid = fork();
+  if (!pid) {
+    setpgid(0,0); // create new process group rooted at pid
+    rlimit r;
+    r.rlim_cur = (1<<30)-1;
+    r.rlim_max = (1<<30)-1;
+    setrlimit(RLIMIT_AS,&r);
+    r.rlim_cur = RLIM_INFINITY;
+    r.rlim_max = RLIM_INFINITY;
+    setrlimit(RLIMIT_STACK,&r);
+    execl("/bin/sh","/bin/sh","-c",c,(char*)0);
+    _exit(0);
+  }
+  // parent
+  int st;
+  rusage r;
+  long long tl = tls*(long long)1000000;
+  while (wait4(pid,&st,WNOHANG,&r) != pid) {
+    if (dt(start) > tl) {
+      kill(-pid,SIGKILL); // the minus kills the whole group rooted at pid
+      wait4(pid,nullptr,0,&r);
+      break;
+    }
+    usleep(10000);
+  }
+  mtms = min(tls*1000,int(dt(start)/1000));
+  mmkB = min(mlkB,int(r.ru_maxrss));
+  if (mtms == tls*1000) return TLE;
+  if (mmkB == mlkB) return MLE;
+  if (!WIFEXITED(st) || WEXITSTATUS(st) || WIFSIGNALED(st)) return RTE;
+  return AC;
+}
+static char run(
+  const string& problem,  // problems/problem/input
+  const string& path,     // path/{source|target|output/}
+  JSON& settings,         // {language: {...}, problem: {...}}
+  int& mtms,
+  int& mmkB,
+  bool enforce_limits = true
+) {
+  //TODO
+}
+
 namespace Judge {
 
 void* thread(void*) {
   load_scripts();
   while (Global::alive()) {
-    pthread_mutex_lock(&judger_mutex);
+    pthread_mutex_lock(&judge_mutex);
     if (jqueue.empty()) {
-      pthread_mutex_unlock(&judger_mutex);
+      pthread_mutex_unlock(&judge_mutex);
       usleep(25000);
       continue;
     }
     QueueData qd = jqueue.front(); jqueue.pop();
-    pthread_mutex_unlock(&judger_mutex);
+    pthread_mutex_unlock(&judge_mutex);
     judge(qd);
   }
 }
@@ -222,9 +281,9 @@ string attempt(const string& fn, const vector<uint8_t>& file, Attempt* attptr) {
   fclose(fp);
   
   // push task
-  pthread_mutex_lock(&judger_mutex);
+  pthread_mutex_lock(&judge_mutex);
   jqueue.emplace(attptr,path);
-  pthread_mutex_unlock(&judger_mutex);
+  pthread_mutex_unlock(&judge_mutex);
   
   return "Attempt "+to<string>(att.id)+" received!";
 }

@@ -3,7 +3,7 @@
 
 #include <string>
 
-enum {AC = 0, CE, RTE, TLE, WA, PE};
+enum {AC = 0, CE, RTE, TLE, MLE, WA, PE};
 int verdict_toi(const std::string&);
 std::string verdict_tos(int);
 
