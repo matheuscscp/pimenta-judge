@@ -13,7 +13,7 @@ static pthread_mutex_t runlist_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 namespace Runlist {
 
-void update(JSON& attempts) {
+void update(map<int,JSON>& attempts) {
   // get necessary settings
   int blind;
   bool blinded;
@@ -28,7 +28,7 @@ void update(JSON& attempts) {
   
   // convert to struct and sort
   vector<Attempt> atts;
-  for (auto& kv : attempts.obj())atts.emplace_back(to<int>(kv.first),kv.second);
+  for (auto& kv : attempts) atts.emplace_back(kv.second);
   sort(atts.begin(),atts.end());
   
   // compute jsons

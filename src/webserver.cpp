@@ -142,14 +142,11 @@ route("/status",[=](const vector<string>&) {
   time_t begin = contest("begin");
   time_t end   = contest("end");
   time_t now   = time(nullptr);
-  auto& probs = contest("problems").obj();
-  JSON problems(vector<JSON>(probs.size()));
-  for (auto& p : probs) {
-    problems[int(p.second("index"))] = move(JSON(move(map<string,JSON>{
-      {"name"     , p.first},
-      {"timelimit", move(p.second("timelimit"))},
-      {"color"    , move(p.second("color"))}
-    })));
+  JSON problems(vector<JSON>(contest("problems").size()));
+  for (auto& kv : contest("problems").obj()) {
+    int i = kv.second("index");
+    problems[i] = kv.second;
+    problems[i]("name") = kv.first;
   }
   json(map<string,JSON>{
     {"fullname" , castsess().fullname},
@@ -157,6 +154,30 @@ route("/status",[=](const vector<string>&) {
     {"languages", move(contest("languages"))},
     {"problems" , move(problems)}
   });
+},true);
+
+route("/source",[=](const vector<string>& args) {
+  if (args.size() == 0) { not_found(); return; }
+  int id;
+  if (!read(args[0],id)) { not_found(); return; }
+  Global::lock_attempts();
+  auto it = Global::attempts.find(id);
+  if (it == Global::attempts.end()) {
+    Global::unlock_attempts();
+    not_found();
+    return;
+  }
+  JSON tmp(it->second);
+  Global::unlock_attempts();
+  auto& user = tmp("username").str();
+  if (user != castsess().username) { not_found(); return; }
+  string fn = "attempts";
+  fn += "/"+user;
+  fn += "/"+tmp("problem").str();
+  fn += "/"+tmp("id").str();
+  fn += "/"+tmp("problem").str();
+  fn += tmp("language").str();
+  file(fn,"text/plain");
 },true);
 
 }

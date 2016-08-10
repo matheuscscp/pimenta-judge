@@ -3,7 +3,7 @@
 
 #include <string>
 
-enum {AC = 0, CE, RTE, TLE, MLE, WA, PE};
+enum {AC = 0, CE, TLE, MLE, RTE, WA, PE};
 int verdict_toi(const std::string&);
 std::string verdict_tos(int);
 
@@ -14,14 +14,17 @@ NewType to(const T& x) {
   return ret;
 }
 
+template <typename T1, typename T2>
+bool read(const T1& s, T2& t) {
+  std::stringstream ss; ss << s;
+  return ss >> t;
+}
+
 template <typename... Args>
 std::string stringf(const char* fmt, Args... args) {
   char aux;
-  int len = snprintf(&aux, 1, fmt, args...);
-  char* buf = new char[len+1];
-  sprintf(buf, fmt, args...);
-  std::string ret = buf;
-  delete[] buf;
+  std::string ret(snprintf(&aux,1,fmt,args...),' ');
+  sprintf((char*)ret.c_str(),fmt,args...);
   return ret;
 }
 

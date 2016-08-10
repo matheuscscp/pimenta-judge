@@ -132,6 +132,24 @@ function verdict_tolongs(verd,p) {
   return "";
 }
 
+function source(id,problem,answer) {
+  $("#content").html("<h2>Attempt "+id+"</h2>");
+  $("#content").append($(
+    "<center>"+
+      "Problem: "+problem+"<br>"+
+      "Answer: "+verdict_tolongs(answer,problem)+
+    "</center>"
+  ));
+  $.get("source/"+id,null,function(resp) {
+    $("#content").append($(
+      "<pre id=\"code\" class=\"prettyprint linenums\">"+
+      "</pre>"
+    ));
+    $("#code").text(resp);
+    PR.prettyPrint();
+  });
+}
+
 function submission() {
   $("#content").html($("#submission").html());
   $("#submission-problem").focus();
@@ -152,7 +170,7 @@ function submission() {
     for (var i = 0; i < resp.length; i++) {
       html +=
         "<tr>"+
-          "<td>"+resp[i].id+"</td>"+
+          "<td><a href=\"#\" onclick=\"source("+resp[i].id+",'"+resp[i].problem+"','"+resp[i].answer+"')\">"+resp[i].id+"</a></td>"+
           "<td>"+resp[i].problem+"</td>"+
           "<td>"+resp[i].time+"</td>"+
           "<td>"+resp[i].language+"</td>"+

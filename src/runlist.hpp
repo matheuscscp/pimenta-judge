@@ -5,7 +5,7 @@
 
 namespace Runlist {
 
-void update(JSON&);
+void update(std::map<int,JSON>&);
 std::string query(const std::string&);
 
 } // namespace Runlist

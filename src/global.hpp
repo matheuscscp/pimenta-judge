@@ -14,7 +14,7 @@ JSON& settings_ref();
 
 namespace Global {
 
-extern JSON attempts;
+extern std::map<int,JSON> attempts;
 
 void install(const std::string&);
 void start();

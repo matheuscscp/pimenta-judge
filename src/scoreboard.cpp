@@ -13,7 +13,7 @@ static pthread_mutex_t scoreboard_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 namespace Scoreboard {
 
-void update(JSON& attempts) {
+void update(map<int,JSON>& attempts) {
   typedef pair<int,int> problem_t;
   struct Entry {
     string fullname;
@@ -69,8 +69,8 @@ void update(JSON& attempts) {
   
   // convert to struct and sort
   vector<Attempt> atts;
-  for (auto& kv : attempts.obj()) {
-    Attempt att(to<int>(kv.first),kv.second);
+  for (auto& kv : attempts) {
+    Attempt att(kv.second);
     if (freeze <= att.when || !att.judged) continue;
     atts.push_back(move(att));
   }

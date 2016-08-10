@@ -19,6 +19,18 @@
 
 using namespace std;
 
+static void read_attempts() {
+  JSON tmp;
+  if (!tmp.read_file("attempts.json")) return;
+  for (auto& att : tmp.arr()) Global::attempts[att("id")] = att;
+}
+
+static void write_attempts(const map<int,JSON>& attempts) {
+  JSON tmp(vector<JSON>{});
+  for (auto& kv : attempts) tmp.push_back(kv.second);
+  tmp.write_file("attempts.json");
+}
+
 static bool quit = false;
 static JSON settings;
 static pthread_mutex_t settings_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -41,9 +53,9 @@ class Contest {
       static time_t nxtupd = 0;
       if (time(nullptr) < nxtupd) return;
       pthread_mutex_lock(&attempts_mutex);
-      JSON atts(Global::attempts);
+      map<int,JSON> atts(Global::attempts);
       pthread_mutex_unlock(&attempts_mutex);
-      atts.write_file("attempts.json");
+      write_attempts(atts);
       Runlist::update(atts);
       Scoreboard::update(atts);
       nxtupd = time(nullptr)+5;
@@ -81,7 +93,7 @@ JSON& settings_ref() {
 
 namespace Global {
 
-JSON attempts;
+map<int,JSON> attempts;
 
 void install(const string& dir) {
   system("cp -rf /usr/local/share/pjudge %s", dir.c_str());
@@ -101,7 +113,7 @@ void start() {
   signal(SIGTERM, term); // Global::shutdown();
   signal(SIGPIPE, SIG_IGN); // avoid broken pipes termination signal
   load_settings();
-  if (!attempts.read_file("attempts.json")) attempts = JSON();
+  read_attempts();
   pthread_t judge, webserver;
   pthread_create(&judge,nullptr,Judge::thread,nullptr);
   pthread_create(&webserver,nullptr,WebServer::thread,nullptr);
@@ -210,14 +222,12 @@ void load_settings() {
   // problems
   JSON problems;
   for (auto& p : contest("problems").arr()) {
-    if (!p("enabled") || problems.find_tuple(p("dirname"))) continue;
-    int j = problems.size();
-    problems(move(p("dirname").str())) = move(JSON(move(map<string,JSON>{
-      {"index"    , j},
-      {"timelimit", move(p("timelimit"))},
-      {"autojudge", move(p("autojudge"))},
-      {"color"    , move(p("color"))}
-    })));
+    if (problems.find_tuple(p("dirname")) || !p("enabled")) continue;
+    string key = move(p("dirname").str());
+    p.erase("dirname");
+    p("index") = problems.size();
+    p.erase("enabled");
+    problems(move(key)) = move(p);
   }
   contest("problems") = move(problems);
   pthread_mutex_unlock(&settings_mutex);

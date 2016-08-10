@@ -5,7 +5,7 @@
 
 namespace Scoreboard {
 
-void update(JSON&);
+void update(std::map<int,JSON>&);
 std::string query();
 
 } // namespace Scoreboard

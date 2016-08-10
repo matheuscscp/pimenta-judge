@@ -11,9 +11,7 @@ static void usagemode() {
     "  install <new directory name without trailing slash>\n"
     "  start\n"
     "  stop\n"
-    "  reload-settings (does not work for webserver settings)\n"
-    "  gen-outs <list of problem names>\n"
-    "  gen-all-outs [list of problem names to skip]\n"
+    "  reload (reload all settings except webserver)\n"
     "  rerun-id <attempt id>\n"
     "  rerun-atts <list of problem names>\n"
     "  rerun-all-atts [list of problem names to skip]\n",
@@ -35,7 +33,7 @@ int main(int argc, char** argv) {
   else if (mode == "stop") {
     Global::stop();
   }
-  else if (mode == "reload-settings") {
+  else if (mode == "reload") {
     Global::reload_settings();
   }
   else usagemode();

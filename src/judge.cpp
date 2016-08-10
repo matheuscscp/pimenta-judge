@@ -27,145 +27,27 @@ static map<string, Script> scripts;
 static queue<QueueData> jqueue;
 static pthread_mutex_t judge_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static void judge(QueueData& qd) {
-  Attempt& att = *qd.att;
-  JSON problem(move(Global::settings("contest","problems",att.problem)));
-  
-  // run
-  int maxms = 0;
-  char verd = scripts[att.language](
-    att.problem[0],
-    (char*)qd.path.c_str(),
-    (char*)(qd.path+att.problem+att.language).c_str(),
-    int(problem("timelimit")),
-    maxms
-  );
-  att.runtime = stringf("%.3lf",maxms/1000.0);
-  
-  // diff files
-  if (verd == AC) {
-    string dn = stringf("problems/%c/output/",att.problem[0]);
-    DIR* dir = opendir(dn.c_str());
-    for (dirent* ent = readdir(dir); ent && verd == AC; ent = readdir(dir)) {
-      string fn = dn+ent->d_name;
-      
-      // check if dirent is regular file
-      struct stat stt;
-      stat(fn.c_str(),&stt);
-      if (!S_ISREG(stt.st_mode)) continue;
-      
-      // diffs
-      int status = system(
-        "diff -wB %s %soutput/%s", fn.c_str(), qd.path.c_str(), ent->d_name
-      );
-      if (WEXITSTATUS(status)) verd = WA;
-      else {
-        status = system(
-          "diff %s %soutput/%s", fn.c_str(), qd.path.c_str(), ent->d_name
-        );
-        if (WEXITSTATUS(status)) verd = PE;
-      }
-    }
-    closedir(dir);
-  }
-  att.verdict = verd;
-  
-  // status
-  att.judged = problem("autojudge");
-  
-  // save attempt info
-  Global::lock_attempts();
-  Global::attempts(to<string>(att.id)) = move(att.json());
-  Global::unlock_attempts();
-  delete qd.att;
-}
-
-static __suseconds_t dtt(const timeval& start) {
-  timeval end;
-  gettimeofday(&end, nullptr);
-  return
-    (end.tv_sec*1000000 + end.tv_usec)-
-    (start.tv_sec*1000000 + start.tv_usec)
-  ;
-}
-static char run(
-  int tle_secs,
-  const string& exec_cmd,
-  char problem,
-  const string& output_path,
-  int& ms
+// %p = path
+// %s = source
+// %P = problem
+static string command(
+  const string& srccmd,
+  const string& path,
+  const string& prob,
+  const string& lang
 ) {
-  char ans = AC;
-  __suseconds_t us = tle_secs*1000000;
-  
-  string dn = stringf("problems/%c/input/",problem);
-  DIR* dir = opendir(dn.c_str());
-  for (dirent* ent = readdir(dir); ent && ans == AC; ent = readdir(dir)) {
-    string fn = dn+ent->d_name;
-    
-    // check if dirent is regular file
-    struct stat stt;
-    stat(fn.c_str(),&stt);
-    if (!S_ISREG(stt.st_mode)) continue;
-    
-    // init time
-    timeval start;
-    gettimeofday(&start, nullptr);
-    
-    // child
-    pid_t proc = fork();
-    if (!proc) {
-      // TODO lose root permissions
-      setpgid(0, 0); // create new process group rooted at proc
-      int status = system(
-        "%s < %s > %soutput/%s",
-        exec_cmd.c_str(),
-        fn.c_str(),
-        output_path.c_str(),
-        ent->d_name
-      );
-      exit(WEXITSTATUS(status));
+  string cmd;
+  for (const char* s = srccmd.c_str(); *s; s++) {
+    if (*s != '%') { cmd += *s; continue; }
+    s++;
+    switch (*s) {
+      case 'p': cmd += path;                break;
+      case 's': cmd += path+"/"+prob+lang;  break;
+      case 'P': cmd += prob;                break;
+      default:  cmd += *(--s);              break;
     }
-    
-    // judge
-    int status;
-    while (waitpid(proc, &status, WNOHANG) != proc && ans == AC) {
-      if (dtt(start) > us) {
-        kill(-proc, SIGKILL); // the minus kills the whole group rooted at proc
-        waitpid(proc, &status, 0);
-        ans = TLE;
-      }
-      if (ans == AC) usleep(10000);
-    }
-    ms = (ans == TLE ? tle_secs*1000 : max(ms,int(dtt(start)/1000)));
-    if (WEXITSTATUS(status)) ans = RTE;
   }
-  closedir(dir);
-  
-  return ans;
-}
-static void load_scripts() {
-  scripts[".c"] = [](char p, char* path, char* fn, int tl, int& ms) {
-    int status = system("gcc -std=c11 %s -o %s%c -lm", fn, path, p);
-    if (WEXITSTATUS(status)) return char(CE);
-    return run(tl,stringf("%s%c",path,p),p,path,ms);
-  };
-  scripts[".cpp"] = [](char p, char* path, char* fn, int tl, int& ms) {
-    int status = system("g++ -std=c++1y %s -o %s%c", fn, path, p);
-    if (WEXITSTATUS(status)) return char(CE);
-    return run(tl,stringf("%s%c",path,p),p,path,ms);
-  };
-  scripts[".java"] = [](char p, char* path, char* fn, int tl, int& ms) {
-    int status = system("javac %s", fn);
-    if (WEXITSTATUS(status)) return char(CE);
-    return run(tl,stringf("java -cp %s %c",path,p),p,path,ms);
-  };
-  scripts[".py"] = [](char p, char* path, char* fn, int tl, int& ms) {
-    return run(tl,stringf("python %s", fn),p,path,ms);
-  };
-  scripts[".py3"] = [](char p, char* path, char* fn, int tl, int& ms) {
-    return run(tl,stringf("python3 %s",fn),p,path,ms);
-  };
+  return cmd;
 }
 
 static long long dt(const timeval& start) {
@@ -178,7 +60,8 @@ static long long dt(const timeval& start) {
   ans -= 1000000*(long long)start.tv_sec;
   return ans;
 }
-static char run(const char* c, int tls, int mlkB, int& mtms, int& mmkB) {
+
+static char run(const string& cmd, int tls, int mlkB, int& mtms, int& mmkB) {
   // init time
   timeval start;
   gettimeofday(&start,nullptr);
@@ -187,13 +70,10 @@ static char run(const char* c, int tls, int mlkB, int& mtms, int& mmkB) {
   if (!pid) {
     setpgid(0,0); // create new process group rooted at pid
     rlimit r;
-    r.rlim_cur = (1<<30)-1;
-    r.rlim_max = (1<<30)-1;
-    setrlimit(RLIMIT_AS,&r);
     r.rlim_cur = RLIM_INFINITY;
     r.rlim_max = RLIM_INFINITY;
     setrlimit(RLIMIT_STACK,&r);
-    execl("/bin/sh","/bin/sh","-c",c,(char*)0);
+    execl("/bin/sh","/bin/sh","-c",cmd.c_str(),(char*)0);
     _exit(0);
   }
   // parent
@@ -208,28 +88,91 @@ static char run(const char* c, int tls, int mlkB, int& mtms, int& mmkB) {
     }
     usleep(10000);
   }
-  mtms = min(tls*1000,int(dt(start)/1000));
-  mmkB = min(mlkB,int(r.ru_maxrss));
-  if (mtms == tls*1000) return TLE;
-  if (mmkB == mlkB) return MLE;
+  mtms = dt(start)/1000;
+  mmkB = r.ru_maxrss;
+  if (mtms > tls*1000) return TLE;
+  if (mmkB > mlkB) return MLE;
   if (!WIFEXITED(st) || WEXITSTATUS(st) || WIFSIGNALED(st)) return RTE;
   return AC;
 }
-static char run(
-  const string& problem,  // problems/problem/input
-  const string& path,     // path/{source|target|output/}
-  JSON& settings,         // {language: {...}, problem: {...}}
-  int& mtms,
-  int& mmkB,
-  bool enforce_limits = true
-) {
-  //TODO
+
+static void judge(QueueData& qd) {
+  Attempt& att = *qd.att;
+  
+  // get compilation settings
+  JSON language(move(Global::settings("contest","languages",att.language)));
+  
+  // compile
+  if (language.find_tuple("compile")) {
+    int status = system(command(
+      language("compile"),
+      qd.path,
+      att.problem,
+      att.language
+    ).c_str());
+    if (WEXITSTATUS(status)) {
+      att.verdict = CE;
+      att.judged = true; // CE needs no judgement by humans
+      Attempt::commit(qd.att);
+      return;
+    }
+  }
+  
+  // get execution settings
+  string cmd = move(command(language("run"),qd.path,att.problem,att.language));
+  JSON problem(move(Global::settings("contest","problems",att.problem)));
+  int Mtms=0,MmkB=0,mtms,mmkB;
+  int tls =
+    problem.find_tuple(att.language,"timelimit") ?
+    problem(att.language,"timelimit") :
+    problem("timelimit")
+  ;
+  int mlkB =
+    problem.find_tuple(att.language,"memlimit") ?
+    problem(att.language,"memlimit") :
+    problem("memlimit")
+  ;
+  
+  // init attempt
+  att.verdict = AC;
+  att.judged = problem("autojudge");
+  
+  // for each input file
+  string dn = "problems/"+att.problem;
+  DIR* dir = opendir((dn+"/input").c_str());
+  for (dirent* ent = readdir(dir); ent; ent = readdir(dir)) {
+    string fn = ent->d_name;
+    string ifn = dn+"/input/"+fn;
+    
+    // check if dirent is regular file
+    struct stat stt;
+    stat(ifn.c_str(),&stt);
+    if (!S_ISREG(stt.st_mode)) continue;
+    
+    // run
+    string ofn = qd.path+"/output/"+fn;
+    att.verdict = run(cmd+" < "+ifn+" > "+ofn,tls,mlkB,mtms,mmkB);
+    Mtms = max(Mtms,mtms);
+    MmkB = max(MmkB,mmkB);
+    if (att.verdict != AC) break;
+    
+    // diff
+    string sfn = dn+"/output/"+fn;
+    int status = system("diff -wB %s %s",ofn.c_str(),sfn.c_str());
+    if (WEXITSTATUS(status)) { att.verdict = WA; break; }
+    status = system("diff %s %s",ofn.c_str(),sfn.c_str());
+    if (WEXITSTATUS(status)) { att.verdict = PE; break; }
+  }
+  
+  // commit
+  att.time = move(stringf("%d",mtms));
+  att.memory = move(stringf("%d",mmkB));
+  Attempt::commit(qd.att);
 }
 
 namespace Judge {
 
 void* thread(void*) {
-  load_scripts();
   while (Global::alive()) {
     pthread_mutex_lock(&judge_mutex);
     if (jqueue.empty()) {
@@ -260,23 +203,22 @@ string attempt(const string& fn, const vector<uint8_t>& file, Attempt* attptr) {
   // generate id
   att.id = 1;
   Global::lock_attempts();
-  auto& atts = Global::attempts.obj();
-  auto it = atts.rbegin();
-  if (it != atts.rend()) att.id = to<int>(it->first)+1;
-  atts[move(to<string>(att.id))] = move(att.json());
+  auto it = Global::attempts.rbegin();
+  if (it != Global::attempts.rend()) att.id = it->first+1;
+  Global::attempts[att.id] = move(att.json());
   Global::unlock_attempts();
   
   // save file
-  string path = "attempts/";
+  string path = "attempts";
   mkdir(path.c_str(), 0777);
-  path += (att.username+"/");
+  path += ("/"+att.username);
   mkdir(path.c_str(), 0777);
-  path += (att.problem+"/");
+  path += ("/"+att.problem);
   mkdir(path.c_str(), 0777);
-  path += (to<string>(att.id)+"/");
+  path += ("/"+to<string>(att.id));
   mkdir(path.c_str(), 0777);
-  mkdir((path+"output/").c_str(), 0777);
-  FILE* fp = fopen((path+fn).c_str(), "wb");
+  mkdir((path+"/output").c_str(), 0777);
+  FILE* fp = fopen((path+"/"+fn).c_str(), "wb");
   fwrite(&file[0], file.size(), 1, fp);
   fclose(fp);
   

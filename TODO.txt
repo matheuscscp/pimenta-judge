@@ -1,8 +1,9 @@
-- refactor judge compilation and running. add limits per language. use settings.
-- implement flexible problem names (remove char-'A' based indexes).
-- show sources of attempts on runlist (https://github.com/google/code-prettify).
+- improve attempt web interface (choose lang and field to paste source code).
 - main() commands.
-- web system for judges (manual judging and clarifications).
-- web system for staff (balloons and prints).
+- allow multiple contests.
+- web system for judges (
+    attempt privileges and hidding, manual judging and clarifications
+  ).
+- web system for staff (attempt privileges and hidding, balloons and prints).
 - implement HTTPS.
 - implement safe computation (run untrusted code safely).

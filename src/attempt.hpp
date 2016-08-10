@@ -10,13 +10,16 @@ struct Attempt {
   char verdict;
   bool judged;
   int when;
-  std::string runtime;
+  std::string time;
+  std::string memory;
   std::string username;
   std::string ip;
   Attempt();
-  Attempt(int,JSON&);
+  Attempt(JSON&);
   JSON json() const;
   bool operator<(const Attempt&) const;
+  void store() const;
+  static void commit(Attempt*);
 };
 
 #endif
