@@ -45,18 +45,6 @@
         "run": "java -cp %p %P",
         "flags": "",
         "enabled": true
-      },
-      ".py": {
-        "name": "Python",
-        "run": "python %s",
-        "flags": "",
-        "enabled": false
-      },
-      ".py3": {
-        "name": "Python 3",
-        "run": "python3 %s",
-        "flags": "",
-        "enabled": false
       }
     },
     "problems": [
@@ -71,65 +59,9 @@
       {
         "dirname": "B",
         "timelimit": 3,
-        "autojudge": false,
+        "autojudge": true,
         "color": "#00ff00",
         "enabled": true
-      },
-      {
-        "dirname": "C",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#0000ff",
-        "enabled": false
-      },
-      {
-        "dirname": "D",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#ff6600",
-        "enabled": false
-      },
-      {
-        "dirname": "E",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#006600",
-        "enabled": false
-      },
-      {
-        "dirname": "F",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#003399",
-        "enabled": false
-      },
-      {
-        "dirname": "G",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#ffcc00",
-        "enabled": false
-      },
-      {
-        "dirname": "H",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#ffffff",
-        "enabled": false
-      },
-      {
-        "dirname": "I",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#000000",
-        "enabled": false
-      },
-      {
-        "dirname": "J",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#ffff00",
-        "enabled": false
       }
     ]
   },

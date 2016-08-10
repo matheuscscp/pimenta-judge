@@ -1,16 +1,6 @@
 # pimenta-judge
 ACM ICPC contest system for GNU/Linux.
 
-The currently supported programming languages are:
-
-| Language | Compilation command | Execution command |
-| -------- | ------------------- | ----------------- |
-| C        | `gcc -std=c11 -lm`  | GNU/Linux default |
-| C++      | `g++ -std=c++1y`    | GNU/Linux default |
-| Java     | `javac`             | `java -cp`        |
-| Python   |                     | `python`          |
-| Python 3 |                     | `python3`         |
-
 ## Table of contents
 * [Installation](#installation)
 * [Usage](#usage)
@@ -45,7 +35,6 @@ $ pjudge stop
 
 ### Hints
 * All it takes to run a `pjudge` instance is a directory and a network port. So you can have multiple contests running in the same host!
-* `pjudge` do *not* supports memory limit configuration. If you need it, feel free to use GNU/Linux commands, like `ulimit -a`, `ulimit -s` and `ulimit -v`, *before* starting `pjudge`!
 
 ## Directory and file structure
 
@@ -98,8 +87,8 @@ Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify t
     "start": {
       "year": 2016,
       "month": 8,
-      "day": 7,
-      "hour": 0,
+      "day": 9,
+      "hour": 20,
       "minute": 0
     },
     "duration": 300,
@@ -108,100 +97,41 @@ Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify t
     "languages": {
       ".c": {
         "name": "C",
+        "compile": "gcc -std=c11 %s -o %p/%P -lm",
+        "run": "%p/%P",
         "flags": "-std=c11 -lm",
         "enabled": true
       },
       ".cpp": {
         "name": "C++",
+        "compile": "g++ -std=c++1y %s -o %p/%P",
+        "run": "%p/%P",
         "flags": "-std=c++1y",
         "enabled": true
       },
       ".java": {
         "name": "Java",
+        "compile": "javac %s",
+        "run": "java -cp %p %P",
         "flags": "",
         "enabled": true
-      },
-      ".py": {
-        "name": "Python",
-        "flags": "",
-        "enabled": false
-      },
-      ".py3": {
-        "name": "Python 3",
-        "flags": "",
-        "enabled": false
       }
     },
     "problems": [
       {
-        "name": "A",
+        "dirname": "A",
         "timelimit": 4,
+        "memlimit": 100000,
         "autojudge": true,
         "color": "#ff0000",
         "enabled": true
       },
       {
-        "name": "B",
+        "dirname": "B",
         "timelimit": 3,
-        "autojudge": false,
+        "autojudge": true,
         "color": "#00ff00",
         "enabled": true
-      },
-      {
-        "name": "C",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#0000ff",
-        "enabled": false
-      },
-      {
-        "name": "D",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#ff6600",
-        "enabled": false
-      },
-      {
-        "name": "E",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#006600",
-        "enabled": false
-      },
-      {
-        "name": "F",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#003399",
-        "enabled": false
-      },
-      {
-        "name": "G",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#ffcc00",
-        "enabled": false
-      },
-      {
-        "name": "H",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#ffffff",
-        "enabled": false
-      },
-      {
-        "name": "I",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#000000",
-        "enabled": false
-      },
-      {
-        "name": "J",
-        "timelimit": 1,
-        "autojudge": true,
-        "color": "#ffff00",
-        "enabled": false
       }
     ]
   },
@@ -221,9 +151,6 @@ Files of the web interface, like HTML, CSS and JavaScript. Feel free to modify t
   }
 }
 ```
-
-##### WARNING
-Problems must be A, B, C and so on. No letter can be skipped! And remember to keep the alphabetical order!
 
 #### File `clarifications.txt`
 ```
