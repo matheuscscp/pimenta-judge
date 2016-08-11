@@ -19,10 +19,11 @@ static void usagemode() {
     "Online options:\n"
     "  stop\n"
     "  restart (stop followed by start)\n"
-    "  reload (just reload all settings except webserver's)\n"
+    "  reload (reload all except webserver settings)\n"
     "  rerun-att <attempt id>\n"
     "  rerun-probs <list of problem id ranges> (* reruns ALL attempts)\n"
-    "    Example to rerun problems 1, 3, 4 and 5: %s rerun-probs 1 3-5\n",
+    "    Example to rerun problems 1, 3, 4, 5 and 6:\n"
+    "    %s rerun-probs 1 3-6\n",
     exe,exe
   );
 }
