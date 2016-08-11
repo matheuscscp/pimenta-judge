@@ -20,7 +20,7 @@ typedef function<char(char, char*, char*, int, int&)> Script;
 struct QueueData {
   Attempt* att;
   string path;
-  QueueData(Attempt* att, string path) : att(att), path(path) {}
+  QueueData(Attempt* att, string&& path) : att(att), path(path) {}
 };
 
 static map<string, Script> scripts;
@@ -209,22 +209,15 @@ string attempt(const string& fn, const vector<uint8_t>& file, Attempt* attptr) {
   Global::unlock_attempts();
   
   // save file
-  string path = "attempts";
-  mkdir(path.c_str(), 0777);
-  path += ("/"+att.username);
-  mkdir(path.c_str(), 0777);
-  path += ("/"+att.problem);
-  mkdir(path.c_str(), 0777);
-  path += ("/"+to<string>(att.id));
-  mkdir(path.c_str(), 0777);
-  mkdir((path+"/output").c_str(), 0777);
+  string path = "attempts/"+to<string>(att.id);
+  system("mkdir -p %s/output",path.c_str());
   FILE* fp = fopen((path+"/"+fn).c_str(), "wb");
   fwrite(&file[0], file.size(), 1, fp);
   fclose(fp);
   
   // push task
   pthread_mutex_lock(&judge_mutex);
-  jqueue.emplace(attptr,path);
+  jqueue.emplace(attptr,move(path));
   pthread_mutex_unlock(&judge_mutex);
   
   return "Attempt "+to<string>(att.id)+" received!";

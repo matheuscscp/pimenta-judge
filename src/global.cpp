@@ -96,7 +96,15 @@ namespace Global {
 map<int,JSON> attempts;
 
 void install(const string& dir) {
-  system("cp -rf /usr/local/share/pjudge %s", dir.c_str());
+  FILE* fp = fopen(dir.c_str(),"r");
+  if (fp) {
+    fclose(fp);
+    printf("pjudge install failed: file already exists.\n");
+    return;
+  }
+  system("mkdir -p %s",dir.c_str());
+  system("cp -rf /usr/local/share/pjudge/* %s",dir.c_str());
+  printf("pjudge installed.\n");
 }
 
 void start() {
