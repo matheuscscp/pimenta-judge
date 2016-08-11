@@ -142,16 +142,21 @@ route("/status",[=](const vector<string>&) {
   time_t begin = contest("begin");
   time_t end   = contest("end");
   time_t now   = time(nullptr);
+  JSON languages(vector<JSON>{});
+  for (auto& kv : contest("languages").obj()) {
+    kv.second("ext") = kv.first;
+    languages.push_back(move(kv.second));
+  }
   JSON problems(vector<JSON>(contest("problems").size()));
   for (auto& kv : contest("problems").obj()) {
+    kv.second("name") = kv.first;
     int i = kv.second("index");
-    problems[i] = kv.second;
-    problems[i]("name") = kv.first;
+    problems[i] = move(kv.second);
   }
   json(map<string,JSON>{
     {"fullname" , castsess().fullname},
     {"rem_time" , now < begin ? 0 : max(0,int(end-now))},
-    {"languages", move(contest("languages"))},
+    {"languages", move(languages)},
     {"problems" , move(problems)}
   });
 },true);

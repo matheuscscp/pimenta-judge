@@ -32,11 +32,12 @@
         <h2>Send attempt</h2>
         <h4 id="response"></h4>
         <table>
-          <tr><td>Problem:</td><td><select id="submission-problem"></select></td></tr>
-          <tr><td>File:</td><td><input id="file" type="file"></td></tr>
-          <tr><td><button onclick="attempt()">Send</button></td></tr>
+          <tr><td>Problem:</td><td><select id="attempt-problem"></select></td></tr>
+          <tr><td>Language:</td><td><select id="attempt-language"></select></td></tr>
+          <tr><td>Browse file...</td><td><input id="attempt-file" type="file"></td></tr>
+          <tr><td valign="top">...<b>or</b> paste code:</td><td><textarea id="attempt-code" rows="8" cols="24"></textarea></td></tr>
+          <tr><td></td><td class="right"><button onclick="attempt()">Send</button></td></tr>
         </table>
-        <div id="enabled-langs"></div>
         <div id="limits"></div>
         <div id="runlist"></div>
       </div>

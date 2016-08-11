@@ -1,4 +1,3 @@
-- improve attempt web interface (choose lang and field to paste source code).
 - main() commands.
 - allow multiple contests.
 - web system for judges (

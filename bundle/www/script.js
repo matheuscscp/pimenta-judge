@@ -41,41 +41,72 @@ function login() {
   pass.value = "";
 }
 
-function lang_table(obj) {
+function lang_table(langs) {
+  var ans =
+    "<option></option>"
+  ;
+  for (var i = 0; i < langs.length; i++) {
+    var flags = (langs[i].flags != "" ? " ("+langs[i].flags+")" : "");
+    ans += "<option value=\""+langs[i].ext+"\">"+langs[i].name+flags+"</option>";
+  }
+  return ans;
+}
+
+function limits_table(langs,probs) {
   var ans =
     "<table class=\"data\">"+
-      "<tr><th>Language</th><th>File extension</th><th>Flags</th></tr>"
+      "<tr>"+
+        "<th class=\"green\">Language</th>"+
+        "<th class=\"blue\">Problem</th>"
   ;
-  for (var ext in obj) {
+  for (var i = 0; i < probs.length; i++) {
     ans +=
-      "<tr><td>"+obj[ext].name+"</td>"+
-      "<td>"+ext+"</td>"+
-      "<td>"+obj[ext].flags+"</td></tr>"
+        "<th class=\"blue\">"+probs[i].name+"</th>"
+    ;
+  }
+  ans +=
+      "</tr>"
+  ;
+  for (var i = 0; i < langs.length; i++) {
+    var zeb = (i%2 ? "" : " class=\"gray\"");
+    ans +=
+      "<tr>"+
+        "<th class=\"green\" rowspan=\"2\">"+langs[i].name+"</th>"+
+        "<th"+zeb+">Time limit</th>"
+    ;
+    for (var j = 0; j < probs.length; j++) {
+      var lim = probs[j]["timelimit"];
+      if (
+        probs[j][langs[i].ext] != undefined &&
+        probs[j][langs[i].ext]["timelimit"] != undefined
+      ) {
+        lim = probs[j][langs[i].ext].timelimit;
+      }
+      ans +=
+        "<td"+zeb+">"+lim+" s</td>"
+      ;
+    }
+    ans +=
+      "</tr>"+
+      "<tr>"+
+        "<th"+zeb+">Memory limit</th>"
+    ;
+    for (var j = 0; j < probs.length; j++) {
+      var lim = probs[j]["memlimit"];
+      if (
+        probs[j][langs[i].ext] != undefined &&
+        probs[j][langs[i].ext]["memlimit"] != undefined) {
+        lim = probs[j][langs[i].ext].memlimit;
+      }
+      ans +=
+        "<td"+zeb+">"+lim+" kB</td>"
+      ;
+    }
+    ans +=
+      "</tr>"
     ;
   }
   return ans+"</table>";
-}
-
-function limits_table(arr) {
-  var ans =
-    "<table class=\"data\">"+
-      "<tr><th>Problem</th>"
-  ;
-  for (var i = 0; i < arr.length; i++) {
-    ans += "<th>"+arr[i].name+"</th>";
-  }
-  ans +=
-    "</tr>"+
-    "<tr><th>Time limit (s)</th>"
-  ;
-  for (var i = 0; i < arr.length; i++) {
-    ans += "<td>"+arr[i].timelimit+"</td>";
-  }
-  ans +=
-      "</tr>"+
-    "</table>"
-  ;
-  return ans;
 }
 
 function init_problems() {
@@ -84,15 +115,16 @@ function init_problems() {
     prob = svstatus.problems[i].name;
     opts += ("<option value=\""+prob+"\">"+prob+"</option>");
   }
-  $("#submission-problem").html(opts);
+  $("#attempt-problem").html(opts);
   $("#clarification-problem").html(opts);
 }
 
 function init() {
   $.get("status",null,function(resp) {
     svstatus = resp;
-    svstatus.languages = lang_table(svstatus.languages);
-    svstatus.limits = limits_table(svstatus.problems);
+    var langstmp = lang_table(svstatus.languages);
+    svstatus.limits = limits_table(svstatus.languages,svstatus.problems);
+    svstatus.languages = langstmp;
     init_problems();
     $("#fullname").html(resp.fullname);
     remaining_time_json = {
@@ -152,8 +184,8 @@ function source(id,problem,answer) {
 
 function submission() {
   $("#content").html($("#submission").html());
-  $("#submission-problem").focus();
-  $("#enabled-langs").html(svstatus.languages);
+  $("#attempt-problem").focus();
+  $("#attempt-language").html(svstatus.languages);
   $("#limits").html(svstatus.limits);
   $.get("runlist",null,function(resp) {
     var html =
@@ -267,16 +299,27 @@ function logout() {
 
 function attempt() {
   document.getElementById("response").innerHTML = "Waiting server response...";
-  var prob = document.getElementById("submission-problem");
+  var prob = document.getElementById("attempt-problem");
   if (prob.value == "") {
     document.getElementById("response").innerHTML = "Choose a problem!";
     prob.focus();
     return;
   }
-  file = document.getElementById("file");
-  if (file.value == "") {
-    document.getElementById("response").innerHTML = "Choose a file!";
+  var lang = document.getElementById("attempt-language");
+  if (lang.value == "") {
+    document.getElementById("response").innerHTML = "Choose a language!";
+    lang.focus();
+    return;
+  }
+  var file = document.getElementById("attempt-file");
+  var code = document.getElementById("attempt-code");
+  if (file.value == "" && code.value == "") {
+    document.getElementById("response").innerHTML = "Browse a file or paste a code!";
     file.focus();
+    return;
+  }
+  if (file.value != "" && code.value != "") {
+    document.getElementById("response").innerHTML = "Should I send the file or the code?";
     return;
   }
   var xmlhttp;
@@ -290,13 +333,19 @@ function attempt() {
     }
   }
   xmlhttp.open("POST", "attempt", true);
-  var re = /(?:\.([^.]+))?$/;
-  var ext = re.exec(file.files[0].name)[1];
-  xmlhttp.setRequestHeader("File-name", prob.value+"."+ext);
-  xmlhttp.setRequestHeader("File-size", file.files[0].size);
-  xmlhttp.send(file.files[0]);
+  xmlhttp.setRequestHeader("File-name", prob.value+lang.value);
+  if (file.value != "") {
+    xmlhttp.setRequestHeader("File-size", file.files[0].size);
+    xmlhttp.send(file.files[0]);
+  }
+  else {
+    xmlhttp.setRequestHeader("File-size", code.value.length);
+    xmlhttp.send(code.value);
+  }
   prob.value = "";
+  lang.value = "";
   file.value = "";
+  code.value = "";
 }
 
 function question() {

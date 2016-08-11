@@ -54,11 +54,16 @@
         "memlimit": 100000,
         "autojudge": true,
         "color": "#ff0000",
-        "enabled": true
+        "enabled": true,
+        ".java": {
+          "timelimit": 10,
+          "memlimit": 150000
+        }
       },
       {
         "dirname": "B",
         "timelimit": 3,
+        "memlimit": 200000,
         "autojudge": true,
         "color": "#00ff00",
         "enabled": true
