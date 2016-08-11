@@ -11,6 +11,7 @@ static void usagemode() {
     "  install <new directory name without trailing slash>\n"
     "  start\n"
     "  stop\n"
+    "  restart (just a stop followed by a start)\n"
     "  reload (reload all settings except webserver)\n"
     "  rerun-id <attempt id>\n"
     "  rerun-atts <list of problem names>\n"
@@ -33,8 +34,12 @@ int main(int argc, char** argv) {
   else if (mode == "stop") {
     Global::stop();
   }
+  else if (mode == "restart") {
+    Global::stop();
+    Global::start();
+  }
   else if (mode == "reload") {
-    Global::reload_settings();
+    Global::reload();
   }
   else usagemode();
   return 0;

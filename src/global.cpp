@@ -140,7 +140,7 @@ void stop() {
   printf("pjudge stopped.\n");
 }
 
-void reload_settings() {
+void reload() {
   key_t key = Contest::alive();
   if (!key) {
     printf("pjudge is not running.\n");

@@ -19,7 +19,7 @@ extern std::map<int,JSON> attempts;
 void install(const std::string&);
 void start();
 void stop();
-void reload_settings();
+void reload();
 
 void lock_attempts();
 void unlock_attempts();
