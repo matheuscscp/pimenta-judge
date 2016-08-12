@@ -20,6 +20,7 @@ void install(const std::string&);
 void start();
 void stop();
 void reload();
+void rerun_attempt(int);
 
 void lock_attempts();
 void unlock_attempts();

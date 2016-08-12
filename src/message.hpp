@@ -3,15 +3,24 @@
 
 #include <sys/types.h>
 
-enum {NOMSG=0,PING,IMALIVE,STOP,RELOAD};
+enum {NOMSG=0,PING,IMALIVE,STOP,RELOAD,RERUN_ATT};
 struct Message {
   long mtype;
-  struct {
+  union {
     key_t sender_key;
+    int att_id;
   } data;
-  Message(long mtype = NOMSG, key_t sender_key = 0);
+  Message(long mtype = NOMSG);
   void send(key_t);
   void process(); // only for main queue
+};
+
+struct PingMessage : public Message {
+  PingMessage(key_t sender_key);
+};
+
+struct RerunAttMessage : public Message {
+  RerunAttMessage(int att_id);
 };
 
 class MessageQueue {

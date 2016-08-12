@@ -6,9 +6,18 @@
 #include "message.hpp"
 
 #include "global.hpp"
+#include "judge.hpp"
 
-Message::Message(long t, key_t k) : mtype(t) {
-  data.sender_key = k;
+Message::Message(long mtype) : mtype(mtype) {
+  
+}
+
+PingMessage::PingMessage(key_t sender_key) : Message(PING) {
+  data.sender_key = sender_key;
+}
+
+RerunAttMessage::RerunAttMessage(int att_id) : Message(RERUN_ATT) {
+  data.att_id = att_id;
 }
 
 void Message::send(key_t key) {
@@ -25,6 +34,9 @@ void Message::process() {
       break;
     case RELOAD:
       Global::load_settings();
+      break;
+    case RERUN_ATT:
+      Judge::attempt(data.att_id);
       break;
   }
 }

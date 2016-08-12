@@ -67,7 +67,7 @@ class Contest {
       fread(&key,sizeof key,1,fp);
       fclose(fp);
       MessageQueue msq;
-      Message(PING,msq.key()).send(key);
+      PingMessage(msq.key()).send(key);
       if (msq.receive(3).mtype != IMALIVE) return 0;
       return key;
     }
@@ -91,6 +91,22 @@ JSON& settings_ref() {
   return settings;
 }
 
+static key_t online() {
+  key_t key = Contest::alive();
+  if (!key) {
+    printf("pjudge is not running: online operations can't be done.\n");
+    _exit(0);
+  }
+  return key;
+}
+
+static void offline() {
+  if (Contest::alive()) {
+    printf("pjudge is running: offline operations can't be done.\n");
+    _exit(0);
+  }
+}
+
 namespace Global {
 
 map<int,JSON> attempts;
@@ -108,10 +124,7 @@ void install(const string& dir) {
 }
 
 void start() {
-  if (Contest::alive()) {
-    printf("pjudge is already running.\n");
-    return;
-  }
+  offline();
   printf("pjudge started.\n");
   if (daemon(1,0) < 0) { // fork with IO redirection to /dev/null
     perror("pjudge stopped because daemon() failed");
@@ -134,14 +147,10 @@ void start() {
 }
 
 void stop() {
-  key_t key = Contest::alive();
-  if (!key) {
-    printf("pjudge is not running.\n");
-    return;
-  }
+  key_t key = online();
   Message(STOP).send(key);
   MessageQueue msq;
-  Message ping(PING,msq.key());
+  PingMessage ping(msq.key());
   do {
     ping.send(key);
   } while (msq.receive(1).mtype == IMALIVE);
@@ -149,13 +158,13 @@ void stop() {
 }
 
 void reload() {
-  key_t key = Contest::alive();
-  if (!key) {
-    printf("pjudge is not running.\n");
-    return;
-  }
-  Message(RELOAD).send(key);
+  Message(RELOAD).send(online());
   printf("pjudge reloaded settings.\n");
+}
+
+void rerun_attempt(int id) {
+  RerunAttMessage(id).send(online());
+  printf("pjudge pushed attempt id=%d to queue.\n",id);
 }
 
 void lock_attempts() {

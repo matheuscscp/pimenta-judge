@@ -16,15 +16,7 @@
 
 using namespace std;
 
-typedef function<char(char, char*, char*, int, int&)> Script;
-struct QueueData {
-  Attempt* att;
-  string path;
-  QueueData(Attempt* att, string&& path) : att(att), path(path) {}
-};
-
-static map<string, Script> scripts;
-static queue<QueueData> jqueue;
+static queue<Attempt*> jqueue;
 static pthread_mutex_t judge_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // %p = path
@@ -96,8 +88,9 @@ static char run(const string& cmd, int tls, int mlkB, int& mtms, int& mmkB) {
   return AC;
 }
 
-static void judge(QueueData& qd) {
-  Attempt& att = *qd.att;
+static void judge(Attempt* attptr) {
+  Attempt& att = *attptr;
+  string path = "attempts/"+to<string>(att.id);
   
   // get compilation settings
   JSON language(move(Global::settings("contest","languages",att.language)));
@@ -106,20 +99,20 @@ static void judge(QueueData& qd) {
   if (language.find_tuple("compile")) {
     int status = system(command(
       language("compile"),
-      qd.path,
+      path,
       att.problem,
       att.language
     ).c_str());
     if (WEXITSTATUS(status)) {
       att.verdict = CE;
       att.judged = true; // CE needs no judgement by humans
-      Attempt::commit(qd.att);
+      Attempt::commit(attptr);
       return;
     }
   }
   
   // get execution settings
-  string cmd = move(command(language("run"),qd.path,att.problem,att.language));
+  string cmd = move(command(language("run"),path,att.problem,att.language));
   JSON problem(move(Global::settings("contest","problems",att.problem)));
   int Mtms=0,MmkB=0,mtms,mmkB;
   int tls =
@@ -150,7 +143,7 @@ static void judge(QueueData& qd) {
     if (!S_ISREG(stt.st_mode)) continue;
     
     // run
-    string ofn = qd.path+"/output/"+fn;
+    string ofn = path+"/output/"+fn;
     att.verdict = run(cmd+" < "+ifn+" > "+ofn,tls,mlkB,mtms,mmkB);
     Mtms = max(Mtms,mtms);
     MmkB = max(MmkB,mmkB);
@@ -165,9 +158,9 @@ static void judge(QueueData& qd) {
   }
   
   // commit
-  att.time = move(stringf("%d",mtms));
-  att.memory = move(stringf("%d",mmkB));
-  Attempt::commit(qd.att);
+  att.time = move(to<string>(mtms));
+  att.memory = move(to<string>(mmkB));
+  Attempt::commit(attptr);
 }
 
 namespace Judge {
@@ -180,9 +173,9 @@ void* thread(void*) {
       usleep(25000);
       continue;
     }
-    QueueData qd = jqueue.front(); jqueue.pop();
+    Attempt* att = jqueue.front(); jqueue.pop();
     pthread_mutex_unlock(&judge_mutex);
-    judge(qd);
+    judge(att);
   }
 }
 
@@ -207,6 +200,7 @@ string attempt(const string& fn, const vector<uint8_t>& file, Attempt* attptr) {
   if (it != Global::attempts.rend()) att.id = it->first+1;
   Global::attempts[att.id] = move(att.json());
   Global::unlock_attempts();
+  int id = att.id;
   
   // save file
   string path = "attempts/"+to<string>(att.id);
@@ -217,10 +211,27 @@ string attempt(const string& fn, const vector<uint8_t>& file, Attempt* attptr) {
   
   // push task
   pthread_mutex_lock(&judge_mutex);
-  jqueue.emplace(attptr,move(path));
+  jqueue.push(attptr);
   pthread_mutex_unlock(&judge_mutex);
   
-  return "Attempt "+to<string>(att.id)+" received!";
+  return "Attempt "+to<string>(id)+" received!";
+}
+
+void attempt(int id) {
+  // create att struct
+  Global::lock_attempts();
+  auto it = Global::attempts.find(id);
+  if (it == Global::attempts.end()) {
+    Global::unlock_attempts();
+    return;
+  }
+  it->second("judged").setfalse();
+  Attempt* att = new Attempt(it->second);
+  Global::unlock_attempts();
+  // push
+  pthread_mutex_lock(&judge_mutex);
+  jqueue.push(att);
+  pthread_mutex_unlock(&judge_mutex);
 }
 
 } // namespace Judge

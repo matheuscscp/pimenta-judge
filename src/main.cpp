@@ -30,7 +30,7 @@ static void usagemode() {
 
 int main(int argc, char** argv) {
   exe = argv[0];
-  if (argc == 1) { usagemode(); return 0; }
+  if (argc <= 1) { usagemode(); return 0; }
   string mode = argv[1];
   if (mode == "install") {
     if (argc == 2) { usagemode(); return 0; }
@@ -48,6 +48,12 @@ int main(int argc, char** argv) {
   }
   else if (mode == "reload") {
     Global::reload();
+  }
+  else if (mode == "rerun-att") {
+    if (argc == 2) { usagemode(); return 0; }
+    int id;
+    if (sscanf(argv[2],"%d",&id) != 1) { usagemode(); return 0; }
+    Global::rerun_attempt(id);
   }
   else usagemode();
   return 0;

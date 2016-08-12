@@ -1,5 +1,5 @@
-- main() commands.
 - allow multiple contests.
+- implement rerun-probs command.
 - web system for judges (
     attempt privileges and hidding, manual judging and clarifications
   ).
