@@ -214,9 +214,9 @@ bool check_session() {
 namespace WebServer {
 
 void* thread(void*) {
-  HTTP::server(
-    Global::alive, Global::settings("webserver"), []() { return new Handler; }
-  );
+  JSON setts;
+  setts.read_file("webserver.json");
+  HTTP::server(Global::alive,setts,[]() { return new Handler; });
 }
 
 } // namespace WebServer

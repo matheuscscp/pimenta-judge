@@ -1,0 +1,14 @@
+{
+  "port": 8000,
+  "client_threads": 4,
+  "request": {
+    "timeout": 5,
+    "max_uri_size": 1024,
+    "max_header_size": 1024,
+    "max_headers": 1024,
+    "max_payload_size": 1048576
+  },
+  "session": {
+    "clean_period": 86400
+  }
+}
