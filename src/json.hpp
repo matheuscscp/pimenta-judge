@@ -81,8 +81,11 @@ class JSON {
     template <typename T>
     bool to(T& buf) const {
       if (!isstr()) return false;
-      std::stringstream ss(str());
-      return ss >> buf;
+      std::stringstream ss1(str());
+      if (!(ss1 >> buf)) return false;
+      std::stringstream ss2;
+      ss2 << buf;
+      return str() == ss2.str();
     }
     // object API
     bool isobj() const;
