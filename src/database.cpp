@@ -4,15 +4,21 @@
 
 #include "database.hpp"
 
+#include "cmap.hpp"
+
 #define MAX_COLLECTIONS 100
 #define WRITE_INTERVAL  30
 
 using namespace std;
 
+static bool match(const JSON& json, const JSON& filter) {
+  return true;//TODO
+}
+
 struct Coll {
   pthread_mutex_t mutex;
   string name;
-  map<int,JSON> documents;
+  cmap<int,JSON> documents;
   Coll() : mutex(PTHREAD_MUTEX_INITIALIZER) {}
   void read() { // this function is called only once, by a locked piece of code
     JSON tmp;
@@ -23,7 +29,7 @@ struct Coll {
     JSON tmp(vector<JSON>{});
     pthread_mutex_lock(&mutex);
     for (auto& kv : documents) tmp.emplace_back(move(map<string,JSON>{
-      {"_id"       , kv.first},
+      {"_id"      , kv.first},
       {"document" , kv.second}
     }));
     pthread_mutex_unlock(&mutex);
@@ -32,8 +38,7 @@ struct Coll {
   int create(JSON&& doc) {
     int id = 1;
     pthread_mutex_lock(&mutex);
-    auto it = documents.rbegin();
-    if (it != documents.rend()) id = it->first+1;
+    if (documents.size() > 0) id += documents.max_key();
     documents[id] = move(doc);
     pthread_mutex_unlock(&mutex);
     return id;
@@ -48,6 +53,39 @@ struct Coll {
     doc = it->second;
     pthread_mutex_unlock(&mutex);
     return true;
+  }
+  vector<Database::Document> retrieve(const JSON& filter) {
+    if (!filter.isobj()) return vector<Database::Document>();
+    if (filter.size() == 0) return retrieve_page(0,documents.size());
+    auto in = filter.find_tuple("in");
+    vector<Database::Document> ans;
+    pthread_mutex_lock(&mutex);
+    if (!in || !in->isarr()) {
+      for (auto& kv : documents) if (match(kv.second,filter)) ans.push_back(kv);
+    }
+    else {
+      for (auto& o : in->arr()) {
+        int id;
+        if (!o.to(id) || id <= 0) continue;
+        auto it = documents.find(id);
+        if (it == documents.end()) continue;
+        if (match(it->second,filter)) ans.push_back(*it);
+      }
+    }
+    pthread_mutex_unlock(&mutex);
+    return ans;
+  }
+  vector<Database::Document> retrieve_page(unsigned p, unsigned ps) {
+    vector<Database::Document> ans;
+    if (ps) {
+      pthread_mutex_lock(&mutex);
+      auto it = documents.at(p*ps);
+      for (int i = 0; i < ps && it != documents.end(); i++, it++) {
+        ans.push_back(*it);
+      }
+      pthread_mutex_unlock(&mutex);
+    }
+    return ans;
   }
   bool update(int id, JSON&& doc) {
     pthread_mutex_lock(&mutex);
@@ -117,7 +155,7 @@ static void* thread(void*) {
 namespace Database {
 
 void init() {
-  system("mkdir database");
+  system("mkdir -p database");
   pthread_create(&db,nullptr,thread,nullptr);
 }
 
@@ -148,6 +186,14 @@ JSON Collection::retrieve(int docid) {
 
 bool Collection::retrieve(int docid, JSON& document) {
   return collection[collid].retrieve(docid,document);
+}
+
+vector<Document> Collection::retrieve(const JSON& filter) {
+  return collection[collid].retrieve(filter);
+}
+
+vector<Document> Collection::retrieve_page(unsigned page, unsigned page_size) {
+  return collection[collid].retrieve_page(page,page_size);
 }
 
 bool Collection::update(int docid, const JSON& document) {

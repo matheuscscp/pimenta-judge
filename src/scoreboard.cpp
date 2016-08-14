@@ -36,7 +36,7 @@ void update(map<int,JSON>& attempts) {
       for (int i = solved-1; 0 <= i; i--) {
         if (ACs[i] != other.ACs[i]) return ACs[i] < other.ACs[i];
       }
-      return false;
+      return fullname < other.fullname;
     }
     JSON json() const {
       JSON ans;

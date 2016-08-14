@@ -1,6 +1,8 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
+#include <set>
+
 #include "json.hpp"
 
 namespace Database {
@@ -8,6 +10,7 @@ namespace Database {
 void init();
 void close();
 
+typedef std::pair<int,JSON> Document;
 class Collection {
   // API
   public:
@@ -16,6 +19,8 @@ class Collection {
     int create(JSON&& document);
     JSON retrieve(int docid);
     bool retrieve(int docid, JSON& document);
+    std::vector<Document> retrieve(const JSON& filter = JSON());
+    std::vector<Document> retrieve_page(unsigned page, unsigned page_size);
     bool update(int docid, const JSON& document);
     bool update(int docid, JSON&& document);
     bool destroy(int docid);
