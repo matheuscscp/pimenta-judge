@@ -217,7 +217,7 @@ string attempt(const string& fn, const vector<uint8_t>& file, Attempt* attptr) {
   return "Attempt "+to<string>(id)+" received!";
 }
 
-void attempt(int id) {
+void rerun_att(int id) {
   // create att struct
   Global::lock_attempts();
   auto it = Global::attempts.find(id);

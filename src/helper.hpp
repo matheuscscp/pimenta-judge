@@ -2,6 +2,7 @@
 #define HELPER_H
 
 #include <string>
+#include <sstream>
 
 enum {AC = 0, CE, TLE, MLE, RTE, WA, PE};
 int verdict_toi(const std::string&);
@@ -12,6 +13,13 @@ NewType to(const T& x) {
   std::stringstream ss; ss << x;
   NewType ret; ss >> ret;
   return ret;
+}
+
+template <typename T>
+std::string tostr(const T& x) {
+  std::stringstream ss;
+  ss << x;
+  return ss.str();
 }
 
 template <typename T1, typename T2>

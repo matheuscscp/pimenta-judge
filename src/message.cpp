@@ -36,7 +36,7 @@ void Message::process() {
       Global::load_settings();
       break;
     case RERUN_ATT:
-      Judge::attempt(data.att_id);
+      Judge::rerun_att(data.att_id);
       break;
   }
 }

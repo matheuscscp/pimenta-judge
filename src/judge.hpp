@@ -7,7 +7,7 @@ namespace Judge {
 
 void* thread(void*);
 std::string attempt(const std::string&,const std::vector<uint8_t>&,Attempt*);
-void attempt(int);
+void rerun_att(int);
 
 } // namespace Judge
 
