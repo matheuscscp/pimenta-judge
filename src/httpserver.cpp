@@ -96,10 +96,10 @@ static string hexstr(unsigned x) {
 static JSON settings;
 template <typename T, typename... Args>
 T setting(T def, Args... args) {
-  auto ptr = settings.find_tuple(args...);
-  if (!ptr) return def;
+  JSON tmp(move(settings(args...)));
+  if (tmp.isnull()) return def;
   T ans;
-  if (!ptr->to(ans)) return def;
+  if (!tmp.to(ans)) return def;
   return ans;
 }
 

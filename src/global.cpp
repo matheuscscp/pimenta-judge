@@ -87,7 +87,7 @@ void unlock_settings() {
   pthread_mutex_unlock(&settings_mutex);
 }
 
-JSON& settings_ref() {
+const JSON& settings_ref() {
   return settings;
 }
 
@@ -194,9 +194,9 @@ void shutdown() {
 void load_settings() {
   pthread_mutex_lock(&settings_mutex);
   ::settings.read_file("settings.json");
-  JSON& contest = ::settings("contest");
+  JSON& contest = ::settings.ref("contest");
   // begin
-  auto& start = contest("start");
+  JSON& start = contest.ref("start");
   int Y = start("year");
   int M = start("month");
   int D = start("day");
@@ -239,10 +239,10 @@ void load_settings() {
   // problems
   JSON problems;
   for (auto& p : contest("problems").arr()) {
-    if (problems.find_tuple(p("dirname")) || !p("enabled")) continue;
+    if (problems(p("dirname").str()) || !p("enabled")) continue;
     string key = move(p("dirname").str());
     p.erase("dirname");
-    p("index") = problems.size();
+    p.ref("index") = problems.size();
     p.erase("enabled");
     problems(move(key)) = move(p);
   }

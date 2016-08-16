@@ -40,7 +40,6 @@ struct JSONValue {
     vector<JSON>::iterator
   ) = 0;
   virtual size_t size() const = 0;
-  virtual const JSON* find_tuple(const string&) const = 0;
   virtual string generate(unsigned) const = 0;
 };
 
@@ -104,9 +103,6 @@ struct String : public JSONValue {
   }
   size_t size() const {
     return v.size();
-  }
-  const JSON* find_tuple(const string&) const {
-    return nullptr;
   }
   string generate(unsigned) const {
     return to_json(v);
@@ -173,10 +169,6 @@ struct Object : public JSONValue {
   }
   size_t size() const {
     return v.size();
-  }
-  const JSON* find_tuple(const string& key) const {
-    auto it = v.find(key);
-    return (it == v.end() ? nullptr : &it->second);
   }
   string generate(unsigned indent) const {
     string ans = "{"; if (indent) ans += "\n";
@@ -260,9 +252,6 @@ struct Array : public JSONValue {
   }
   size_t size() const {
     return v.size();
-  }
-  const JSON* find_tuple(const string&) const {
-    return nullptr;
   }
   string generate(unsigned indent) const {
     string ans = "["; if (indent) ans += "\n";
@@ -576,16 +565,12 @@ size_t JSON::size() const {
   return value->size();
 }
 
-JSON& JSON::operator()() {
+JSON JSON::operator()() const {
   return *this;
 }
 
-const JSON* JSON::find_tuple() const {
-  return this;
-}
-
-const JSON* JSON::find_tuple(const string& key) const {
-  return value->find_tuple(key);
+JSON& JSON::ref() {
+  return *this;
 }
 
 bool JSON::parse(void* src) {

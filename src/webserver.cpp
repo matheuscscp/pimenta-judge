@@ -24,10 +24,9 @@ static bool eqip(uint32_t a, uint32_t b) {
 }
 
 static string find_fullname(const string& username, const string& password) {
-  JSON users(move(Global::settings("users")));
-  JSON* user = (JSON*)users.find_tuple(username);
-  if (!user || (*user)("password").str() != password) return "";
-  return (*user)("fullname");
+  JSON user(move(Global::settings("users",username)));
+  if (!user || user("password").str() != password) return "";
+  return user("fullname");
 }
 
 class Session : public HTTP::Session {
@@ -84,7 +83,7 @@ route("/login",[=](const vector<string>&) {
   data.push_back(0);
   JSON json;
   json.parse(&data[0]);
-  if (!json.find_tuple("username") || !json.find_tuple("password")) {
+  if (!json("username") || !json("password")) {
     response("Invalid username/password!");
     return;
   }

@@ -83,7 +83,7 @@ static char run(const string& cmd, int tls, int mlkB, int& mtms, int& mmkB) {
   mtms = dt(start)/1000;
   mmkB = r.ru_maxrss;
   if (mtms > tls*1000) return TLE;
-  if (mmkB > mlkB) return MLE;
+  if (mlkB && mmkB > mlkB) return MLE;
   if (!WIFEXITED(st) || WEXITSTATUS(st) || WIFSIGNALED(st)) return RTE;
   return AC;
 }
@@ -96,7 +96,7 @@ static void judge(Attempt* attptr) {
   JSON language(move(Global::settings("contest","languages",att.language)));
   
   // compile
-  if (language.find_tuple("compile")) {
+  if (language("compile")) {
     int status = system(command(
       language("compile"),
       path,
@@ -116,15 +116,17 @@ static void judge(Attempt* attptr) {
   JSON problem(move(Global::settings("contest","problems",att.problem)));
   int Mtms=0,MmkB=0,mtms,mmkB;
   int tls =
-    problem.find_tuple(att.language,"timelimit") ?
-    problem(att.language,"timelimit") :
-    problem("timelimit")
+    !problem(att.language,"timelimit").isnull() ?
+    int(problem(att.language,"timelimit")) :
+    (!problem("timelimit").isnull() ? int(problem("timelimit")) : 1)
   ;
+  tls = max(1,min(300,tls));
   int mlkB =
-    problem.find_tuple(att.language,"memlimit") ?
-    problem(att.language,"memlimit") :
-    problem("memlimit")
+    !problem(att.language,"memlimit").isnull() ?
+    int(problem(att.language,"memlimit")) :
+    (!problem("memlimit").isnull() ? int(problem("memlimit")) : 0)
   ;
+  mlkB = max(0,mlkB);
   
   // init attempt
   att.verdict = AC;
@@ -187,11 +189,9 @@ string attempt(const string& fn, const vector<uint8_t>& file, Attempt* attptr) {
   auto dot = fn.find('.');
   if (dot == string::npos) return "Invalid filename!";
   att.problem = move(fn.substr(0,dot));
-  if (!contest.find_tuple("problems",att.problem)) return "Invalid filename!";
+  if (!contest("problems",att.problem)) return "Invalid filename!";
   att.language = move(fn.substr(dot,string::npos));
-  if (!contest.find_tuple("languages",att.language)) {
-    return "Invalid programming language!";
-  }
+  if (!contest("languages",att.language))return "Invalid programming language!";
   
   // generate id
   att.id = 1;

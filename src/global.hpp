@@ -10,7 +10,7 @@
 
 void lock_settings();
 void unlock_settings();
-JSON& settings_ref();
+const JSON& settings_ref();
 
 namespace Global {
 
@@ -34,7 +34,7 @@ void load_settings();
 template <typename... Args>
 JSON settings(Args... args) {
   lock_settings();
-  JSON ans(settings_ref()(args...));
+  JSON ans(std::move(settings_ref()(args...)));
   unlock_settings();
   return ans;
 }

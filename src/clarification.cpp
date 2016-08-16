@@ -60,7 +60,7 @@ string question(
   if (now < begin || end <= now) return "The contest is not running.";
   
   // check problem
-  if (!Global::settings("contest","problems").find_tuple(problem)) {
+  if (!Global::settings("contest","problems",problem)) {
     return "Choose a problem!";
   }
   

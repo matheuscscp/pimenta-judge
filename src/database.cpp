@@ -57,14 +57,14 @@ struct Coll {
   vector<Database::Document> retrieve(const JSON& filter) {
     if (!filter.isobj()) return vector<Database::Document>();
     if (filter.size() == 0) return retrieve_page(0,documents.size());
-    auto in = filter.find_tuple("in");
+    JSON in(move(filter("in")));
     vector<Database::Document> ans;
     pthread_mutex_lock(&mutex);
-    if (!in || !in->isarr()) {
+    if (!in || !in.isarr()) {
       for (auto& kv : documents) if (match(kv.second,filter)) ans.push_back(kv);
     }
     else {
-      for (auto& o : in->arr()) {
+      for (auto& o : in.arr()) {
         int id;
         if (!o.to(id) || id <= 0) continue;
         auto it = documents.find(id);

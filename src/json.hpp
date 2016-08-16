@@ -128,23 +128,23 @@ class JSON {
     operator bool() const; // false if, and only if, = "", 0, "false" or "null"
     size_t size() const;
     // algebraic function syntax
-    JSON& operator()();
+    JSON operator()() const;
+    template <typename... Args>
+    JSON operator()(const std::string& key, Args... args) const {
+      if (!isobj()) return JSON("null");
+      auto it = find(key);
+      if (it == obj().end()) return JSON("null");
+      return it->second(args...);
+    }
+    template <typename... Args>
+    JSON operator()(size_t i, Args... args) const {
+      if (!isarr() || size() <= i) return JSON("null");
+      return (*this)[i](args...);
+    }
+    JSON& ref();
     template <typename T, typename... Args>
-    JSON& operator()(const T& f, Args... args) {
-      return (*this)[f](args...);
-    }
-    const JSON* find_tuple() const;
-    const JSON* find_tuple(const std::string&) const;
-    template <typename... Args>
-    const JSON* find_tuple(const std::string& key, Args... args) const {
-      auto ptr = find_tuple(key);
-      if (ptr) return ptr->find_tuple(args...);
-      return nullptr;
-    }
-    template <typename... Args>
-    const JSON* find_tuple(size_t i, Args... args) const {
-      if (isarr() && i < size()) return (*this)[i].find_tuple(args...);
-      return nullptr;
+    JSON& ref(const T& f, Args... args) {
+      return (*this)[f].ref(args...);
     }
     // I/O
     bool parse(void*); // null terminated byte sequence
