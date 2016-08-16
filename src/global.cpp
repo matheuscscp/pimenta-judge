@@ -11,6 +11,7 @@
 #include "global.hpp"
 
 #include "helper.hpp"
+#include "database.hpp"
 #include "message.hpp"
 #include "judge.hpp"
 #include "runlist.hpp"
@@ -133,6 +134,7 @@ void start() {
   Contest contest; // RAII
   signal(SIGTERM, term); // Global::shutdown();
   signal(SIGPIPE, SIG_IGN); // avoid broken pipes termination signal
+  Database::init();
   load_settings();
   read_attempts();
   pthread_t judge, webserver;
@@ -144,6 +146,7 @@ void start() {
   }
   pthread_join(judge,nullptr);
   pthread_join(webserver,nullptr);
+  Database::close();
 }
 
 void stop() {

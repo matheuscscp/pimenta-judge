@@ -5,6 +5,7 @@
 #include "helper.hpp"
 #include "global.hpp"
 #include "httpserver.hpp"
+#include "user.hpp"
 #include "judge.hpp"
 #include "runlist.hpp"
 #include "scoreboard.hpp"
@@ -21,12 +22,6 @@ static void log(const string& msg) {
 static bool eqip(uint32_t a, uint32_t b) {
   if ((a == 0 || a == 0x0100007f) && (b == 0 || b == 0x0100007f)) return true;
   return a == b;
-}
-
-static string find_fullname(const string& username, const string& password) {
-  JSON user(move(Global::settings("users",username)));
-  if (!user || user("password").str() != password) return "";
-  return user("fullname");
 }
 
 class Session : public HTTP::Session {
@@ -87,7 +82,7 @@ route("/login",[=](const vector<string>&) {
     response("Invalid username/password!");
     return;
   }
-  string fullname = find_fullname(json["username"],json["password"]);
+  string fullname = User::login(json["username"],json["password"]);
   if (fullname == "") {
     response("Invalid username/password!");
     return;

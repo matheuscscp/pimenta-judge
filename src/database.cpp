@@ -54,6 +54,21 @@ struct Coll {
     pthread_mutex_unlock(&mutex);
     return true;
   }
+  Database::Document retrieve(const string& key, const string& value) {//FIXME
+    Database::Document ans;
+    pthread_mutex_lock(&mutex);
+    for (auto& kv : documents) {
+      if (kv.second(key) && kv.second(key).str() == value) {
+        ans = kv;
+        pthread_mutex_unlock(&mutex);
+        return ans;
+      }
+    }
+    pthread_mutex_unlock(&mutex);
+    ans.first = 0;
+    ans.second.setnull();
+    return ans;
+  }
   vector<Database::Document> retrieve(const JSON& filter) {
     if (!filter.isobj()) return vector<Database::Document>();
     if (filter.size() == 0) return retrieve_page(0,documents.size());
@@ -186,6 +201,10 @@ JSON Collection::retrieve(int docid) {
 
 bool Collection::retrieve(int docid, JSON& document) {
   return collection[collid].retrieve(docid,document);
+}
+
+Document Collection::retrieve(const string& key, const string& value) {
+  return collection[collid].retrieve(key,value);
 }
 
 vector<Document> Collection::retrieve(const JSON& filter) {
