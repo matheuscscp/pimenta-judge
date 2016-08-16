@@ -66,7 +66,7 @@ struct Coll {
     else {
       for (auto& o : in.arr()) {
         int id;
-        if (!o.to(id) || id <= 0) continue;
+        if (!o.read(id) || id <= 0) continue;
         auto it = documents.find(id);
         if (it == documents.end()) continue;
         if (match(it->second,filter)) ans.push_back(*it);

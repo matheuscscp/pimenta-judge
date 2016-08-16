@@ -95,12 +95,8 @@ static string hexstr(unsigned x) {
 // settings
 static JSON settings;
 template <typename T, typename... Args>
-T setting(T def, Args... args) {
-  JSON tmp(move(settings(args...)));
-  if (tmp.isnull()) return def;
-  T ans;
-  if (!tmp.to(ans)) return def;
-  return ans;
+inline T setting(T def, Args... args) {
+  return settings(args...).to(def);
 }
 
 // client threads

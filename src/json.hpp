@@ -72,20 +72,24 @@ class JSON {
     number num() const;
     template <typename T>
     operator T() const {
-      if (!isstr()) return T();
       std::stringstream ss(str());
       T ans;
       ss >> ans;
       return ans;
     }
     template <typename T>
-    bool to(T& buf) const {
-      if (!isstr()) return false;
-      std::stringstream ss1(str());
-      if (!(ss1 >> buf)) return false;
-      std::stringstream ss2;
-      ss2 << buf;
-      return str() == ss2.str();
+    bool read(T& buf) const {
+      if (!isstr() || isnull()) return false;
+      std::stringstream ss(str());
+      if (!(ss >> buf)) return false;
+      ss.get();
+      return !ss;
+    }
+    template <typename T>
+    T to(T def = T()) const {
+      T ans;
+      if (!read(ans)) return def;
+      return ans;
     }
     // object API
     bool isobj() const;
@@ -125,20 +129,20 @@ class JSON {
     void setfalse();
     void setnull();
     // polymorphic
-    operator bool() const; // false if, and only if, = "", 0, "false" or "null"
+    operator bool() const; // false iff (=="", ==0, isfalse() or isnull())
     size_t size() const;
     // algebraic function syntax
-    JSON operator()() const;
+    const JSON operator()() const;
     template <typename... Args>
-    JSON operator()(const std::string& key, Args... args) const {
-      if (!isobj()) return JSON("null");
+    const JSON operator()(const std::string& key, Args... args) const {
+      if (!isobj()) { JSON nul; nul.setnull(); return nul; }
       auto it = find(key);
-      if (it == obj().end()) return JSON("null");
+      if (it == obj().end()) { JSON nul; nul.setnull(); return nul; }
       return it->second(args...);
     }
     template <typename... Args>
-    JSON operator()(size_t i, Args... args) const {
-      if (!isarr() || size() <= i) return JSON("null");
+    const JSON operator()(size_t i, Args... args) const {
+      if (!isarr() || size() <= i) { JSON nul; nul.setnull(); return nul; }
       return (*this)[i](args...);
     }
     JSON& ref();

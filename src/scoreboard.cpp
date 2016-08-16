@@ -40,14 +40,14 @@ void update(map<int,JSON>& attempts) {
     }
     JSON json() const {
       JSON ans;
-      ans("fullname") = fullname;
-      ans("problems") = vector<JSON>{};
-      for (auto& p : problems) ans("problems").emplace_back(map<string,JSON>{
+      ans["fullname"] = fullname;
+      ans["problems"] = vector<JSON>{};
+      for (auto& p : problems) ans["problems"].emplace_back(map<string,JSON>{
         {"cnt" , p.first},
         {"time", p.second}
       });
-      ans("solved") = solved;
-      ans("penalty") = penalty;
+      ans["solved"] = solved;
+      ans["penalty"] = penalty;
       return ans;
     }
   };
@@ -117,7 +117,7 @@ void update(map<int,JSON>& attempts) {
     {"frozen"    , frozen ? "true" : "false"},
     {"scoreboard", vector<JSON>{}}
   });
-  for (auto& e : entries) buf("scoreboard").push_back(move(e.json()));
+  for (auto& e : entries) buf["scoreboard"].push_back(move(e.json()));
   
   // update scoreboard
   pthread_mutex_lock(&scoreboard_mutex);

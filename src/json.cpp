@@ -565,7 +565,7 @@ size_t JSON::size() const {
   return value->size();
 }
 
-JSON JSON::operator()() const {
+const JSON JSON::operator()() const {
   return *this;
 }
 

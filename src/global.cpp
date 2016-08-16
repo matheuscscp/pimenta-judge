@@ -194,9 +194,9 @@ void shutdown() {
 void load_settings() {
   pthread_mutex_lock(&settings_mutex);
   ::settings.read_file("settings.json");
-  JSON& contest = ::settings.ref("contest");
+  JSON& contest = ::settings["contest"];
   // begin
-  JSON& start = contest.ref("start");
+  JSON& start = contest["start"];
   int Y = start("year");
   int M = start("month");
   int D = start("day");
@@ -213,22 +213,22 @@ void load_settings() {
   ti.tm_min  = m;
   ti.tm_sec  = 0;
   begin = mktime(&ti);
-  contest("begin") = begin;
+  contest["begin"] = begin;
   // end
   time_t end = contest("duration");
   contest.erase("duration");
   end = begin + 60*end;
-  contest("end") = end;
+  contest["end"] = end;
   // freeze
   time_t freeze = contest("freeze");
   freeze = end - 60*freeze;
-  contest("freeze") = freeze;
+  contest["freeze"] = freeze;
   // blind
   time_t blind = contest("blind");
   blind = end - 60*blind;
-  contest("blind") = blind;
+  contest["blind"] = blind;
   // languages
-  auto& langs = contest("languages").obj();
+  auto& langs = contest["languages"].obj();
   for (auto it = langs.begin(); it != langs.end();) {
     if (!it->second("enabled")) langs.erase(it++);
     else {
@@ -238,15 +238,15 @@ void load_settings() {
   }
   // problems
   JSON problems;
-  for (auto& p : contest("problems").arr()) {
-    if (problems(p("dirname").str()) || !p("enabled")) continue;
-    string key = move(p("dirname").str());
+  for (auto& p : contest["problems"].arr()) {
+    if (problems(p["dirname"].str()) || !p("enabled")) continue;
+    string key = move(p["dirname"].str());
     p.erase("dirname");
-    p.ref("index") = problems.size();
+    p["index"] = problems.size();
     p.erase("enabled");
-    problems(move(key)) = move(p);
+    problems[move(key)] = move(p);
   }
-  contest("problems") = move(problems);
+  contest["problems"] = move(problems);
   pthread_mutex_unlock(&settings_mutex);
 }
 

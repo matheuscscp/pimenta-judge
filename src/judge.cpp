@@ -115,17 +115,17 @@ static void judge(Attempt* attptr) {
   string cmd = move(command(language("run"),path,att.problem,att.language));
   JSON problem(move(Global::settings("contest","problems",att.problem)));
   int Mtms=0,MmkB=0,mtms,mmkB;
-  int tls =
-    !problem(att.language,"timelimit").isnull() ?
-    int(problem(att.language,"timelimit")) :
-    (!problem("timelimit").isnull() ? int(problem("timelimit")) : 1)
-  ;
+  int tls;
+  if (
+    !problem(att.language,"timelimit").read(tls) &&
+    !problem("timelimit").read(tls)
+  ) tls = 1;
   tls = max(1,min(300,tls));
-  int mlkB =
-    !problem(att.language,"memlimit").isnull() ?
-    int(problem(att.language,"memlimit")) :
-    (!problem("memlimit").isnull() ? int(problem("memlimit")) : 0)
-  ;
+  int mlkB;
+  if (
+    !problem(att.language,"memlimit").read(mlkB) &&
+    !problem("memlimit").read(mlkB)
+  ) mlkB = 0;
   mlkB = max(0,mlkB);
   
   // init attempt
@@ -225,7 +225,7 @@ void rerun_att(int id) {
     Global::unlock_attempts();
     return;
   }
-  it->second("judged").setfalse();
+  it->second["judged"].setfalse();
   Attempt* att = new Attempt(it->second);
   Global::unlock_attempts();
   // push
