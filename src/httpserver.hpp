@@ -52,6 +52,14 @@ class Handler {
     std::string& query();
     const std::string& query() const;
     std::string header(const std::string& name) const;
+    template <typename T>
+    bool header(const std::string& name, T& buf) {
+      std::stringstream ss(header(name));
+      T ans;
+      if (!(ss >> ans)) return false;
+      ss.get();
+      return !ss;
+    }
     std::vector<uint8_t>& payload();
     const std::vector<uint8_t>& payload() const;
     // response

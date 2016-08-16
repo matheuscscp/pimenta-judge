@@ -6,6 +6,7 @@
 #include "global.hpp"
 #include "httpserver.hpp"
 #include "user.hpp"
+#include "contest.hpp"
 #include "judge.hpp"
 #include "runlist.hpp"
 #include "scoreboard.hpp"
@@ -27,13 +28,12 @@ static bool eqip(uint32_t a, uint32_t b) {
 class Session : public HTTP::Session {
   public:
     uint32_t ip;
-    string username,fullname;
-    Session(uint32_t ip, const string& u, const string& f) :
-    ip(ip), username(u), fullname(f) {
+    User::Data user;
+    Session(uint32_t ip, User::Data&& user) : ip(ip), user(move(user)) {
       uint32_t oip = -1;
       destroy([&](const HTTP::Session* sess) {
         auto& ref = *(Session*)sess;
-        if (username != ref.username) return false;
+        if (user.username != ref.user.username) return false;
         oip = ref.ip;
         return true;
       });
@@ -45,7 +45,7 @@ class Session : public HTTP::Session {
       log(stringf(
         "%s, username %s: IP %s logged in while IP %s was already logged in.",
         buf,
-        username.c_str(),
+        user.username.c_str(),
         HTTP::iptostr(ip).c_str(),
         HTTP::iptostr(oip).c_str()
       ));
@@ -82,12 +82,12 @@ route("/login",[=](const vector<string>&) {
     response("Invalid username/password!");
     return;
   }
-  string fullname = User::login(json["username"],json["password"]);
-  if (fullname == "") {
+  User::Data user = User::login(json["username"],json["password"]);
+  if (!user.id) {
     response("Invalid username/password!");
     return;
   }
-  session(new Session(ip(),json["username"],fullname));
+  session(new Session(ip(),move(user)));
   response("ok");
 });
 
@@ -98,11 +98,13 @@ route("/logout",[=](const vector<string>&) {
 
 route("/attempt",[=](const vector<string>&) {
   if (method() != "POST") { location("/"); return; }
-  time_t begin = Global::settings("contest","begin");
-  if (when() < begin) { response("The contest has not started yet!"); return; }
+  int probid;
+  if (!header("problem-id",probid)) { response("Invalid problem!"); return; }
+  string resp = Contest::allow_attempt(castsess().user.id,probid,when());
+  if (resp != "") { response(resp); return; }
   Attempt* att  = new Attempt;
-  att->when     = int(round((when()-begin)/60.0));
-  att->username = castsess().username;
+  //FIXME att->when     = int(round((when()-begin)/60.0));
+  att->username = castsess().user.username;
   att->ip       = HTTP::iptostr(ip());
   response(Judge::attempt(header("file-name"),payload(),att));
 },true);
@@ -110,12 +112,12 @@ route("/attempt",[=](const vector<string>&) {
 route("/question",[=](const vector<string>&) {
   if (method() != "POST") { location("/"); return; }
   response(Clarification::question(
-    castsess().username,header("problem"),header("question")
+    castsess().user.username,header("problem"),header("question")
   ));
 },true);
 
 route("/runlist",[=](const vector<string>&) {
-  response(Runlist::query(castsess().username),"application/json");
+  response(Runlist::query(castsess().user.username),"application/json");
 },true);
 
 route("/scoreboard",[=](const vector<string>&) {
@@ -123,7 +125,7 @@ route("/scoreboard",[=](const vector<string>&) {
 },true);
 
 route("/clarifications",[=](const vector<string>&) {
-  json(Clarification::query(castsess().username));
+  json(Clarification::query(castsess().user.username));
 },true);
 
 route("/statement",[=](const vector<string>&) {
@@ -148,7 +150,7 @@ route("/status",[=](const vector<string>&) {
     problems[i] = move(kv.second);
   }
   json(map<string,JSON>{
-    {"fullname" , castsess().fullname},
+    {"fullname" , castsess().user.fullname},
     {"rem_time" , now < begin ? 0 : max(0,int(end-now))},
     {"languages", move(languages)},
     {"problems" , move(problems)}
@@ -169,7 +171,7 @@ route("/source",[=](const vector<string>& args) {
   JSON tmp(it->second);
   Global::unlock_attempts();
   auto& user = tmp("username").str();
-  if (user != castsess().username) { not_found(); return; }
+  if (user != castsess().user.username) { not_found(); return; }
   string fn = "attempts";
   fn += "/"+tmp("id").str();
   fn += "/"+tmp("problem").str();
@@ -196,7 +198,7 @@ bool check_session() {
   log(stringf(
     "%s: %s had a session with IP %s and made a request with IP %s.",
     buf,
-    castsess().username.c_str(),
+    castsess().user.username.c_str(),
     HTTP::iptostr(castsess().ip).c_str(),
     HTTP::iptostr(ip()).c_str()
   ));
