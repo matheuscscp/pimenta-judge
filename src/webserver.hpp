@@ -3,7 +3,8 @@
 
 namespace WebServer {
 
-void* thread(void*);
+void init();
+void close();
 
 } // namespace WebServer
 

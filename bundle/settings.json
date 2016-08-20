@@ -9,51 +9,6 @@
     },
     "duration": 300,
     "freeze": 60,
-    "blind": 15,
-    "languages": {
-      ".c": {
-        "name": "C",
-        "compile": "gcc -std=c11 %s -o %p/%P -lm",
-        "run": "%p/%P",
-        "flags": "-std=c11 -lm",
-        "enabled": true
-      },
-      ".cpp": {
-        "name": "C++",
-        "compile": "g++ -std=c++1y %s -o %p/%P",
-        "run": "%p/%P",
-        "flags": "-std=c++1y",
-        "enabled": true
-      },
-      ".java": {
-        "name": "Java",
-        "compile": "javac %s",
-        "run": "java -cp %p %P",
-        "flags": "",
-        "enabled": true
-      }
-    },
-    "problems": [
-      {
-        "dirname": "A",
-        "timelimit": 4,
-        "memlimit": 100000,
-        "autojudge": true,
-        "color": "#ff0000",
-        "enabled": true,
-        ".java": {
-          "timelimit": 10,
-          "memlimit": 150000
-        }
-      },
-      {
-        "dirname": "B",
-        "timelimit": 3,
-        "memlimit": 200000,
-        "autojudge": true,
-        "color": "#00ff00",
-        "enabled": true
-      }
-    ]
+    "blind": 15
   }
 }

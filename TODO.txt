@@ -1,4 +1,5 @@
 - allow multiple contests.
+- refactor Makefile (-include, remove includes inside files, and def. _HPP).
 - implement rerun-probs command.
 - web system for judges (
     attempt privileges and hidding, manual judging and clarifications

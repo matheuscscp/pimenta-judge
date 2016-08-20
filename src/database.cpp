@@ -11,10 +11,6 @@
 
 using namespace std;
 
-static bool match(const JSON& json, const JSON& filter) {
-  return true;//TODO
-}
-
 struct Coll {
   pthread_mutex_t mutex;
   string name;
@@ -54,7 +50,7 @@ struct Coll {
     pthread_mutex_unlock(&mutex);
     return true;
   }
-  Database::Document retrieve(const string& key, const string& value) {//FIXME
+  Database::Document retrieve(const string& key, const string& value) {
     Database::Document ans;
     pthread_mutex_lock(&mutex);
     for (auto& kv : documents) {
@@ -69,24 +65,12 @@ struct Coll {
     ans.second.setnull();
     return ans;
   }
-  vector<Database::Document> retrieve(const JSON& filter) {
-    if (!filter.isobj()) return vector<Database::Document>();
-    if (filter.size() == 0) return retrieve_page(0,documents.size());
-    JSON in(move(filter("in")));
+  vector<Database::Document> retrieve(
+    const function<bool(const Database::Document&)>& accept
+  ) {
     vector<Database::Document> ans;
     pthread_mutex_lock(&mutex);
-    if (!in || !in.isarr()) {
-      for (auto& kv : documents) if (match(kv.second,filter)) ans.push_back(kv);
-    }
-    else {
-      for (auto& o : in.arr()) {
-        int id;
-        if (!o.read(id) || id <= 0) continue;
-        auto it = documents.find(id);
-        if (it == documents.end()) continue;
-        if (match(it->second,filter)) ans.push_back(*it);
-      }
-    }
+    for (auto& kv : documents) if (accept(kv)) ans.push_back(kv);
     pthread_mutex_unlock(&mutex);
     return ans;
   }
@@ -207,8 +191,10 @@ Document Collection::retrieve(const string& key, const string& value) {
   return collection[collid].retrieve(key,value);
 }
 
-vector<Document> Collection::retrieve(const JSON& filter) {
-  return collection[collid].retrieve(filter);
+vector<Document> Collection::retrieve(
+  const function<bool(const Document&)>& accept
+) {
+  return collection[collid].retrieve(accept);
 }
 
 vector<Document> Collection::retrieve_page(unsigned page, unsigned page_size) {

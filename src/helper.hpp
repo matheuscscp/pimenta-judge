@@ -5,8 +5,11 @@
 #include <sstream>
 
 enum {AC = 0, CE, TLE, MLE, RTE, WA, PE};
+
 int verdict_toi(const std::string&);
 std::string verdict_tos(int);
+
+std::string getcwd();
 
 template <typename NewType, typename T>
 NewType to(const T& x) {
@@ -25,7 +28,9 @@ std::string tostr(const T& x) {
 template <typename T1, typename T2>
 bool read(const T1& s, T2& t) {
   std::stringstream ss; ss << s;
-  return ss >> t;
+  if (!(ss >> t)) return false;
+  ss.get();
+  return !ss;
 }
 
 template <typename... Args>

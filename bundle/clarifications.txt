@@ -1,2 +1,0 @@
-global A "Problem A question available to all teams" "Answer"
-team1username B "Problem B question privately answered to Team 1" "Answer"

@@ -1,5 +1,3 @@
-#include <cstring>
-#include <functional>
 #include <queue>
 
 #include <unistd.h>
@@ -11,13 +9,10 @@
 
 #include "judge.hpp"
 
+#include "database.hpp"
 #include "helper.hpp"
-#include "global.hpp"
 
 using namespace std;
-
-static queue<Attempt*> jqueue;
-static pthread_mutex_t judge_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // %p = path
 // %s = source
@@ -42,17 +37,6 @@ static string command(
   return cmd;
 }
 
-static long long dt(const timeval& start) {
-  timeval end;
-  gettimeofday(&end,nullptr);
-  long long ans = end.tv_sec;
-  ans *= 1000000;
-  ans += end.tv_usec;
-  ans -= start.tv_usec;
-  ans -= 1000000*(long long)start.tv_sec;
-  return ans;
-}
-
 static char run(const string& cmd, int tls, int mlkB, int& mtms, int& mmkB) {
   // init time
   timeval start;
@@ -60,27 +44,26 @@ static char run(const string& cmd, int tls, int mlkB, int& mtms, int& mmkB) {
   // child
   pid_t pid = fork();
   if (!pid) {
-    setpgid(0,0); // create new process group rooted at pid
     rlimit r;
+    r.rlim_cur = tls;
+    r.rlim_max = tls;
+    setrlimit(RLIMIT_CPU,&r);
     r.rlim_cur = RLIM_INFINITY;
     r.rlim_max = RLIM_INFINITY;
     setrlimit(RLIMIT_STACK,&r);
     execl("/bin/sh","/bin/sh","-c",cmd.c_str(),(char*)0);
-    _exit(0);
+    _exit(-1);
   }
   // parent
   int st;
   rusage r;
-  long long tl = tls*(long long)1000000;
-  while (wait4(pid,&st,WNOHANG,&r) != pid) {
-    if (dt(start) > tl) {
-      kill(-pid,SIGKILL); // the minus kills the whole group rooted at pid
-      wait4(pid,nullptr,0,&r);
-      break;
-    }
-    usleep(10000);
-  }
-  mtms = dt(start)/1000;
+  wait4(pid,&st,0,&r);
+  long long us = 0;
+  us += r.ru_utime.tv_sec*1000000L;
+  us += r.ru_utime.tv_usec;
+  us += r.ru_stime.tv_sec*1000000L;
+  us += r.ru_stime.tv_usec;
+  mtms = us/1000;
   mmkB = r.ru_maxrss;
   if (mtms > tls*1000) return TLE;
   if (mlkB && mmkB > mlkB) return MLE;
@@ -88,10 +71,14 @@ static char run(const string& cmd, int tls, int mlkB, int& mtms, int& mmkB) {
   return AC;
 }
 
-static void judge(Attempt* attptr) {
-  Attempt& att = *attptr;
-  string path = "attempts/"+to<string>(att.id);
+static void judge(int attid) {
+  DB(attempts);
+  JSON att;
+  if (!attempts.retrieve(attid,att)) return;
   
+  string path = "attempts/"+tostr(attid);
+  
+  /*
   // get compilation settings
   JSON language(move(Global::settings("contest","languages",att.language)));
   
@@ -158,79 +145,52 @@ static void judge(Attempt* attptr) {
     status = system("diff %s %s",ofn.c_str(),sfn.c_str());
     if (WEXITSTATUS(status)) { att.verdict = PE; break; }
   }
+  closedir(dir);
   
   // commit
-  att.time = move(to<string>(mtms));
-  att.memory = move(to<string>(mmkB));
+  att.time = move(tostr(mtms));
+  att.memory = move(tostr(mmkB));
   Attempt::commit(attptr);
+  */
 }
 
-namespace Judge {
-
-void* thread(void*) {
-  while (Global::alive()) {
+static queue<int> jqueue;
+static bool quit = false;
+static pthread_t jthread;
+static pthread_mutex_t judge_mutex = PTHREAD_MUTEX_INITIALIZER;
+static void* thread(void*) {
+  while (!quit) {
     pthread_mutex_lock(&judge_mutex);
     if (jqueue.empty()) {
       pthread_mutex_unlock(&judge_mutex);
       usleep(25000);
       continue;
     }
-    Attempt* att = jqueue.front(); jqueue.pop();
+    int attid = jqueue.front(); jqueue.pop();
     pthread_mutex_unlock(&judge_mutex);
-    judge(att);
+    judge(attid);
   }
 }
 
-string attempt(const string& fn, const vector<uint8_t>& file, Attempt* attptr) {
-  Attempt& att = *attptr;
-  JSON contest(move(Global::settings("contest")));
-  
-  // check file name
-  auto dot = fn.find('.');
-  if (dot == string::npos) return "Invalid filename!";
-  att.problem = move(fn.substr(0,dot));
-  if (!contest("problems",att.problem)) return "Invalid filename!";
-  att.language = move(fn.substr(dot,string::npos));
-  if (!contest("languages",att.language))return "Invalid programming language!";
-  
-  // generate id
-  att.id = 1;
-  Global::lock_attempts();
-  auto it = Global::attempts.rbegin();
-  if (it != Global::attempts.rend()) att.id = it->first+1;
-  Global::attempts[att.id] = move(att.json());
-  Global::unlock_attempts();
-  int id = att.id;
-  
-  // save file
-  string path = "attempts/"+to<string>(att.id);
-  system("mkdir -p %s/output",path.c_str());
-  FILE* fp = fopen((path+"/"+fn).c_str(), "wb");
-  fwrite(&file[0], file.size(), 1, fp);
-  fclose(fp);
-  
-  // push task
-  pthread_mutex_lock(&judge_mutex);
-  jqueue.push(attptr);
-  pthread_mutex_unlock(&judge_mutex);
-  
-  return "Attempt "+to<string>(id)+" received!";
+namespace Judge {
+
+void init() {
+  pthread_create(&jthread,nullptr,thread,nullptr);
 }
 
-void rerun_att(int id) {
-  // create att struct
-  Global::lock_attempts();
-  auto it = Global::attempts.find(id);
-  if (it == Global::attempts.end()) {
-    Global::unlock_attempts();
-    return;
-  }
-  it->second["judged"].setfalse();
-  Attempt* att = new Attempt(it->second);
-  Global::unlock_attempts();
-  // push
+void close() {
+  quit = true;
+  pthread_join(jthread,nullptr);
+}
+
+void push(int attid) {
+  DB(attempts);
+  JSON att;
+  if (!attempts.retrieve(attid,att)) return;
+  att["status"] = "inqueue";
+  attempts.update(attid,move(att));
   pthread_mutex_lock(&judge_mutex);
-  jqueue.push(att);
+  jqueue.push(attid);
   pthread_mutex_unlock(&judge_mutex);
 }
 

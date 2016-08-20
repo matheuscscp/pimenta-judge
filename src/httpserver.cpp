@@ -204,7 +204,7 @@ void Session::destroy(const function<bool(const Session*)>& cb) {
 }
 
 Handler::Handler() {
-  routes["/"] = make_pair(false,[=](const vector<string>& segments) {
+  route("/",[=](const vector<string>& segments) {
     string fn = move(HTTP::path(segments));
     if (fn != "") file(fn);
     else not_found();
@@ -225,9 +225,16 @@ Handler::~Handler() {
 void Handler::route(
   const string& path,
   const function<void(const vector<string>&)>& cb,
-  bool sreq
+  bool sreq,
+  bool preq,
+  int args
 ) {
-  routes[path] = make_pair(sreq,cb);
+  Route r;
+  r.func = cb;
+  r.session = sreq;
+  r.post = preq;
+  r.min_args = args;
+  routes[path] = r;
 }
 
 void Handler::not_found() {
@@ -557,10 +564,12 @@ void Handler::handle() {
     vector<string> args(segments.begin()+arg,segments.end());
     if (route != "") {
       auto& rt = routes[route];
-      if (rt.first && !sess) unauthorized();
-      else rt.second(args);
+      if (rt.session && !sess) unauthorized();
+      else if (rt.post && method_ != "POST") not_found();
+      else if (args.size() < rt.min_args) not_found();
+      else rt.func(args);
     }
-    else if (path_ == "/" || segments.size() > 0) routes["/"].second(args);
+    else if (path_ == "/" || segments.size() > 0) routes["/"].func(args);
     else not_found();
   }
   
@@ -606,24 +615,14 @@ bool Handler::getline(int max_size) {
 }
 
 void server(
-  function<bool()> alive,
   const JSON& setts,
-  function<Handler*()> handler_factory,
-  ostream& log
+  function<bool()> alive,
+  function<Handler*()> handler_factory
 ) {
   // read settings
   settings = setts;
-  uint16_t port = setting(8000,"port");
-  if (port == 8000) log << "httpserver: using default port (8000)\n";
-  unsigned nthreads = setting(0,"client_threads");
-  if (nthreads == 0) {
-    log << "httpserver: using default number of client threads (0)\n";
-  }
-  else if (nthreads > sysconf(_SC_NPROCESSORS_ONLN)) {
-    log << "httpserver: limiting number of client threads to the number of ";
-    log << "online processors (" << sysconf(_SC_NPROCESSORS_ONLN) << ")\n";
-    nthreads = sysconf(_SC_NPROCESSORS_ONLN);
-  }
+  uint16_t port = setts("port");
+  unsigned nthreads = setts("client_threads");
   
   // create socket
   int ssd = socket(AF_INET, SOCK_STREAM, 0);

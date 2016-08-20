@@ -7,9 +7,9 @@ using namespace std;
 namespace User {
 
 Data login(const string& username, const string& password) {
+  DB(users);
   Data ans;
   ans.id = 0;
-  Database::Collection users("users");
   Database::Document user(move(users.retrieve("username",username)));
   if (!user.first || user.second("password").str() != password) return ans;
   ans.id = user.first;

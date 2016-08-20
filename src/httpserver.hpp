@@ -2,7 +2,6 @@
 #define HTTPSERVER_H
 
 #include <functional>
-#include <iostream>
 
 #include "json.hpp"
 
@@ -32,14 +31,16 @@ class Handler {
     void route(
       const std::string& path,
       const std::function<void(const std::vector<std::string>& args)>&,
-      bool session_required = false
+      bool session_required = false,
+      bool post_required = false,
+      int min_args_required = 0
     );
     virtual void not_found();
     virtual void unauthorized(); // for routes with 'session required' flag
     void location(const std::string&); // redirect
     // socket
     time_t when() const;
-    uint32_t ip() const; // network endianness
+    uint32_t ip() const; // network order
     // request
     std::string& method();
     const std::string& method() const;
@@ -80,10 +81,13 @@ class Handler {
   // implementation
   private:
     // routing
-    std::map<
-      std::string,
-      std::pair<bool,std::function<void(const std::vector<std::string>&)>>
-    > routes;
+    struct Route {
+      std::function<void(const std::vector<std::string>&)> func;
+      bool session;
+      bool post;
+      int min_args;
+    };
+    std::map<std::string,Route> routes;
     // socket
     int sd;
     time_t when_;
@@ -107,10 +111,9 @@ class Handler {
 };
 
 void server(
+  const JSON& settings,
   std::function<bool()> alive,
-  const JSON& settings = JSON(),
-  std::function<Handler*()> handler_factory = []() { return new Handler; },
-  std::ostream& log = std::clog
+  std::function<Handler*()> handler_factory = []() { return new Handler; }
 );
 
 } // namespace HTTP

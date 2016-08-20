@@ -16,8 +16,8 @@ PingMessage::PingMessage(key_t sender_key) : Message(PING) {
   data.sender_key = sender_key;
 }
 
-RerunAttMessage::RerunAttMessage(int att_id) : Message(RERUN_ATT) {
-  data.att_id = att_id;
+RerunAttMessage::RerunAttMessage(int attid) : Message(RERUN_ATT) {
+  data.attid = attid;
 }
 
 void Message::send(key_t key) {
@@ -32,11 +32,8 @@ void Message::process() {
     case STOP:
       Global::shutdown();
       break;
-    case RELOAD:
-      Global::load_settings();
-      break;
     case RERUN_ATT:
-      Judge::rerun_att(data.att_id);
+      Judge::push(data.attid);
       break;
   }
 }

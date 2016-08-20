@@ -1,12 +1,5 @@
-#include <cstring>
-#include <fstream>
-#include <list>
-
 #include <unistd.h>
 #include <signal.h>
-#include <pthread.h>
-#include <sys/msg.h>
-#include <sys/stat.h>
 
 #include "global.hpp"
 
@@ -14,29 +7,11 @@
 #include "database.hpp"
 #include "message.hpp"
 #include "judge.hpp"
-#include "runlist.hpp"
-#include "scoreboard.hpp"
 #include "webserver.hpp"
 
 using namespace std;
 
-static void read_attempts() {
-  JSON tmp;
-  if (!tmp.read_file("attempts.json")) return;
-  for (auto& att : tmp.arr()) Global::attempts[att("id")] = att;
-}
-
-static void write_attempts(const map<int,JSON>& attempts) {
-  JSON tmp(vector<JSON>{});
-  for (auto& kv : attempts) tmp.push_back(kv.second);
-  tmp.write_file("attempts.json");
-}
-
 static bool quit = false;
-static JSON settings;
-static pthread_mutex_t settings_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t attempts_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t questionfile_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 class Contest {
   public:
@@ -51,15 +26,6 @@ class Contest {
     }
     void update() {
       msq.update();
-      static time_t nxtupd = 0;
-      if (time(nullptr) < nxtupd) return;
-      pthread_mutex_lock(&attempts_mutex);
-      map<int,JSON> atts(Global::attempts);
-      pthread_mutex_unlock(&attempts_mutex);
-      write_attempts(atts);
-      Runlist::update(atts);
-      Scoreboard::update(atts);
-      nxtupd = time(nullptr)+5;
     }
     static key_t alive() {
       FILE* fp = fopen("contest.bin", "rb");
@@ -80,18 +46,6 @@ static void term(int) {
   Global::shutdown();
 }
 
-void lock_settings() {
-  pthread_mutex_lock(&settings_mutex);
-}
-
-void unlock_settings() {
-  pthread_mutex_unlock(&settings_mutex);
-}
-
-const JSON& settings_ref() {
-  return settings;
-}
-
 static key_t online() {
   key_t key = Contest::alive();
   if (!key) {
@@ -110,42 +64,40 @@ static void offline() {
 
 namespace Global {
 
-map<int,JSON> attempts;
-
-void install(const string& dir) {
-  FILE* fp = fopen(dir.c_str(),"r");
+void install(const string& path) {
+  FILE* fp = fopen(path.c_str(),"r");
   if (fp) {
     fclose(fp);
     printf("pjudge install failed: file already exists.\n");
     return;
   }
-  system("mkdir -p %s",dir.c_str());
-  system("cp -rf /usr/local/share/pjudge/* %s",dir.c_str());
-  printf("pjudge installed.\n");
+  system("mkdir -p %s",path.c_str());
+  system("cp -rf /usr/local/share/pjudge/* %s",path.c_str());
+  printf("pjudge installed at %s.\n",path.c_str());
 }
 
 void start() {
   offline();
-  printf("pjudge started.\n");
-  if (daemon(1,0) < 0) { // fork with IO redirection to /dev/null
-    perror("pjudge stopped because daemon() failed");
+  printf("pjudge[%s] started.\n",getcwd().c_str());
+  if (daemon(1,0) < 0) { // fork and redirect IO to /dev/null
+    perror(stringf(
+      "pjudge[%s] could not start in background",
+      getcwd().c_str()
+    ).c_str());
     _exit(-1);
   }
   Contest contest; // RAII
-  signal(SIGTERM, term); // Global::shutdown();
-  signal(SIGPIPE, SIG_IGN); // avoid broken pipes termination signal
+  signal(SIGTERM,term); // Global::shutdown();
+  signal(SIGPIPE,SIG_IGN); // ignore broken pipes (tcp shit)
   Database::init();
-  load_settings();
-  read_attempts();
-  pthread_t judge, webserver;
-  pthread_create(&judge,nullptr,Judge::thread,nullptr);
-  pthread_create(&webserver,nullptr,WebServer::thread,nullptr);
+  Judge::init();
+  WebServer::init();
   while (!quit) {
     contest.update();
     usleep(25000);
   }
-  pthread_join(judge,nullptr);
-  pthread_join(webserver,nullptr);
+  WebServer::close();
+  Judge::close();
   Database::close();
 }
 
@@ -157,100 +109,20 @@ void stop() {
   do {
     ping.send(key);
   } while (msq.receive(1).mtype == IMALIVE);
-  printf("pjudge stopped.\n");
-}
-
-void reload() {
-  Message(RELOAD).send(online());
-  printf("pjudge reloaded settings.\n");
+  printf("pjudge[%s] stopped.\n",getcwd().c_str());
 }
 
 void rerun_attempt(int id) {
   RerunAttMessage(id).send(online());
-  printf("pjudge pushed attempt id=%d to queue.\n",id);
-}
-
-void lock_attempts() {
-  pthread_mutex_lock(&attempts_mutex);
-}
-
-void unlock_attempts() {
-  pthread_mutex_unlock(&attempts_mutex);
-}
-
-void lock_question_file() {
-  pthread_mutex_lock(&questionfile_mutex);
-}
-
-void unlock_question_file() {
-  pthread_mutex_unlock(&questionfile_mutex);
-}
-
-bool alive() {
-  return !quit;
+  printf(
+    "pjudge[%s] pushed attempt id=%d to queue.\n",
+    getcwd().c_str(),
+    id
+  );
 }
 
 void shutdown() {
   quit = true;
-}
-
-void load_settings() {
-  pthread_mutex_lock(&settings_mutex);
-  ::settings.read_file("settings.json");
-  JSON& contest = ::settings["contest"];
-  // begin
-  JSON& start = contest["start"];
-  int Y = start("year");
-  int M = start("month");
-  int D = start("day");
-  int h = start("hour");
-  int m = start("minute");
-  contest.erase("start");
-  time_t begin = time(nullptr);
-  tm ti;
-  localtime_r(&begin,&ti);
-  ti.tm_year = Y - 1900;
-  ti.tm_mon  = M - 1;
-  ti.tm_mday = D;
-  ti.tm_hour = h;
-  ti.tm_min  = m;
-  ti.tm_sec  = 0;
-  begin = mktime(&ti);
-  contest["begin"] = begin;
-  // end
-  time_t end = contest("duration");
-  contest.erase("duration");
-  end = begin + 60*end;
-  contest["end"] = end;
-  // freeze
-  time_t freeze = contest("freeze");
-  freeze = end - 60*freeze;
-  contest["freeze"] = freeze;
-  // blind
-  time_t blind = contest("blind");
-  blind = end - 60*blind;
-  contest["blind"] = blind;
-  // languages
-  auto& langs = contest["languages"].obj();
-  for (auto it = langs.begin(); it != langs.end();) {
-    if (!it->second("enabled")) langs.erase(it++);
-    else {
-      it->second.erase("enabled");
-      it++;
-    }
-  }
-  // problems
-  JSON problems;
-  for (auto& p : contest["problems"].arr()) {
-    if (problems(p["dirname"].str()) || !p("enabled")) continue;
-    string key = move(p["dirname"].str());
-    p.erase("dirname");
-    p["index"] = problems.size();
-    p.erase("enabled");
-    problems[move(key)] = move(p);
-  }
-  contest["problems"] = move(problems);
-  pthread_mutex_unlock(&settings_mutex);
 }
 
 } // namespace Global

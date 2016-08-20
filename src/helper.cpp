@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 #include "helper.hpp"
 
 using namespace std;
@@ -24,4 +26,11 @@ string verdict_tos(int verd) {
     case  PE: return "PE";
   }
   return "";
+}
+
+string getcwd() {
+  char* tmp = get_current_dir_name();
+  string ans = tmp;
+  free(tmp);
+  return ans;
 }
