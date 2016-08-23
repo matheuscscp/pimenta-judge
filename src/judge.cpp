@@ -11,6 +11,7 @@
 
 #include "database.hpp"
 #include "helper.hpp"
+#include "language.hpp"
 
 using namespace std;
 
@@ -66,7 +67,7 @@ static char run(const string& cmd, int tls, int mlkB, int& mtms, int& mmkB) {
   mtms = us/1000;
   mmkB = r.ru_maxrss;
   if (mtms > tls*1000) return TLE;
-  if (mlkB && mmkB > mlkB) return MLE;
+  if (mmkB > mlkB) return MLE;
   if (!WIFEXITED(st) || WEXITSTATUS(st) || WIFSIGNALED(st)) return RTE;
   return AC;
 }
@@ -75,52 +76,34 @@ static void judge(int attid) {
   DB(attempts);
   JSON att;
   if (!attempts.retrieve(attid,att)) return;
+  string prob = att["problem"];
+  string lang = att["language"];
+  JSON settings = move(Language::settings(att));
   
   string path = "attempts/"+tostr(attid);
   
-  /*
-  // get compilation settings
-  JSON language(move(Global::settings("contest","languages",att.language)));
-  
   // compile
-  if (language("compile")) {
-    int status = system(command(
-      language("compile"),
-      path,
-      att.problem,
-      att.language
-    ).c_str());
+  if (settings("compile")) {
+    int status = system(command(settings["compile"],path,prob,lang).c_str());
     if (WEXITSTATUS(status)) {
-      att.verdict = CE;
-      att.judged = true; // CE needs no judgement by humans
-      Attempt::commit(attptr);
+      att["status"] = "judged"; // CE needs no judgement by humans
+      att["verdict"] = verdict_tos(CE);
+      attempts.update(attid,move(att));
       return;
     }
   }
   
   // get execution settings
-  string cmd = move(command(language("run"),path,att.problem,att.language));
-  JSON problem(move(Global::settings("contest","problems",att.problem)));
+  string cmd = command(settings["run"],path,prob,lang);
   int Mtms=0,MmkB=0,mtms,mmkB;
-  int tls;
-  if (
-    !problem(att.language,"timelimit").read(tls) &&
-    !problem("timelimit").read(tls)
-  ) tls = 1;
-  tls = max(1,min(300,tls));
-  int mlkB;
-  if (
-    !problem(att.language,"memlimit").read(mlkB) &&
-    !problem("memlimit").read(mlkB)
-  ) mlkB = 0;
-  mlkB = max(0,mlkB);
+  int tls = settings["timelimit"], mlkB = settings["memlimit"];
   
   // init attempt
-  att.verdict = AC;
-  att.judged = problem("autojudge");
+  att["status"] = settings["autojudge"] ? "judged" : "waiting";
+  int verd = AC;
   
   // for each input file
-  string dn = "problems/"+att.problem;
+  string dn = "problems/"+prob;
   DIR* dir = opendir((dn+"/input").c_str());
   for (dirent* ent = readdir(dir); ent; ent = readdir(dir)) {
     string fn = ent->d_name;
@@ -133,25 +116,25 @@ static void judge(int attid) {
     
     // run
     string ofn = path+"/output/"+fn;
-    att.verdict = run(cmd+" < "+ifn+" > "+ofn,tls,mlkB,mtms,mmkB);
+    verd = run(cmd+" < "+ifn+" > "+ofn,tls,mlkB,mtms,mmkB);
     Mtms = max(Mtms,mtms);
     MmkB = max(MmkB,mmkB);
-    if (att.verdict != AC) break;
+    if (verd != AC) break;
     
     // diff
     string sfn = dn+"/output/"+fn;
     int status = system("diff -wB %s %s",ofn.c_str(),sfn.c_str());
-    if (WEXITSTATUS(status)) { att.verdict = WA; break; }
+    if (WEXITSTATUS(status)) { verd = WA; break; }
     status = system("diff %s %s",ofn.c_str(),sfn.c_str());
-    if (WEXITSTATUS(status)) { att.verdict = PE; break; }
+    if (WEXITSTATUS(status)) { verd = PE; break; }
   }
   closedir(dir);
   
-  // commit
-  att.time = move(tostr(mtms));
-  att.memory = move(tostr(mmkB));
-  Attempt::commit(attptr);
-  */
+  // update attempt
+  att["verdict"] = verdict_tos(verd);
+  att["time"] = move(tostr(mtms));
+  att["memory"] = move(tostr(mmkB));
+  attempts.update(attid,move(att));
 }
 
 static queue<int> jqueue;
@@ -175,6 +158,11 @@ static void* thread(void*) {
 namespace Judge {
 
 void init() {
+  DB(attempts);
+  attempts.retrieve([](const Database::Document& doc) {
+    if (doc.second("status") == "inqueue") jqueue.push(doc.first);
+    return Database::null();
+  });
   pthread_create(&jthread,nullptr,thread,nullptr);
 }
 
@@ -185,13 +173,15 @@ void close() {
 
 void push(int attid) {
   DB(attempts);
-  JSON att;
-  if (!attempts.retrieve(attid,att)) return;
-  att["status"] = "inqueue";
-  attempts.update(attid,move(att));
-  pthread_mutex_lock(&judge_mutex);
-  jqueue.push(attid);
-  pthread_mutex_unlock(&judge_mutex);
+  if (attempts.updater(attid,[](JSON& doc) {
+    if (doc["status"] == "inqueue") return false;
+    doc["status"] = "inqueue";
+    return true;
+  })) {
+    pthread_mutex_lock(&judge_mutex);
+    jqueue.push(attid);
+    pthread_mutex_unlock(&judge_mutex);
+  }
 }
 
 } // namespace Judge

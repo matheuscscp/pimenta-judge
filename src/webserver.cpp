@@ -1,4 +1,3 @@
-#include <cmath>
 #include <fstream>
 
 #include "webserver.hpp"
@@ -79,16 +78,8 @@ route("/",[=](const vector<string>& segments) {
 // =============================================================================
 
 route("/status",[=](const vector<string>&) {
-  DB(languages);
-  auto langdocs = languages.retrieve();
-  JSON langs(vector<JSON>{});
-  for (auto& kv : langdocs) {
-    kv.second["id"] = kv.first;
-    langs.push_back(move(kv.second));
-  }
   json(map<string,JSON>{
-    {"fullname" , castsess().user.fullname},
-    {"languages", langs}
+    {"fullname" , castsess().user.fullname}
   });
 },true);
 
@@ -117,8 +108,7 @@ route("/problem/statement",[=](const vector<string>& args) {
   int probid;
   if (!read(args[0],probid)) { not_found(); return; }
   string fn = Problem::statement(probid);
-  if (fn == "") { not_found(); return; }
-  file(fn);
+  if (fn != "") file(fn);
 },true,false,1);
 
 route("/source",[=](const vector<string>& args) {//FIXME
@@ -171,13 +161,11 @@ route("/login",[=](const vector<string>&) {
 route("/new_attempt",[=](const vector<string>& args) {
   int probid;
   if (!read(args[0],probid)) { not_found(); return; }
-  int langid;
-  if (!read(args[1],langid)) { not_found(); return; }
   payload().push_back('\n');
   response(Attempt::create(move(JSON(map<string,JSON>{
     {"user"     , castsess().user.id},
     {"problem"  , probid},
-    {"language" , langid},
+    {"language" , args[1]},
     {"when"     , when()},
     {"ip"       , HTTP::iptostr(ip())}
   })),payload()));

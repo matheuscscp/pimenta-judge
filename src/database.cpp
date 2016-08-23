@@ -65,12 +65,13 @@ struct Coll {
     ans.second.setnull();
     return ans;
   }
-  vector<Database::Document> retrieve(
-    const function<bool(const Database::Document&)>& accept
-  ) {
+  vector<Database::Document> retrieve(const Database::Transformation& tr) {
     vector<Database::Document> ans;
     pthread_mutex_lock(&mutex);
-    for (auto& kv : documents) if (accept(kv)) ans.push_back(kv);
+    for (auto& kv : documents) {
+      Database::Document tmp = move(tr(kv));
+      if (tmp.first) ans.push_back(move(tmp));
+    }
     pthread_mutex_unlock(&mutex);
     return ans;
   }
@@ -96,6 +97,17 @@ struct Coll {
     it->second = move(doc);
     pthread_mutex_unlock(&mutex);
     return true;
+  }
+  bool updater(int id, const Database::Updater& upd) {
+    pthread_mutex_lock(&mutex);
+    auto it = documents.find(id);
+    if (it == documents.end()) {
+      pthread_mutex_unlock(&mutex);
+      return false;
+    }
+    bool ans = upd(it->second);
+    pthread_mutex_unlock(&mutex);
+    return ans;
   }
   bool destroy(int id) {
     pthread_mutex_lock(&mutex);
@@ -153,17 +165,6 @@ static void* thread(void*) {
 
 namespace Database {
 
-void init() {
-  system("mkdir -p database");
-  pthread_create(&db,nullptr,thread,nullptr);
-}
-
-void close() {
-  quit = true;
-  pthread_join(db,nullptr);
-  update();
-}
-
 Collection::Collection(const string& name) : collid(get(name)) {
   
 }
@@ -191,10 +192,8 @@ Document Collection::retrieve(const string& key, const string& value) {
   return collection[collid].retrieve(key,value);
 }
 
-vector<Document> Collection::retrieve(
-  const function<bool(const Document&)>& accept
-) {
-  return collection[collid].retrieve(accept);
+vector<Document> Collection::retrieve(const Transformation& tr) {
+  return collection[collid].retrieve(tr);
 }
 
 vector<Document> Collection::retrieve_page(unsigned page, unsigned page_size) {
@@ -210,8 +209,23 @@ bool Collection::update(int docid, JSON&& document) {
   return collection[collid].update(docid,move(document));
 }
 
+bool Collection::updater(int docid, const Updater& upd) {
+  return collection[collid].updater(docid,upd);
+}
+
 bool Collection::destroy(int docid) {
   return collection[collid].destroy(docid);
+}
+
+void init() {
+  system("mkdir -p database");
+  pthread_create(&db,nullptr,thread,nullptr);
+}
+
+void close() {
+  quit = true;
+  pthread_join(db,nullptr);
+  update();
 }
 
 } // namespace Database

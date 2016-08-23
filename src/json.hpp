@@ -128,6 +128,7 @@ class JSON {
     void settrue();
     void setfalse();
     void setnull();
+    static JSON null();
     // polymorphic
     operator bool() const; // false iff (=="", ==0, isfalse() or isnull())
     size_t size() const;
@@ -135,14 +136,14 @@ class JSON {
     const JSON operator()() const;
     template <typename... Args>
     const JSON operator()(const std::string& key, Args... args) const {
-      if (!isobj()) { JSON nul; nul.setnull(); return nul; }
+      if (!isobj()) return JSON::null();
       auto it = find(key);
-      if (it == obj().end()) { JSON nul; nul.setnull(); return nul; }
+      if (it == obj().end()) return JSON::null();
       return it->second(args...);
     }
     template <typename... Args>
     const JSON operator()(size_t i, Args... args) const {
-      if (!isarr() || size() <= i) { JSON nul; nul.setnull(); return nul; }
+      if (!isarr() || size() <= i) return JSON::null();
       return (*this)[i](args...);
     }
     JSON& ref();

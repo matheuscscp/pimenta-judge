@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "contest.hpp"
 
 #include "helper.hpp"
@@ -78,24 +80,22 @@ bool allow_problem(const JSON& problem) {
   return (begin(contest) <= ::time(nullptr));
 }
 
-string allow_attempt(time_t when, int userid, int probid) {
-  DB(problems);
-  DB(contests);
-  JSON problem;
-  if (!problems.retrieve(probid,problem)) {
-    return "Problem "+tostr(probid)+" do not exists!";
-  }
+bool allow_create_attempt(JSON& attempt, const JSON& problem) {
   int cid;
-  if (!problem("contest").read(cid)) return "";
+  if (!problem("contest").read(cid)) return true;
+  DB(contests);
   JSON contest;
-  if (!contests.retrieve(cid,contest)) return "";
+  if (!contests.retrieve(cid,contest)) return true;
   JSON judges(move(contest("judges")));
   if (judges && judges.isarr()) {
-    int x;
-    for (auto& id : judges.arr()) if (id.read(x) && x == userid) return "";
+    int userid = attempt["user"], x;
+    for (auto& id : judges.arr()) if (id.read(x) && x == userid) return true;
   }
-  if (when < begin(contest)) return "The contest has not started yet!";
-  return "";
+  time_t beg = begin(contest);
+  time_t when = attempt["when"];
+  bool ans = beg <= when;
+  if (ans) attempt["contest_time"] = int(roundl((when-beg)/60.0L));
+  return ans;
 }
 
 } // namespace Contest

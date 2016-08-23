@@ -16,7 +16,7 @@ time_t blind(const JSON& contest);
 
 bool allow_list_problem(const Database::Document& problem);
 bool allow_problem(const JSON& problem);
-std::string allow_attempt(time_t when, int userid, int probid);
+bool allow_create_attempt(JSON& attempt, const JSON& problem);
 
 } // namespace Contest
 

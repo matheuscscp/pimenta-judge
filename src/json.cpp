@@ -554,6 +554,10 @@ void JSON::setnull() {
   operator=("null");
 }
 
+JSON JSON::null() {
+  return JSON("null");
+}
+
 JSON::operator bool() const {
   if (!value->isstr()) return true;
   auto s = value->str();
