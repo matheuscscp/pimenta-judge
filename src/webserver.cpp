@@ -21,11 +21,6 @@ static void log(const string& msg) {
   pthread_mutex_unlock(&mutex);
 }
 
-static bool eqip(uint32_t a, uint32_t b) {
-  if ((a == 0 || a == 0x0100007f) && (b == 0 || b == 0x0100007f)) return true;
-  return a == b;
-}
-
 class Session : public HTTP::Session {
   public:
     uint32_t ip;
@@ -34,7 +29,7 @@ class Session : public HTTP::Session {
       uint32_t oip = -1;
       destroy([&](const HTTP::Session* sess) {
         auto& ref = *(Session*)sess;
-        if (user.username != ref.user.username) return false;
+        if (user.id != ref.user.id) return false;
         oip = ref.ip;
         return true;
       });
@@ -44,9 +39,9 @@ class Session : public HTTP::Session {
       char buf[26];
       strftime(buf,26,"At %H:%M:%S on %d/%m/%Y",localtime_r(&now,&ti));
       log(stringf(
-        "%s, username %s: IP %s logged in while IP %s was already logged in.",
+        "%s, user id=%d: IP %s logged in while IP %s was already logged in.",
         buf,
-        user.username.c_str(),
+        user.id,
         HTTP::iptostr(ip).c_str(),
         HTTP::iptostr(oip).c_str()
       ));
@@ -179,22 +174,6 @@ void not_found() {
 
 void unauthorized() {
   location("/");
-}
-
-bool check_session() {
-  if (eqip(castsess().ip,ip())) return false;
-  time_t now = time(nullptr);
-  tm ti;
-  char buf[26];
-  strftime(buf,26,"At %H:%M:%S on %d/%m/%Y",localtime_r(&now,&ti));
-  log(stringf(
-    "%s: %s had a session with IP %s and made a request with IP %s.",
-    buf,
-    castsess().user.username.c_str(),
-    HTTP::iptostr(castsess().ip).c_str(),
-    HTTP::iptostr(ip()).c_str()
-  ));
-  return true;
 }
 
 };

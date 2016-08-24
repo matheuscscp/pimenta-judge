@@ -18,6 +18,7 @@ class Session {
   public:
     virtual ~Session();
     virtual Session* clone() const = 0;
+  protected:
     static void destroy(const std::function<bool(const Session*)>&);
 };
 
@@ -77,7 +78,6 @@ class Handler {
     // session
     Session* session() const;
     void session(Session*);
-    virtual bool check_session(); // return true if must reload
   // implementation
   private:
     // routing

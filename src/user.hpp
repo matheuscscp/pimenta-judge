@@ -7,7 +7,6 @@ namespace User {
 
 struct Data {
   int id;
-  std::string username;
   std::string fullname;
 };
 

@@ -1,4 +1,3 @@
-- URGENT: REFACTOR SESSION HANDLING
 - allow multiple contests.
 - refactor Makefile (-include, remove includes inside files, and def. _HPP).
 - implement rerun-probs command.

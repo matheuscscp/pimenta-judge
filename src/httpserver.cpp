@@ -86,9 +86,13 @@ static bool ishex(const string& s) {
   for (char c : s) if (!isxdigit(c)) return false;
   return true;
 }
-static string hexstr(unsigned x) {
-  string ans = "00000000";
-  sprintf((char*)ans.c_str(),"%08x",x);
+template <typename T>
+static string hexstr(T x) {
+  stringstream ss;
+  ss << hex << x;
+  string ans;
+  ss >> ans;
+  while (ans.size() < (sizeof(T)<<1)) ans = "0"+ans;
   return ans;
 }
 
@@ -118,32 +122,81 @@ static void* thread(void*) {
 // sessions
 struct SessionEntry {
   time_t end;
+  int loaded;
+  bool must_delete;
   HTTP::Session* sess;
-  SessionEntry() : sess(nullptr) {}
+  SessionEntry() : loaded(0), must_delete(false), sess(nullptr) {}
 };
+static time_t init_time;
 static map<unsigned,SessionEntry> sessions;
 static pthread_mutex_t sessions_mutex = PTHREAD_MUTEX_INITIALIZER;
-static HTTP::Session* load_session(unsigned& id) {
+static size_t session_id_size() {
+  return (sizeof(unsigned)+sizeof(time_t))<<1;
+}
+static void read_session_id(string& id, unsigned& uid, time_t& ini) {
+  if (id.size() != session_id_size()) { uid = 0; return; }
+  char tmp = id[sizeof(unsigned)<<1];
+  id[sizeof(unsigned)<<1] = '\0';
+  sscanf(id.c_str(),"%x",&uid);
+  id[sizeof(unsigned)<<1] = tmp;
+  stringstream ss;
+  ss << &id[sizeof(unsigned)<<1];
+  ss >> hex >> ini;
+}
+static HTTP::Session* load_session(const string& id) {
+  HTTP::Session* ans = nullptr;
+  // check init time
+  unsigned uid;
+  time_t ini;
+  read_session_id((string&)id,uid,ini);
+  if (!uid || ini != init_time) return ans;
+  // access table
   pthread_mutex_lock(&sessions_mutex);
-  auto it = sessions.find(id);
-  if (it == sessions.end()) {
-    do {
-      id = 0;
-      for (int shf = 0; shf < 32; shf += 8) id |= ((rand()&0xffu)<<shf);
-    } while (!id || sessions.find(id) != sessions.end());
-    it = sessions.emplace(id,SessionEntry()).first;
+  auto it = sessions.find(uid);
+  if (it != sessions.end()) {
+    if (time(nullptr) < it->second.end && !it->second.must_delete) {
+      it->second.loaded++;
+      ans = it->second.sess->clone();
+    }
+    else {
+      it->second.must_delete = true;
+      if (it->second.loaded == 0) {
+        delete it->second.sess;
+        sessions.erase(it);
+      }
+    }
   }
-  it->second.end = time(nullptr)+2592000;
-  HTTP::Session* ans = (it->second.sess ? it->second.sess->clone() : nullptr);
   pthread_mutex_unlock(&sessions_mutex);
   return ans;
 }
-static void store_session(unsigned id, HTTP::Session* sess) {
+static void store_session(string& id, HTTP::Session* sess) {
+  if (id == "" && !sess) return;
+  unsigned uid;
   pthread_mutex_lock(&sessions_mutex);
-  auto it = sessions.find(id);
-  if (it != sessions.end()) {
-    delete it->second.sess;
-    it->second.sess = sess;
+  if (id == "") { // create
+    do {
+      uid = 0;
+      for (int shf = 0; shf < 32; shf += 8) uid |= ((rand()&0xffu)<<shf);
+    } while (!uid || sessions.find(uid) != sessions.end());
+    auto& s = sessions[uid];
+    s.end = time(nullptr)+2592000;
+    s.sess = sess;
+    id = hexstr(uid)+hexstr(init_time);
+  }
+  else {
+    time_t ini;
+    read_session_id((string&)id,uid,ini);
+    auto& s = sessions[uid];
+    s.loaded--;
+    if (!sess) s.must_delete = true; // delete
+    else { // update
+      delete s.sess;
+      s.sess = sess;
+    }
+    if (s.must_delete && s.loaded == 0) {
+      delete s.sess;
+      sessions.erase(uid);
+    }
   }
   pthread_mutex_unlock(&sessions_mutex);
 }
@@ -155,7 +208,10 @@ static void clean_sessions() {
   next = now+period;
   pthread_mutex_lock(&sessions_mutex);
   for (auto it = sessions.begin(); it != sessions.end();) {
-    if (now < it->second.end) { it++; continue; }
+    if (
+      it->second.loaded > 0 ||
+      (now < it->second.end && !it->second.must_delete)
+    ) { it++; continue; }
     delete it->second.sess;
     sessions.erase(it++);
   }
@@ -193,10 +249,11 @@ void Session::destroy(const function<bool(const Session*)>& cb) {
   time_t now = time(nullptr);
   pthread_mutex_lock(&sessions_mutex);
   for (auto it = sessions.begin(); it != sessions.end();) {
-    if (now < it->second.end && (!it->second.sess || !cb(it->second.sess))) {
-      it++;
-      continue;
-    }
+    if (cb(it->second.sess)) it->second.must_delete = true;
+    if (
+      it->second.loaded > 0 ||
+      (now < it->second.end && !it->second.must_delete)
+    ) { it++; continue; }
     delete it->second.sess;
     sessions.erase(it++);
   }
@@ -214,7 +271,9 @@ Handler::Handler() {
 Handler::~Handler() {
   if (st_code) { // request not processed
     stringstream ss;
-    ss << st_version << " " << st_code << " " << st_phrase << "\r\n\r\n";
+    ss << st_version << " " << st_code << " " << st_phrase << "\r\n";
+    for (auto& kv : resp_headers) ss << kv.first << ": " << kv.second << "\r\n";
+    ss << "\r\n";
     string resp = move(ss.str());
     write(sd,resp.c_str(),resp.size());
   }
@@ -398,10 +457,6 @@ void Handler::session(Session* nsess) {
   sess = nsess;
 }
 
-bool Handler::check_session() {
-  return false;
-}
-
 void Handler::init(int sd, time_t when, uint32_t ip) {
   // socket
   this->sd = sd;
@@ -505,26 +560,30 @@ void Handler::handle() {
   }
   
   // load session
-  unsigned sid = 0;
+  string sid;
+  sess = nullptr;
+  auto setcook = [&]() {
+    return "SID="+sid+"; Path=/; Max-Age=2592000";
+  };
+  auto delcook = [&]() {
+    return "SID=deleted; Path=/; Max-Age=0";
+  };
   {
-    string cookie = req_headers["cookie"];
-    auto it = cookie.find("sessionID=");
-    if (it != string::npos) {
-      cookie = move(cookie.substr(it+10,8));
-      if (cookie.size() == 8 && ishex(cookie)) sscanf(cookie.c_str(),"%x",&sid);
-    }
-    sess = load_session(sid);
-    if (sess && check_session()) {
-      delete sess;
-      sess = nullptr;
-      sid = 0;
-      load_session(sid);
-    }
-    resp_headers["Set-Cookie"] = "sessionID="+hexstr(sid)+"; Max-Age=2592000";
     resp_headers["P3P"] = // to allow cookies
       "CP=\"CURa ADMa DEVa PSAo PSDo OUR BUS UNI PUR INT "
       "DEM STA PRE COM NAV OTC NOI DSP COR\""
     ;
+    string cookie = req_headers["cookie"];
+    auto it = cookie.find("SID=");
+    if (it != string::npos) {
+      sid = cookie.substr(it+4,session_id_size());
+      sess = load_session(sid);
+      if (!sess) {
+        resp_headers["Set-Cookie"] = delcook();
+        location("/");
+        return;
+      }
+    }
   }
   
   // route by path with origin-form syntax rule
@@ -574,7 +633,10 @@ void Handler::handle() {
   }
   
   // store session
+  bool new_sess = (sid == "" && sess);
   store_session(sid,sess);
+  if (new_sess) resp_headers["Set-Cookie"] = setcook();
+  else if (sid != "" && !sess) resp_headers["Set-Cookie"] = delcook();
   
   // response
   stringstream ss;
@@ -619,6 +681,8 @@ void server(
   function<bool()> alive,
   function<Handler*()> handler_factory
 ) {
+  init_time = time(nullptr);
+  
   // read settings
   settings = setts;
   uint16_t port = setts("port");
