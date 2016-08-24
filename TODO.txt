@@ -1,9 +1,10 @@
 - allow multiple contests.
 - refactor Makefile (-include, remove includes inside files, and def. _HPP).
+- convert to RESTful API.
 - implement rerun-probs command.
 - web system for judges (
     attempt privileges and hidding, manual judging and clarifications
   ).
-- web system for staff (attempt privileges and hidding, balloons and prints).
+- web system for staff (balloons and prints).
 - implement HTTPS.
 - implement safe computation (run untrusted code safely).
