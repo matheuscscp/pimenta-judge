@@ -67,8 +67,7 @@ bool allow_list_problem(const Database::Document& problem) {
   DB(contests);
   JSON contest;
   if (!contests.retrieve(cid,contest)) return true;
-  Time t(move(time(contest)));
-  return (t.freeze == t.end && t.blind == t.end && t.end <= ::time(nullptr));
+  return (end(contest) <= ::time(nullptr));
 }
 
 bool allow_problem(const JSON& problem) {
@@ -91,10 +90,44 @@ bool allow_create_attempt(JSON& attempt, const JSON& problem) {
     int userid = attempt["user"], x;
     for (auto& id : judges.arr()) if (id.read(x) && x == userid) return true;
   }
-  time_t beg = begin(contest);
+  auto t = time(contest);
   time_t when = attempt["when"];
-  bool ans = beg <= when;
-  if (ans) attempt["contest_time"] = int(roundl((when-beg)/60.0L));
+  if (t.begin <= when && when < t.end) {
+    attempt["contest_time"] = int(roundl((when-t.begin)/60.0L));
+  }
+  return t.begin <= when;
+}
+
+JSON get(int id) {
+  DB(contests);
+  JSON ans;
+  if (!contests.retrieve(id,ans) || ::time(nullptr) < begin(ans)) {
+    return JSON::null();
+  }
+  ans["id"] = id;
+  DB(problems);
+  ans["problems"] = JSON(vector<JSON>{});
+  problems.retrieve([&](const Database::Document& doc) {
+    if (doc.second("contest") && int(doc.second("contest")) == id) {
+      JSON tmp = doc.second;
+      tmp["id"] = doc.first;
+      tmp.erase("languages");
+      ans["problems"].push_back(move(tmp));
+    }
+    return Database::null();
+  });
+  return ans;
+}
+
+JSON page(unsigned p, unsigned ps) {
+  DB(contests);
+  JSON ans(vector<JSON>{});
+  contests.retrieve_page(p,ps,[&](const Database::Document& contest) {
+    JSON tmp = contest.second;
+    tmp["id"] = contest.first;
+    ans.push_back(move(tmp));
+    return Database::null();
+  });
   return ans;
 }
 

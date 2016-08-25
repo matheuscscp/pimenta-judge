@@ -25,7 +25,11 @@ class Collection {
     std::vector<Document> retrieve( // return Database::null() to discard a doc
       const Transformation& = [](const Document& doc) { return doc; }
     );
-    std::vector<Document> retrieve_page(unsigned page, unsigned page_size);
+    std::vector<Document> retrieve_page(
+      unsigned page,
+      unsigned page_size,
+      const Transformation& = [](const Document& doc) { return doc; }
+    );
     bool update(int docid, const JSON& document);
     bool update(int docid, JSON&& document);
     bool updater(int docid, const Updater&);

@@ -75,16 +75,20 @@ struct Coll {
     pthread_mutex_unlock(&mutex);
     return ans;
   }
-  vector<Database::Document> retrieve_page(unsigned p, unsigned ps) {
+  vector<Database::Document> retrieve_page(
+    unsigned p,
+    unsigned ps,
+    const Database::Transformation& tr
+  ) {
     vector<Database::Document> ans;
-    if (ps) {
-      pthread_mutex_lock(&mutex);
-      auto it = documents.at(p*ps);
-      for (int i = 0; i < ps && it != documents.end(); i++, it++) {
-        ans.push_back(*it);
-      }
-      pthread_mutex_unlock(&mutex);
+    pthread_mutex_lock(&mutex);
+    if (!ps) p = 0, ps = documents.size();
+    auto it = documents.at(p*ps);
+    for (int i = 0; i < ps && it != documents.end(); i++, it++) {
+      Database::Document tmp = move(tr(*it));
+      if (tmp.first) ans.push_back(move(tmp));
     }
+    pthread_mutex_unlock(&mutex);
     return ans;
   }
   bool update(int id, JSON&& doc) {
@@ -196,8 +200,12 @@ vector<Document> Collection::retrieve(const Transformation& tr) {
   return collection[collid].retrieve(tr);
 }
 
-vector<Document> Collection::retrieve_page(unsigned page, unsigned page_size) {
-  return collection[collid].retrieve_page(page,page_size);
+vector<Document> Collection::retrieve_page(
+  unsigned page,
+  unsigned page_size,
+  const Transformation& tr
+) {
+  return collection[collid].retrieve_page(page,page_size,tr);
 }
 
 bool Collection::update(int docid, const JSON& document) {

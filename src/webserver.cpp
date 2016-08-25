@@ -74,6 +74,7 @@ route("/",[=](const vector<string>& segments) {
 
 route("/status",[=](const vector<string>&) {
   json(map<string,JSON>{
+    {"time"     , time(nullptr)},
     {"fullname" , castsess().user.fullname}
   });
 },true);
@@ -86,6 +87,16 @@ route("/problems",[=](const vector<string>& args) {
     return;
   }
   json(Problem::page(page,page_size));
+},true);
+
+route("/contests",[=](const vector<string>& args) {
+  if (args.size() < 2) { json(Contest::page()); return; }
+  unsigned page, page_size;
+  if (!read(args[0],page) || !read(args[1],page_size)) {
+    json(Contest::page());
+    return;
+  }
+  json(Contest::page(page,page_size));
 },true);
 
 route("/logout",[=](const vector<string>&) {
@@ -104,6 +115,12 @@ route("/problem/statement",[=](const vector<string>& args) {
   if (!read(args[0],probid)) { not_found(); return; }
   string fn = Problem::statement(probid);
   if (fn != "") file(fn);
+},true,false,1);
+
+route("/contest",[=](const vector<string>& args) {
+  int cid;
+  if (!read(args[0],cid)) { not_found(); return; }
+  json(Contest::get(cid));
 },true,false,1);
 
 route("/source",[=](const vector<string>& args) {//FIXME
