@@ -41,11 +41,13 @@ JSON list(int probid) {
   // fetch languages of problem's contest
   JSON autojudge;
   autojudge.settrue();
+  bool contest_finished = true;
   if (problem("contest")) {
     DB(contests);
     JSON contest;
     if (contests.retrieve(int(problem["contest"]),contest)) {
       if (contest("autojudge").isfalse()) autojudge.setfalse();
+      if (!contest("finished")) contest_finished = false;
       overwrite_list(langs,contest["languages"].obj());
     }
   }
@@ -65,6 +67,7 @@ JSON list(int probid) {
     }
     if (!kv.second("info")) kv.second["info"] = "";
     if (!kv.second("autojudge").isfalse()) kv.second["autojudge"] = autojudge;
+    if (contest_finished) kv.second["autojudge"].settrue();
     if (!kv.second("enabled").isfalse()) ans.push_back(move(kv.second));
   }
   return ans;

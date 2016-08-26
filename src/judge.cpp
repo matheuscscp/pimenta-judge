@@ -73,12 +73,18 @@ static char run(const string& cmd, int tls, int mlkB, int& mtms, int& mmkB) {
 }
 
 static void judge(int attid) {
+  // load stuff
   DB(attempts);
   JSON att;
   if (!attempts.retrieve(attid,att)) return;
   string prob = att["problem"];
   string lang = att["language"];
   JSON settings = move(Language::settings(att));
+  if (!settings) { // impossible to judge
+    att["status"] = "cantjudge";
+    attempts.update(attid,move(att));
+    return;
+  }
   
   string path = "attempts/"+tostr(attid);
   
@@ -160,7 +166,7 @@ namespace Judge {
 void init() {
   DB(attempts);
   attempts.retrieve([](const Database::Document& doc) {
-    if (doc.second("status") == "inqueue") jqueue.push(doc.first);
+    if (doc.second("status") == "queued") jqueue.push(doc.first);
     return Database::null();
   });
   pthread_create(&jthread,nullptr,thread,nullptr);
@@ -174,8 +180,8 @@ void close() {
 void push(int attid) {
   DB(attempts);
   if (attempts.updater(attid,[](JSON& doc) {
-    if (doc["status"] == "inqueue") return false;
-    doc["status"] = "inqueue";
+    if (doc["status"] == "queued") return false;
+    doc["status"] = "queued";
     return true;
   })) {
     pthread_mutex_lock(&judge_mutex);

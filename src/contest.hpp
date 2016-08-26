@@ -17,8 +17,11 @@ time_t blind(const JSON& contest);
 bool allow_list_problem(const Database::Document& problem);
 bool allow_problem(const JSON& problem);
 bool allow_create_attempt(JSON& attempt, const JSON& problem);
+void transform_attempt(JSON& attempt);
 
 JSON get(int id);
+JSON get_problems(int id);
+JSON get_attempts(int id, int user);
 JSON page(unsigned page = 0, unsigned page_size = 0);
 
 } // namespace Contest

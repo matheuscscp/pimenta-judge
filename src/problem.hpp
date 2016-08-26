@@ -8,7 +8,7 @@ namespace Problem {
 JSON get_short(int id);
 JSON get(int id);
 std::string statement(int id);
-JSON page(unsigned page = 0, unsigned page_size = 0);
+JSON page(unsigned page = 0, unsigned page_size = 0, int contest = -1);
 
 } // namespace Problem
 

@@ -28,6 +28,8 @@ JSON get(int id) {
   JSON ans(move(get_short(id)));
   if (!ans) return ans;
   ans["languages"] = Language::list(id);
+  ans["has_statement"].setfalse();
+  if (statement(id) != "") ans["has_statement"].settrue();
   return ans;
 }
 
@@ -46,12 +48,16 @@ string statement(int id) {
   return "";
 }
 
-JSON page(unsigned p, unsigned ps) {
+JSON page(unsigned p, unsigned ps, int contest) {
   DB(problems);
-  auto probs = move(problems.retrieve([](const Database::Document& problem) {
+  auto probs = move(problems.retrieve([&](const Database::Document& problem) {
     if (
       problem.second("enabled").isfalse() ||
-      !Contest::allow_list_problem(problem)
+      (contest != -1 && (
+        !problem.second("contest") ||
+        int(problem.second("contest")) != contest
+      )) ||
+      (contest == -1 && !Contest::allow_list_problem(problem))
     ) return Database::null();
     Database::Document ans(problem);
     ans.second.erase("languages");

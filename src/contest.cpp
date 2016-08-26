@@ -3,6 +3,8 @@
 #include "contest.hpp"
 
 #include "helper.hpp"
+#include "problem.hpp"
+#include "attempt.hpp"
 
 using namespace std;
 
@@ -25,7 +27,7 @@ Time time(const JSON& contest) {
   ti.tm_min  = m;
   ti.tm_sec  = 0;
   ans.begin = mktime(&ti);
-  ans.end = ans.begin - 60*int(contest("duration"));
+  ans.end = ans.begin + 60*int(contest("duration"));
   ans.freeze = ans.end - 60*int(contest("freeze"));
   ans.blind = ans.end - 60*int(contest("blind"));
   return ans;
@@ -85,7 +87,8 @@ bool allow_create_attempt(JSON& attempt, const JSON& problem) {
   DB(contests);
   JSON contest;
   if (!contests.retrieve(cid,contest)) return true;
-  JSON judges(move(contest("judges")));
+  if (contest("finished")) return true;
+  JSON judges(move(contest["judges"]));
   if (judges && judges.isarr()) {
     int userid = attempt["user"], x;
     for (auto& id : judges.arr()) if (id.read(x) && x == userid) return true;
@@ -93,9 +96,30 @@ bool allow_create_attempt(JSON& attempt, const JSON& problem) {
   auto t = time(contest);
   time_t when = attempt["when"];
   if (t.begin <= when && when < t.end) {
+    attempt["contest"] = cid;
     attempt["contest_time"] = int(roundl((when-t.begin)/60.0L));
+    return true;
   }
-  return t.begin <= when;
+  return false;
+}
+
+void transform_attempt(JSON& attempt) {
+  int cid;
+  if (!attempt("contest").read(cid)) return;
+  DB(contests);
+  JSON contest;
+  if (!contests.retrieve(cid,contest)) return;
+  if (contest("finished")) return;
+  if (
+    int(contest["blind"]) == 0 ||
+    int(attempt["contest_time"])<int(contest["duration"])-int(contest["blind"])
+  ) return;
+  JSON judges(move(contest["judges"]));
+  if (judges && judges.isarr()) {
+    int userid = attempt["user"], x;
+    for (auto& id : judges.arr()) if (id.read(x) && x == userid) return;
+  }
+  attempt["status"] = "blind";
 }
 
 JSON get(int id) {
@@ -105,18 +129,19 @@ JSON get(int id) {
     return JSON::null();
   }
   ans["id"] = id;
-  DB(problems);
-  ans["problems"] = JSON(vector<JSON>{});
-  problems.retrieve([&](const Database::Document& doc) {
-    if (doc.second("contest") && int(doc.second("contest")) == id) {
-      JSON tmp = doc.second;
-      tmp["id"] = doc.first;
-      tmp.erase("languages");
-      ans["problems"].push_back(move(tmp));
-    }
-    return Database::null();
-  });
   return ans;
+}
+
+JSON get_problems(int id) {
+  JSON contest = get(id);
+  if (!contest) return contest;
+  return Problem::page(0,0,id);
+}
+
+JSON get_attempts(int id, int user) {
+  JSON contest = get(id);
+  if (!contest) return contest;
+  return Attempt::page(user,0,0,id);
 }
 
 JSON page(unsigned p, unsigned ps) {

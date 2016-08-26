@@ -435,8 +435,16 @@ bool JSON::operator==(const string& val) const {
   return value->isstr() && val == value->str();
 }
 
+bool JSON::operator!=(const string& val) const {
+  return value->isstr() && val != value->str();
+}
+
 bool operator==(const string& val, const JSON& json) {
   return json == val;
+}
+
+bool operator!=(const string& val, const JSON& json) {
+  return json != val;
 }
 
 bool JSON::isnum() const {

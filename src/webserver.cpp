@@ -89,6 +89,16 @@ route("/problems",[=](const vector<string>& args) {
   json(Problem::page(page,page_size));
 },true);
 
+route("/attempts",[=](const vector<string>& args) {
+  if (args.size() < 2) { json(Attempt::page(castsess().user.id)); return; }
+  unsigned page, page_size;
+  if (!read(args[0],page) || !read(args[1],page_size)) {
+    json(Attempt::page(castsess().user.id));
+    return;
+  }
+  json(Attempt::page(castsess().user.id,page,page_size));
+},true);
+
 route("/contests",[=](const vector<string>& args) {
   if (args.size() < 2) { json(Contest::page()); return; }
   unsigned page, page_size;
@@ -121,6 +131,18 @@ route("/contest",[=](const vector<string>& args) {
   int cid;
   if (!read(args[0],cid)) { not_found(); return; }
   json(Contest::get(cid));
+},true,false,1);
+
+route("/contest/problems",[=](const vector<string>& args) {
+  int cid;
+  if (!read(args[0],cid)) { not_found(); return; }
+  json(Contest::get_problems(cid));
+},true,false,1);
+
+route("/contest/attempts",[=](const vector<string>& args) {
+  int cid;
+  if (!read(args[0],cid)) { not_found(); return; }
+  json(Contest::get_attempts(cid,castsess().user.id));
 },true,false,1);
 
 route("/source",[=](const vector<string>& args) {//FIXME

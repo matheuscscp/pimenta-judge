@@ -67,6 +67,7 @@ class JSON {
     operator std::string&();
     operator const std::string&() const;
     bool operator==(const std::string&) const;
+    bool operator!=(const std::string&) const;
     // number API
     bool isnum() const;
     number num() const;
@@ -163,6 +164,7 @@ class JSON {
 };
 // more API
 bool operator==(const std::string&, const JSON&);
+bool operator!=(const std::string&, const JSON&);
 std::ostream& operator<<(std::ostream&, const JSON&); // outputs indented JSON
 
 #endif
