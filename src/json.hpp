@@ -80,7 +80,7 @@ class JSON {
     }
     template <typename T>
     bool read(T& buf) const {
-      if (!isstr() || isnull()) return false;
+      if (!isnum()) return false;
       std::stringstream ss(str());
       if (!(ss >> buf)) return false;
       ss.get();

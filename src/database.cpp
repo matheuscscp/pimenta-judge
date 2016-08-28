@@ -51,19 +51,16 @@ struct Coll {
     return true;
   }
   Database::Document retrieve(const string& key, const string& value) {
-    Database::Document ans;
     pthread_mutex_lock(&mutex);
     for (auto& kv : documents) {
       if (kv.second(key) && kv.second(key).str() == value) {
-        ans = kv;
+        Database::Document ans = kv;
         pthread_mutex_unlock(&mutex);
         return ans;
       }
     }
     pthread_mutex_unlock(&mutex);
-    ans.first = 0;
-    ans.second.setnull();
-    return ans;
+    return Database::null();
   }
   vector<Database::Document> retrieve(const Database::Transformation& tr) {
     vector<Database::Document> ans;
@@ -107,11 +104,11 @@ struct Coll {
     pthread_mutex_lock(&mutex);
     auto it = documents.find(id);
     if (it != documents.end()) {
-      ans = upd(it->second);
+      ans = upd(*it);
       pthread_mutex_unlock(&mutex);
       return ans;
     }
-    for (auto& kv : documents) ans = ans || upd(kv.second);
+    for (auto& kv : documents) ans = ans || upd(kv);
     pthread_mutex_unlock(&mutex);
     return ans;
   }

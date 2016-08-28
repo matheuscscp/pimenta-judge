@@ -91,7 +91,7 @@ void start() {
   signal(SIGTERM,term); // Global::shutdown();
   signal(SIGPIPE,SIG_IGN); // ignore broken pipes (tcp shit)
   Database::init();
-  Contest::init();
+  Contest::fix();
   Judge::init();
   WebServer::init();
   while (!quit) {

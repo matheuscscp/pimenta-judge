@@ -34,3 +34,7 @@ string getcwd() {
   free(tmp);
   return ans;
 }
+
+void debug() {
+  fclose(fopen("debug","w"));
+}

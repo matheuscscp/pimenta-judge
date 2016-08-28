@@ -105,7 +105,9 @@ static void judge(int attid) {
   int tls = settings["timelimit"], mlkB = settings["memlimit"];
   
   // init attempt
-  att["status"] = settings["autojudge"] ? "judged" : "waiting";
+  att["status"] = (
+    att("privileged") || settings("autojudge") ? "judged": "waiting"
+  );
   int verd = AC;
   
   // for each input file
@@ -179,9 +181,9 @@ void close() {
 
 void push(int attid) {
   DB(attempts);
-  if (attempts.update([](JSON& doc) {
-    if (doc["status"] == "queued") return false;
-    doc["status"] = "queued";
+  if (attempts.update([](Database::Document& doc) {
+    if (doc.second["status"] == "queued") return false;
+    doc.second["status"] = "queued";
     return true;
   },attid)) {
     pthread_mutex_lock(&judge_mutex);

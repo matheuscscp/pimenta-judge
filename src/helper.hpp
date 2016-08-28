@@ -8,6 +8,7 @@ enum {AC = 0, CE, TLE, MLE, RTE, WA, PE};
 
 int verdict_toi(const std::string&);
 std::string verdict_tos(int);
+void debug();
 
 std::string getcwd();
 

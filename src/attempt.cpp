@@ -34,37 +34,44 @@ string create(JSON&& att, const vector<uint8_t>& src) {
 
 JSON page(int user, unsigned p, unsigned ps, int contest) {
   DB(attempts);
-  auto atts = move(attempts.retrieve([&](const Database::Document& doc) {
-    if (
-      user != (int)doc.second("user") ||
-      (contest != -1 && (
-        !doc.second("contest") ||
-        contest != (int)doc.second("contest")
-      ))
-    ) return Database::null();
-    return doc;
-  }));
-  if (!ps) {
-    p = 0;
-    ps = atts.size();
-  }
-  JSON ans(vector<JSON>{});
-  for (int i = p*ps, j = 0; i < atts.size() && j < ps; i++, j++) {
-    JSON& att = atts[i].second;
-    Contest::transform_attempt(att); // change status field to blind?
+  JSON ans(vector<JSON>{}), aux;
+  attempts.retrieve([&](const Database::Document& doc) {
+    JSON att = doc.second;
+    int cid;
+    if (!att("contest").read(cid)) { if (contest) return Database::null(); }
+    else {
+      if (contest) {
+        if (contest != cid) return Database::null();
+      }
+      else {
+        aux = Contest::get(cid);
+        if (!aux || !aux("finished")) return Database::null();
+      }
+    }
+    int pid = att("problem");
+    aux = Problem::get_short(pid);
+    if (!aux) return Database::null();
+    att["id"] = doc.first;
     att["language"] = Language::settings(att)["name"];
-    att["id"] = atts[i].first;
+    att["problem"] = move(map<string,JSON>{
+      {"id"   , pid},
+      {"name" , aux["name"]}
+    });
     att.erase("ip");
     att.erase("time");
     att.erase("memory");
     if (att["status"] != "judged") att.erase("verdict");
-    int prob = att["problem"];
-    att["problem"] = JSON(map<string,JSON>{
-      {"id"   , prob},
-      {"name" , Problem::get_short(prob)["name"]}
-    });
     ans.push_back(move(att));
+    return Database::null();
+  });
+  if (!ps) {
+    p = 0;
+    ps = ans.size();
   }
+  auto& a = ans.arr();
+  unsigned r = (p+1)*ps;
+  if (r < a.size()) a.erase(a.begin()+r,a.end());
+  a.erase(a.begin(),a.begin()+(p*ps));
   return ans;
 }
 

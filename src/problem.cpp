@@ -48,30 +48,30 @@ string statement(int id) {
   return "";
 }
 
-JSON page(unsigned p, unsigned ps, int contest) {
+JSON page(unsigned p, unsigned ps) {
   DB(problems);
-  auto probs = move(problems.retrieve([&](const Database::Document& problem) {
-    if (
-      problem.second("enabled").isfalse() ||
-      (contest != -1 && (
-        !problem.second("contest") ||
-        int(problem.second("contest")) != contest
-      )) ||
-      (contest == -1 && !Contest::allow_list_problem(problem))
-    ) return Database::null();
-    Database::Document ans(problem);
-    ans.second.erase("languages");
-    return ans;
-  }));
+  JSON ans(vector<JSON>{}), aux;
+  problems.retrieve([&](const Database::Document& doc) {
+    JSON tmp = doc.second;
+    if (tmp("enabled").isfalse()) return Database::null();
+    int cid;
+    if (tmp("contest").read(cid)) {
+      aux = Contest::get(cid);
+      if (!aux || !aux("finished")) return Database::null();
+    }
+    tmp["id"] = doc.first;
+    tmp.erase("languages");
+    ans.push_back(move(tmp));
+    return Database::null();
+  });
   if (!ps) {
     p = 0;
-    ps = probs.size();
+    ps = ans.size();
   }
-  JSON ans(vector<JSON>{});
-  for (int i = p*ps, j = 0; i < probs.size() && j < ps; i++, j++) {
-    probs[i].second["id"] = probs[i].first;
-    ans.push_back(move(probs[i].second));
-  }
+  auto& a = ans.arr();
+  unsigned r = (p+1)*ps;
+  if (r < a.size()) a.erase(a.begin()+r,a.end());
+  a.erase(a.begin(),a.begin()+(p*ps));
   return ans;
 }
 

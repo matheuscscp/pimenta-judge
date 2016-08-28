@@ -1,4 +1,5 @@
 #include <cmath>
+#include <algorithm>
 
 #include "contest.hpp"
 
@@ -8,10 +9,47 @@
 
 using namespace std;
 
+bool isjudge(int user, const JSON& contest) {
+  JSON tmp = contest("judges");
+  if (!tmp.isarr()) return false;
+  auto& a = tmp.arr();
+  auto i = lower_bound(a.begin(),a.end(),user,std::less<int>())-a.begin();
+  return i < a.size() && int(a[i]) == user;
+}
+
 namespace Contest {
 
-void init() {
-  //TODO
+void fix() {
+  DB(contests);
+  DB(problems);
+  JSON aux;
+  contests.update([&](Database::Document& doc) {
+    if (doc.second("judges").isarr()) {
+      auto& a = doc.second["judges"].arr();
+      sort(a.begin(),a.end(),std::less<int>());
+    }
+    auto& ps = doc.second["problems"];
+    if (!ps.isarr()) {
+      ps = JSON(vector<JSON>{});
+      return true;
+    }
+    for (int id : ps.arr()) if (problems.retrieve(id,aux)) {
+      aux["contest"] = doc.first;
+      problems.update(id,move(aux));
+    }
+    return true;
+  });
+  problems.update([&](Database::Document& doc) {
+    int cid;
+    if (
+      !doc.second["contest"].read(cid) || !contests.retrieve(cid,aux)) {
+      doc.second.erase("contest");
+      return true;
+    }
+    for (int id : aux["problems"].arr()) if (id == doc.first) return true;
+    doc.second.erase("contest");
+    return true;
+  });
 }
 
 Time time(const JSON& contest) {
@@ -67,15 +105,6 @@ time_t blind(const JSON& contest) {
   return end(contest) - 60*int(contest("blind"));
 }
 
-bool allow_list_problem(const Database::Document& problem) {
-  int cid;
-  if (!problem.second("contest").read(cid)) return true;
-  DB(contests);
-  JSON contest;
-  if (!contests.retrieve(cid,contest)) return true;
-  return (end(contest) <= ::time(nullptr));
-}
-
 bool allow_problem(const JSON& problem) {
   int cid;
   if (!problem("contest").read(cid)) return true;
@@ -92,10 +121,10 @@ bool allow_create_attempt(JSON& attempt, const JSON& problem) {
   JSON contest;
   if (!contests.retrieve(cid,contest)) return true;
   if (contest("finished")) return true;
-  JSON judges(move(contest["judges"]));
-  if (judges && judges.isarr()) {
-    int userid = attempt["user"], x;
-    for (auto& id : judges.arr()) if (id.read(x) && x == userid) return true;
+  if (isjudge(attempt["user"],contest)) {
+    attempt["contest"] = cid;
+    attempt["privileged"].settrue();
+    return true;
   }
   auto t = time(contest);
   time_t when = attempt["when"];
@@ -105,25 +134,6 @@ bool allow_create_attempt(JSON& attempt, const JSON& problem) {
     return true;
   }
   return false;
-}
-
-void transform_attempt(JSON& attempt) {
-  int cid;
-  if (!attempt("contest").read(cid)) return;
-  DB(contests);
-  JSON contest;
-  if (!contests.retrieve(cid,contest)) return;
-  if (contest("finished")) return;
-  if (
-    int(contest["blind"]) == 0 ||
-    int(attempt["contest_time"])<int(contest["duration"])-int(contest["blind"])
-  ) return;
-  JSON judges(move(contest["judges"]));
-  if (judges && judges.isarr()) {
-    int userid = attempt["user"], x;
-    for (auto& id : judges.arr()) if (id.read(x) && x == userid) return;
-  }
-  attempt["status"] = "blind";
 }
 
 JSON get(int id) {
@@ -139,13 +149,31 @@ JSON get(int id) {
 JSON get_problems(int id) {
   JSON contest = get(id);
   if (!contest) return contest;
-  return Problem::page(0,0,id);
+  JSON ans(vector<JSON>{}), tmp;
+  for (int pid : contest["problems"].arr()) {
+    tmp = Problem::get_short(pid);
+    if (!tmp) continue;
+    ans.push_back(move(tmp));
+  }
+  return ans;
 }
 
 JSON get_attempts(int id, int user) {
   JSON contest = get(id);
   if (!contest) return contest;
-  return Attempt::page(user,0,0,id);
+  JSON ans = Attempt::page(user,0,0,id);
+  if (
+    contest("finished") ||
+    int(contest["blind"]) == 0 ||
+    isjudge(user,contest)
+  ) return ans;
+  int blind = int(contest["duration"])-int(contest["blind"]);
+  for (auto& att : ans.arr()) {
+    if (int(att["contest_time"]) < blind) continue;
+    att["status"] = "blind";
+    att.erase("verdict");
+  }
+  return ans;
 }
 
 JSON page(unsigned p, unsigned ps) {

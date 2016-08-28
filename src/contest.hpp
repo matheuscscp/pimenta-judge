@@ -5,7 +5,7 @@
 
 namespace Contest {
 
-void init();
+void fix();
 
 struct Time {
   time_t begin,end,freeze,blind;
@@ -16,10 +16,8 @@ time_t end(const JSON& contest);
 time_t freeze(const JSON& contest);
 time_t blind(const JSON& contest);
 
-bool allow_list_problem(const Database::Document& problem);
 bool allow_problem(const JSON& problem);
 bool allow_create_attempt(JSON& attempt, const JSON& problem);
-void transform_attempt(JSON& attempt);
 
 JSON get(int id);
 JSON get_problems(int id);

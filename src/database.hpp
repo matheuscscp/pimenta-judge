@@ -9,9 +9,9 @@
 
 namespace Database {
 
-typedef std::pair<int,JSON> Document;
+typedef std::pair<const int,JSON> Document;
 typedef std::function<Document(const Document&)> Transformation;
-typedef std::function<bool(JSON&)> Updater;
+typedef std::function<bool(Document&)> Updater;
 
 class Collection {
   // API
