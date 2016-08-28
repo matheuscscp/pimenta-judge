@@ -32,7 +32,7 @@ class Collection {
     );
     bool update(int docid, const JSON& document);
     bool update(int docid, JSON&& document);
-    bool updater(int docid, const Updater&);
+    bool update(const Updater&, int docid = 0);
     bool destroy(int docid);
   // implementation
   private:

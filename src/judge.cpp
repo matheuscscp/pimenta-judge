@@ -179,11 +179,11 @@ void close() {
 
 void push(int attid) {
   DB(attempts);
-  if (attempts.updater(attid,[](JSON& doc) {
+  if (attempts.update([](JSON& doc) {
     if (doc["status"] == "queued") return false;
     doc["status"] = "queued";
     return true;
-  })) {
+  },attid)) {
     pthread_mutex_lock(&judge_mutex);
     jqueue.push(attid);
     pthread_mutex_unlock(&judge_mutex);

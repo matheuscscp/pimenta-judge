@@ -102,14 +102,16 @@ struct Coll {
     pthread_mutex_unlock(&mutex);
     return true;
   }
-  bool updater(int id, const Database::Updater& upd) {
+  bool update(const Database::Updater& upd, int id) {
+    bool ans = false;
     pthread_mutex_lock(&mutex);
     auto it = documents.find(id);
-    if (it == documents.end()) {
+    if (it != documents.end()) {
+      ans = upd(it->second);
       pthread_mutex_unlock(&mutex);
-      return false;
+      return ans;
     }
-    bool ans = upd(it->second);
+    for (auto& kv : documents) ans = ans || upd(kv.second);
     pthread_mutex_unlock(&mutex);
     return ans;
   }
@@ -217,8 +219,8 @@ bool Collection::update(int docid, JSON&& document) {
   return collection[collid].update(docid,move(document));
 }
 
-bool Collection::updater(int docid, const Updater& upd) {
-  return collection[collid].updater(docid,upd);
+bool Collection::update(const Updater& upd, int docid) {
+  return collection[collid].update(upd,docid);
 }
 
 bool Collection::destroy(int docid) {

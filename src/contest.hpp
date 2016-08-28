@@ -5,6 +5,8 @@
 
 namespace Contest {
 
+void init();
+
 struct Time {
   time_t begin,end,freeze,blind;
 };

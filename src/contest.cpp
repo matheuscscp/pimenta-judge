@@ -10,6 +10,10 @@ using namespace std;
 
 namespace Contest {
 
+void init() {
+  //TODO
+}
+
 Time time(const JSON& contest) {
   Time ans;
   int Y = contest("start","year");

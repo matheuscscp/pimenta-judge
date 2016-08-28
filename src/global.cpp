@@ -8,27 +8,28 @@
 #include "message.hpp"
 #include "judge.hpp"
 #include "webserver.hpp"
+#include "contest.hpp"
 
 using namespace std;
 
 static bool quit = false;
 
-class Contest {
+class pjudge {
   public:
-    Contest() {
+    pjudge() {
       key_t key = msq.key();
-      FILE* fp = fopen("contest.bin", "wb");
+      FILE* fp = fopen("pjudge.bin", "wb");
       fwrite(&key,sizeof key,1,fp);
       fclose(fp);
     }
-    ~Contest() {
-      remove("contest.bin");
+    ~pjudge() {
+      remove("pjudge.bin");
     }
     void update() {
       msq.update();
     }
     static key_t alive() {
-      FILE* fp = fopen("contest.bin", "rb");
+      FILE* fp = fopen("pjudge.bin", "rb");
       if (!fp) return 0;
       key_t key;
       fread(&key,sizeof key,1,fp);
@@ -47,7 +48,7 @@ static void term(int) {
 }
 
 static key_t online() {
-  key_t key = Contest::alive();
+  key_t key = pjudge::alive();
   if (!key) {
     printf("pjudge is not running: online operations can't be done.\n");
     _exit(0);
@@ -56,7 +57,7 @@ static key_t online() {
 }
 
 static void offline() {
-  if (Contest::alive()) {
+  if (pjudge::alive()) {
     printf("pjudge is running: offline operations can't be done.\n");
     _exit(0);
   }
@@ -86,14 +87,15 @@ void start() {
     ).c_str());
     _exit(-1);
   }
-  Contest contest; // RAII
+  pjudge pj; // RAII
   signal(SIGTERM,term); // Global::shutdown();
   signal(SIGPIPE,SIG_IGN); // ignore broken pipes (tcp shit)
   Database::init();
+  Contest::init();
   Judge::init();
   WebServer::init();
   while (!quit) {
-    contest.update();
+    pj.update();
     usleep(25000);
   }
   WebServer::close();
