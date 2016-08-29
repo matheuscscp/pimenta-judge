@@ -1,4 +1,3 @@
-- green solved problems.
 - attempt page.
 - scoreboard.
 - users.

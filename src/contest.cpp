@@ -17,11 +17,11 @@ bool isjudge(int user, const JSON& contest) {
   return i < a.size() && int(a[i]) == user;
 }
 
-JSON list_problems(const JSON& contest) {
+JSON list_problems(const JSON& contest, int user) {
   JSON probs = contest("problems");
   JSON ans(vector<JSON>{}), tmp;
   for (int pid : probs.arr()) {
-    tmp = Problem::get_short(pid);
+    tmp = Problem::get_short(pid,user);
     if (!tmp) continue;
     ans.push_back(move(tmp));
   }
@@ -116,13 +116,17 @@ time_t blind(const JSON& contest) {
   return end(contest) - 60*int(contest("blind"));
 }
 
-bool allow_problem(const JSON& problem) {
+bool allow_problem(const JSON& problem, int user) {
   int cid;
   if (!problem("contest").read(cid)) return true;
   DB(contests);
   JSON contest;
-  if (!contests.retrieve(cid,contest)) return true;
-  return (begin(contest) <= ::time(nullptr));
+  return
+    !contests.retrieve(cid,contest) ||
+    contest("finished") ||
+    isjudge(user,contest) ||
+    begin(contest) <= ::time(nullptr)
+  ;
 }
 
 bool allow_create_attempt(JSON& attempt, const JSON& problem) {
@@ -130,8 +134,10 @@ bool allow_create_attempt(JSON& attempt, const JSON& problem) {
   if (!problem("contest").read(cid)) return true;
   DB(contests);
   JSON contest;
-  if (!contests.retrieve(cid,contest)) return true;
-  if (contest("finished")) return true;
+  if (
+    !contests.retrieve(cid,contest) ||
+    contest("finished")
+  ) return true;
   if (isjudge(attempt["user"],contest)) {
     attempt["contest"] = cid;
     attempt["privileged"].settrue();
@@ -157,16 +163,16 @@ JSON get(int id) {
   return ans;
 }
 
-JSON get_problems(int id) {
+JSON get_problems(int id, int user) {
   JSON contest = get(id);
   if (!contest) return contest;
-  return list_problems(contest);
+  return list_problems(contest,user);
 }
 
 JSON get_attempts(int id, int user) {
   JSON contest = get(id);
   if (!contest) return contest;
-  JSON probs = list_problems(contest);
+  JSON probs = list_problems(contest,user);
   map<int,JSON> pinfo;
   int i = 0;
   for (auto& prob : probs.arr()) pinfo[prob["id"]] = map<string,JSON>{

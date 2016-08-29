@@ -12,7 +12,7 @@ using namespace std;
 namespace Attempt {
 
 string create(JSON&& att, const vector<uint8_t>& src) {
-  JSON problem = Problem::get_short(att["problem"]);
+  JSON problem = Problem::get_short(att["problem"],att["user"]);
   if (!problem) return "Problem "+att["problem"].str()+" do not exists!";
   JSON setts = Language::settings(att);
   if (!setts) return "Language "+att["language"].str()+" do not exists!";
@@ -49,7 +49,7 @@ JSON page(int user, unsigned p, unsigned ps, int contest) {
       }
     }
     int pid = att("problem");
-    aux = Problem::get_short(pid);
+    aux = Problem::get_short(pid,user);
     if (!aux) return Database::null();
     att["id"] = doc.first;
     att["language"] = Language::settings(att)["name"];

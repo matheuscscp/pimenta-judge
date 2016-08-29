@@ -11,30 +11,30 @@ using namespace std;
 
 namespace Problem {
 
-JSON get_short(int id) {
+JSON get_short(int id, int user) {
   DB(problems);
   JSON ans;
   if (
     !problems.retrieve(id,ans) ||
     ans("enabled").isfalse() ||
-    !Contest::allow_problem(ans)
+    !Contest::allow_problem(ans,user)
   ) return JSON::null();
   ans["id"] = id;
   ans.erase("languages");
   return ans;
 }
 
-JSON get(int id) {
-  JSON ans(move(get_short(id)));
+JSON get(int id, int user) {
+  JSON ans(move(get_short(id,user)));
   if (!ans) return ans;
   ans["languages"] = Language::list(id);
   ans["has_statement"].setfalse();
-  if (statement(id) != "") ans["has_statement"].settrue();
+  if (statement(id,user) != "") ans["has_statement"].settrue();
   return ans;
 }
 
-string statement(int id) {
-  JSON tmp(move(get_short(id)));
+string statement(int id, int user) {
+  JSON tmp(move(get_short(id,user)));
   if (!tmp) return "";
   DIR* dir = opendir(("problems/"+tostr(id)).c_str());
   if (!dir) return "";

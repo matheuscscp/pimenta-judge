@@ -24,12 +24,12 @@ static void log(const string& msg) {
 class Session : public HTTP::Session {
   public:
     uint32_t ip;
-    User::Data user;
-    Session(uint32_t ip, User::Data&& user) : ip(ip), user(move(user)) {
+    int uid;
+    Session(uint32_t ip, int uid) : ip(ip), uid(uid) {
       uint32_t oip = -1;
       destroy([&](const HTTP::Session* sess) {
         auto& ref = *(Session*)sess;
-        if (user.id != ref.user.id) return false;
+        if (uid != ref.uid) return false;
         oip = ref.ip;
         return true;
       });
@@ -41,7 +41,7 @@ class Session : public HTTP::Session {
       log(stringf(
         "%s, user id=%d: IP %s logged in while IP %s was already logged in.",
         buf,
-        user.id,
+        uid,
         HTTP::iptostr(ip).c_str(),
         HTTP::iptostr(oip).c_str()
       ));
@@ -74,8 +74,8 @@ route("/",[=](const vector<string>& segments) {
 
 route("/status",[=](const vector<string>&) {
   json(map<string,JSON>{
-    {"time"     , time(nullptr)},
-    {"fullname" , castsess().user.fullname}
+    {"time" , time(nullptr)},
+    {"name" , User::get(castsess().uid)["name"]}
   });
 },true);
 
@@ -90,13 +90,13 @@ route("/problems",[=](const vector<string>& args) {
 },true);
 
 route("/attempts",[=](const vector<string>& args) {
-  if (args.size() < 2) { json(Attempt::page(castsess().user.id)); return; }
+  if (args.size() < 2) { json(Attempt::page(castsess().uid)); return; }
   unsigned page, page_size;
   if (!read(args[0],page) || !read(args[1],page_size)) {
-    json(Attempt::page(castsess().user.id));
+    json(Attempt::page(castsess().uid));
     return;
   }
-  json(Attempt::page(castsess().user.id,page,page_size));
+  json(Attempt::page(castsess().uid,page,page_size));
 },true);
 
 route("/contests",[=](const vector<string>& args) {
@@ -117,13 +117,13 @@ route("/logout",[=](const vector<string>&) {
 route("/problem",[=](const vector<string>& args) {
   int probid;
   if (!read(args[0],probid)) { not_found(); return; }
-  json(Problem::get(probid));
+  json(Problem::get(probid,castsess().uid));
 },true,false,1);
 
 route("/problem/statement",[=](const vector<string>& args) {
   int probid;
   if (!read(args[0],probid)) { not_found(); return; }
-  string fn = Problem::statement(probid);
+  string fn = Problem::statement(probid,castsess().uid);
   if (fn != "") file(fn);
 },true,false,1);
 
@@ -136,13 +136,13 @@ route("/contest",[=](const vector<string>& args) {
 route("/contest/problems",[=](const vector<string>& args) {
   int cid;
   if (!read(args[0],cid)) { not_found(); return; }
-  json(Contest::get_problems(cid));
+  json(Contest::get_problems(cid,castsess().uid));
 },true,false,1);
 
 route("/contest/attempts",[=](const vector<string>& args) {
   int cid;
   if (!read(args[0],cid)) { not_found(); return; }
-  json(Contest::get_attempts(cid,castsess().user.id));
+  json(Contest::get_attempts(cid,castsess().uid));
 },true,false,1);
 
 route("/source",[=](const vector<string>& args) {//FIXME
@@ -183,12 +183,12 @@ route("/login",[=](const vector<string>&) {
     response("Invalid username/password!");
     return;
   }
-  User::Data user = User::login(json["username"],json["password"]);
-  if (!user.id) {
+  int uid = User::login(json["username"],json["password"]);
+  if (!uid) {
     response("Invalid username/password!");
     return;
   }
-  session(new Session(ip(),move(user)));
+  session(new Session(ip(),uid));
   response("ok");
 },false,true);
 
@@ -197,7 +197,7 @@ route("/new_attempt",[=](const vector<string>& args) {
   if (!read(args[0],probid)) { not_found(); return; }
   payload().push_back('\n');
   response(Attempt::create(move(JSON(map<string,JSON>{
-    {"user"     , castsess().user.id},
+    {"user"     , castsess().uid},
     {"problem"  , probid},
     {"language" , args[1]},
     {"when"     , when()},

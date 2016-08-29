@@ -43,6 +43,7 @@ struct Coll {
     pthread_mutex_lock(&mutex);
     auto it = documents.find(id);
     if (it == documents.end()) {
+      doc.setnull();
       pthread_mutex_unlock(&mutex);
       return false;
     }

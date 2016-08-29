@@ -1,16 +1,12 @@
 #ifndef USER_H
 #define USER_H
 
-#include <string>
+#include "json.hpp"
 
 namespace User {
 
-struct Data {
-  int id;
-  std::string fullname;
-};
-
-Data login(const std::string& username, const std::string& password);
+int login(const std::string& username, const std::string& password); // id
+JSON get(int id);
 
 } // namespace User
 
