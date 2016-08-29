@@ -127,6 +127,12 @@ route("/problem/statement",[=](const vector<string>& args) {
   if (fn != "") file(fn);
 },true,false,1);
 
+route("/attempt",[=](const vector<string>& args) {
+  int id;
+  if (!read(args[0],id)) { not_found(); return; }
+  json(Attempt::get(id,castsess().uid));
+},true,false,1);
+
 route("/contest",[=](const vector<string>& args) {
   int cid;
   if (!read(args[0],cid)) { not_found(); return; }

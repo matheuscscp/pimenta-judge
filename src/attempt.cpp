@@ -32,6 +32,10 @@ string create(JSON&& att, const vector<uint8_t>& src) {
   return "Attempt "+tostr(id)+" received.";
 }
 
+JSON get(int id, int user) {
+  return JSON::null();
+}
+
 JSON page(int user, unsigned p, unsigned ps, int contest) {
   DB(attempts);
   JSON ans(vector<JSON>{}), aux;
