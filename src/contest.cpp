@@ -17,6 +17,17 @@ bool isjudge(int user, const JSON& contest) {
   return i < a.size() && int(a[i]) == user;
 }
 
+JSON list_problems(const JSON& contest) {
+  JSON probs = contest("problems");
+  JSON ans(vector<JSON>{}), tmp;
+  for (int pid : probs.arr()) {
+    tmp = Problem::get_short(pid);
+    if (!tmp) continue;
+    ans.push_back(move(tmp));
+  }
+  return ans;
+}
+
 namespace Contest {
 
 void fix() {
@@ -149,19 +160,23 @@ JSON get(int id) {
 JSON get_problems(int id) {
   JSON contest = get(id);
   if (!contest) return contest;
-  JSON ans(vector<JSON>{}), tmp;
-  for (int pid : contest["problems"].arr()) {
-    tmp = Problem::get_short(pid);
-    if (!tmp) continue;
-    ans.push_back(move(tmp));
-  }
-  return ans;
+  return list_problems(contest);
 }
 
 JSON get_attempts(int id, int user) {
   JSON contest = get(id);
   if (!contest) return contest;
+  JSON probs = list_problems(contest);
+  map<int,JSON> pinfo;
+  int i = 0;
+  for (auto& prob : probs.arr()) pinfo[prob["id"]] = map<string,JSON>{
+    {"id"   , prob["id"]},
+    {"name" , prob["name"]},
+    {"color", prob["color"]},
+    {"idx"  , i++}
+  };
   JSON ans = Attempt::page(user,0,0,id);
+  for (auto& att : ans.arr()) att["problem"] = pinfo[att["problem"]["id"]];
   if (
     contest("finished") ||
     int(contest["blind"]) == 0 ||
