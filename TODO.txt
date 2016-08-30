@@ -1,4 +1,3 @@
-- scoreboard.
 - users.
 - open API to non-users.
 - convert to RESTful API.
