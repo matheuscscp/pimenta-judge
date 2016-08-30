@@ -18,4 +18,10 @@ JSON get(int id) {
   return users.retrieve(id);
 }
 
+string name(int id) {
+  JSON tmp = get(id);
+  if (!tmp) return "";
+  return tmp["name"];
+}
+
 } // namespace User

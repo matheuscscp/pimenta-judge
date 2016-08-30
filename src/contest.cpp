@@ -6,6 +6,7 @@
 #include "helper.hpp"
 #include "problem.hpp"
 #include "attempt.hpp"
+#include "user.hpp"
 
 using namespace std;
 
@@ -200,9 +201,12 @@ JSON scoreboard(int id, int user) {
   }
   // get attempts
   ans["attempts"] = Attempt::page(user,0,0,id,true);
-  // set problem indexes
+  // set info
   auto& arr = ans["attempts"].arr();
-  for (auto& att : arr) att["problem"] = idx[att["problem"]["id"]];
+  for (auto& att : arr) {
+    att["problem"] = idx[att["problem"]["id"]];
+    att["user"] = User::name(att["user"]);
+  }
   // no freeze/blind filtering needed?
   if (
     contest("finished") ||
