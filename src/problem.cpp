@@ -48,14 +48,14 @@ string statement(int id, int user) {
   return "";
 }
 
-JSON page(unsigned p, unsigned ps) {
+JSON page(int user, unsigned p, unsigned ps) {
   DB(problems);
   JSON tmp = problems.retrieve(), ans(vector<JSON>{}), aux;
   for (auto& p : tmp.arr()) {
     if (p("enabled").isfalse()) continue;
     int cid;
     if (p("contest").read(cid)) {
-      aux = Contest::get(cid);
+      aux = Contest::get(cid,user);
       if (!aux || !aux("finished")) continue;
     }
     p.erase("languages");

@@ -130,7 +130,7 @@ class JSON {
     void settrue();
     void setfalse();
     void setnull();
-    static JSON null();
+    static inline JSON null() { JSON ans; ans.setnull(); return ans; }
     // polymorphic
     operator bool() const; // false iff (=="", ==0, isfalse() or isnull())
     size_t size() const;

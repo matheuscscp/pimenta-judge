@@ -80,13 +80,13 @@ route("/status",[=](const vector<string>&) {
 },true);
 
 route("/problems",[=](const vector<string>& args) {
-  if (args.size() < 2) { json(Problem::page()); return; }
+  if (args.size() < 2) { json(Problem::page(castsess().uid)); return; }
   unsigned page, page_size;
   if (!read(args[0],page) || !read(args[1],page_size)) {
-    json(Problem::page());
+    json(Problem::page(castsess().uid));
     return;
   }
-  json(Problem::page(page,page_size));
+  json(Problem::page(castsess().uid,page,page_size));
 },true);
 
 route("/attempts",[=](const vector<string>& args) {
@@ -136,7 +136,7 @@ route("/attempt",[=](const vector<string>& args) {
 route("/contest",[=](const vector<string>& args) {
   int cid;
   if (!read(args[0],cid)) { not_found(); return; }
-  json(Contest::get(cid));
+  json(Contest::get(cid,castsess().uid));
 },true,false,1);
 
 route("/contest/problems",[=](const vector<string>& args) {

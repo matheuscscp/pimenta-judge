@@ -9,7 +9,7 @@
 
 using namespace std;
 
-bool isjudge(int user, const JSON& contest) {
+static bool isjudge(int user, const JSON& contest) {
   JSON tmp = contest("judges");
   if (!tmp.isarr()) return false;
   auto& a = tmp.arr();
@@ -17,7 +17,7 @@ bool isjudge(int user, const JSON& contest) {
   return i < a.size() && int(a[i]) == user;
 }
 
-JSON list_problems(const JSON& contest, int user) {
+static JSON list_problems(const JSON& contest, int user) {
   JSON probs = contest("problems");
   JSON ans(vector<JSON>{}), tmp;
   for (int pid : probs.arr()) {
@@ -135,10 +135,13 @@ bool allow_create_attempt(JSON& attempt, const JSON& problem) {
   return false;
 }
 
-JSON get(int id) {
+JSON get(int id, int user) {
   DB(contests);
   JSON ans;
-  if (!contests.retrieve(id,ans) || ::time(nullptr) < begin(ans)) {
+  if (
+    !contests.retrieve(id,ans) ||
+    (!isjudge(user,ans) && ::time(nullptr) < begin(ans))
+  ) {
     return JSON::null();
   }
   ans["id"] = id;
@@ -146,13 +149,13 @@ JSON get(int id) {
 }
 
 JSON get_problems(int id, int user) {
-  JSON contest = get(id);
+  JSON contest = get(id,user);
   if (!contest) return contest;
   return list_problems(contest,user);
 }
 
 JSON get_attempts(int id, int user) {
-  JSON contest = get(id);
+  JSON contest = get(id,user);
   if (!contest) return contest;
   // get problem info
   JSON probs = list_problems(contest,user);

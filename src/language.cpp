@@ -12,11 +12,11 @@ static JSON list() {
   return ans;
 }
 
-inline void overwrite(map<string,JSON>& dst, map<string,JSON>& src) {
+static void overwrite(map<string,JSON>& dst, map<string,JSON>& src) {
   for (auto& kv : src) dst[kv.first] = move(kv.second);
 }
 
-inline void overwrite_list(map<string,JSON>& dst, map<string,JSON>& src) {
+static void overwrite_list(map<string,JSON>& dst, map<string,JSON>& src) {
   for (auto& kv : src) {
     auto it = dst.find(kv.first);
     if (it == dst.end()) dst[kv.first] = move(kv.second);

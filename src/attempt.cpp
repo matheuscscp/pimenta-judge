@@ -9,6 +9,16 @@
 
 using namespace std;
 
+static string source(const string& fn) {
+  string ans;
+  char* buf = new char[(1<<20)+1];
+  FILE* fp = fopen(fn.c_str(),"rb");
+  for (int sz; (sz = fread(buf,1,1<<20,fp)) > 0; buf[sz] = 0, ans += buf);
+  fclose(fp);
+  delete[] buf;
+  return ans;
+}
+
 namespace Attempt {
 
 string create(JSON&& att, const vector<uint8_t>& src) {
@@ -38,20 +48,42 @@ string create(JSON&& att, const vector<uint8_t>& src) {
 }
 
 JSON get(int id, int user) {
-  return JSON::null();//TODO
+  DB(attempts);
+  JSON ans;
+  if (!attempts.retrieve(id,ans)) return JSON::null();
+  if (user != int(ans["user"])) return JSON::null();
+  int cid;
+  if (ans("contest").read(cid) && !Contest::get(cid,user)) return JSON::null();
+  int pid = ans["problem"];
+  JSON prob = Problem::get_short(pid,user);
+  if (!prob) return JSON::null();
+  ans["id"] = id;
+  string ext = ans["language"];
+  ans["language"] = Language::settings(ans)["name"];
+  ans["problem"] = move(map<string,JSON>{
+    {"id"   , pid},
+    {"name" , prob["name"]}
+  });
+  ans["source"] = source("attempts/"+tostr(id)+"/"+tostr(pid)+ext);
+  ans.erase("ip");
+  ans.erase("time");
+  ans.erase("memory");
+  if (ans["status"] != "judged") ans.erase("verdict");
+  return ans;
 }
 
 JSON page(int user, unsigned p, unsigned ps, int contest) {
   DB(attempts);
   JSON tmp = attempts.retrieve(), ans(vector<JSON>{}), aux;
   for (auto& att : tmp.arr()) {
+    if (int(att["user"]) != user) continue;
     int cid;
     bool hasc = att("contest").read(cid);
     if (contest) {
       if (!hasc || cid != contest) continue;
     }
     else if (hasc) {
-      aux = Contest::get(cid);
+      aux = Contest::get(cid,user);
       if (!aux || !aux("finished")) continue;
     }
     int pid = att["problem"];
