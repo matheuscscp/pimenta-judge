@@ -151,6 +151,12 @@ route("/contest/attempts",[=](const vector<string>& args) {
   json(Contest::get_attempts(cid,castsess().uid));
 },true,false,1);
 
+route("/contest/scoreboard",[=](const vector<string>& args) {
+  int cid;
+  if (!read(args[0],cid)) { not_found(); return; }
+  json(Contest::scoreboard(cid,castsess().uid));
+},true,false,1);
+
 route("/source",[=](const vector<string>& args) {//FIXME
   /*
   if (args.size() == 0) { not_found(); return; }

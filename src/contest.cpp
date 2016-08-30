@@ -187,6 +187,40 @@ JSON get_attempts(int id, int user) {
   return ans;
 }
 
+JSON scoreboard(int id, int user) {
+  JSON contest = get(id,user);
+  if (!contest) return contest;
+  JSON ans(map<string,JSON>{{"attempts",JSON()},{"colors",vector<JSON>{}}});
+  // get problem info
+  JSON probs = list_problems(contest,user);
+  map<int,int> idx;
+  for (auto& prob : probs.arr()) {
+    idx[prob["id"]] = ans["colors"].size();
+    ans["colors"].push_back(prob["color"]);
+  }
+  // get attempts
+  ans["attempts"] = Attempt::page(user,0,0,id,true);
+  // set problem indexes
+  auto& arr = ans["attempts"].arr();
+  for (auto& att : arr) att["problem"] = idx[att["problem"]["id"]];
+  // no freeze/blind filtering needed?
+  if (
+    contest("finished") ||
+    (int(contest["freeze"]) == 0 && int(contest["blind"]) == 0) ||
+    isjudge(user,contest)
+  ) return ans;
+  // freeze/blind filtering
+  int freeze = int(contest["duration"])-int(contest["freeze"]);
+  int blind = int(contest["duration"])-int(contest["blind"]);
+  freeze = min(freeze,blind);
+  JSON tmp(vector<JSON>{});
+  for (auto& att : arr) if (int(att["contest_time"]) < freeze) {
+    tmp.push_back(move(att));
+  }
+  ans["attempts"] = move(tmp);
+  return ans;
+}
+
 JSON page(unsigned p, unsigned ps) {
   DB(contests);
   return contests.retrieve_page(p,ps);
