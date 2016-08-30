@@ -12,6 +12,7 @@ using namespace std;
 namespace Attempt {
 
 string create(JSON&& att, const vector<uint8_t>& src) {
+  // check stuff
   JSON problem = Problem::get_short(att["problem"],att["user"]);
   if (!problem) return "Problem "+att["problem"].str()+" do not exists!";
   JSON setts = Language::settings(att);
@@ -19,8 +20,10 @@ string create(JSON&& att, const vector<uint8_t>& src) {
   if (!Contest::allow_create_attempt(att,problem)) {
     return "Attempts are not allowed right now.";
   }
+  // update db
   DB(attempts);
   int id = attempts.create(att);
+  // save file
   string fn = "attempts/"+tostr(id)+"/";
   system("mkdir -p %soutput",fn.c_str());
   fn += att["problem"].str();
@@ -28,34 +31,32 @@ string create(JSON&& att, const vector<uint8_t>& src) {
   FILE* fp = fopen(fn.c_str(), "wb");
   fwrite(&src[0],src.size(),1,fp);
   fclose(fp);
+  // push
   Judge::push(id);
+  // msg
   return "Attempt "+tostr(id)+" received.";
 }
 
 JSON get(int id, int user) {
-  return JSON::null();
+  return JSON::null();//TODO
 }
 
 JSON page(int user, unsigned p, unsigned ps, int contest) {
   DB(attempts);
-  JSON ans(vector<JSON>{}), aux;
-  attempts.retrieve([&](const Database::Document& doc) {
-    JSON att = doc.second;
+  JSON tmp = attempts.retrieve(), ans(vector<JSON>{}), aux;
+  for (auto& att : tmp.arr()) {
     int cid;
-    if (!att("contest").read(cid)) { if (contest) return Database::null(); }
-    else {
-      if (contest) {
-        if (contest != cid) return Database::null();
-      }
-      else {
-        aux = Contest::get(cid);
-        if (!aux || !aux("finished")) return Database::null();
-      }
+    bool hasc = att("contest").read(cid);
+    if (contest) {
+      if (!hasc || cid != contest) continue;
     }
-    int pid = att("problem");
+    else if (hasc) {
+      aux = Contest::get(cid);
+      if (!aux || !aux("finished")) continue;
+    }
+    int pid = att["problem"];
     aux = Problem::get_short(pid,user);
-    if (!aux) return Database::null();
-    att["id"] = doc.first;
+    if (!aux) continue;
     att["language"] = Language::settings(att)["name"];
     att["problem"] = move(map<string,JSON>{
       {"id"   , pid},
@@ -66,8 +67,7 @@ JSON page(int user, unsigned p, unsigned ps, int contest) {
     att.erase("memory");
     if (att["status"] != "judged") att.erase("verdict");
     ans.push_back(move(att));
-    return Database::null();
-  });
+  }
   if (!ps) {
     p = 0;
     ps = ans.size();

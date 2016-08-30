@@ -167,10 +167,10 @@ namespace Judge {
 
 void init() {
   DB(attempts);
-  attempts.retrieve([](const Database::Document& doc) {
-    if (doc.second("status") == "queued") jqueue.push(doc.first);
-    return Database::null();
-  });
+  JSON tmp = attempts.retrieve(JSON(map<string,JSON>{
+    {"status", "queued"}
+  }));
+  for (auto& a : tmp.arr()) jqueue.push(a["id"]);
   pthread_create(&jthread,nullptr,thread,nullptr);
 }
 

@@ -50,20 +50,17 @@ string statement(int id, int user) {
 
 JSON page(unsigned p, unsigned ps) {
   DB(problems);
-  JSON ans(vector<JSON>{}), aux;
-  problems.retrieve([&](const Database::Document& doc) {
-    JSON tmp = doc.second;
-    if (tmp("enabled").isfalse()) return Database::null();
+  JSON tmp = problems.retrieve(), ans(vector<JSON>{}), aux;
+  for (auto& p : tmp.arr()) {
+    if (p("enabled").isfalse()) continue;
     int cid;
-    if (tmp("contest").read(cid)) {
+    if (p("contest").read(cid)) {
       aux = Contest::get(cid);
-      if (!aux || !aux("finished")) return Database::null();
+      if (!aux || !aux("finished")) continue;
     }
-    tmp["id"] = doc.first;
-    tmp.erase("languages");
-    ans.push_back(move(tmp));
-    return Database::null();
-  });
+    p.erase("languages");
+    ans.push_back(move(p));
+  }
   if (!ps) {
     p = 0;
     ps = ans.size();

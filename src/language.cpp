@@ -6,12 +6,9 @@ using namespace std;
 
 static JSON list() {
   DB(languages);
+  JSON tmp = languages.retrieve();
   JSON ans;
-  languages.retrieve([&](const Database::Document& doc) {
-    JSON tmp = doc.second;
-    ans[tmp["extension"].str()] = move(tmp);
-    return Database::null();
-  });
+  for (auto& l : tmp.arr()) ans[l["extension"].str()] = l;
   return ans;
 }
 

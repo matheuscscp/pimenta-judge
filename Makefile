@@ -6,7 +6,7 @@
 EXE     = pjudge
 LIBS    = -pthread
 
-CXX     = g++ -std=c++0x
+CXX     = g++ -g -std=c++0x
 SRCS    = $(shell find src -name '*.cpp')
 HEADERS = $(shell find src -name '*.hpp')
 OBJS    = $(addprefix obj/,$(notdir $(SRCS:%.cpp=%.o)))

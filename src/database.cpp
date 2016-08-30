@@ -63,28 +63,26 @@ struct Coll {
     pthread_mutex_unlock(&mutex);
     return Database::null();
   }
-  vector<Database::Document> retrieve(const Database::Transformation& tr) {
-    vector<Database::Document> ans;
+  JSON retrieve(const JSON& filter) {
+    JSON ans(vector<JSON>{});
     pthread_mutex_lock(&mutex);
-    for (auto& kv : documents) {
-      Database::Document tmp = move(tr(kv));
-      if (tmp.first) ans.push_back(move(tmp));
+    for (auto& kv : documents) if (filter.issubobj(kv.second)) {
+      JSON tmp = kv.second;
+      tmp["id"] = kv.first;
+      ans.push_back(move(tmp));
     }
     pthread_mutex_unlock(&mutex);
     return ans;
   }
-  vector<Database::Document> retrieve_page(
-    unsigned p,
-    unsigned ps,
-    const Database::Transformation& tr
-  ) {
-    vector<Database::Document> ans;
+  JSON retrieve_page(unsigned p, unsigned ps) {
+    JSON ans(vector<JSON>{});
     pthread_mutex_lock(&mutex);
     if (!ps) p = 0, ps = documents.size();
     auto it = documents.at(p*ps);
     for (int i = 0; i < ps && it != documents.end(); i++, it++) {
-      Database::Document tmp = move(tr(*it));
-      if (tmp.first) ans.push_back(move(tmp));
+      JSON tmp = it->second;
+      tmp["id"] = it->first;
+      ans.push_back(move(tmp));
     }
     pthread_mutex_unlock(&mutex);
     return ans;
@@ -196,16 +194,12 @@ Document Collection::retrieve(const string& key, const string& value) {
   return collection[collid].retrieve(key,value);
 }
 
-vector<Document> Collection::retrieve(const Transformation& tr) {
-  return collection[collid].retrieve(tr);
+JSON Collection::retrieve(const JSON& filter) {
+  return collection[collid].retrieve(filter);
 }
 
-vector<Document> Collection::retrieve_page(
-  unsigned page,
-  unsigned page_size,
-  const Transformation& tr
-) {
-  return collection[collid].retrieve_page(page,page_size,tr);
+JSON Collection::retrieve_page(unsigned page,unsigned page_size) {
+  return collection[collid].retrieve_page(page,page_size);
 }
 
 bool Collection::update(int docid, const JSON& document) {

@@ -94,6 +94,7 @@ class JSON {
     }
     // object API
     bool isobj() const;
+    bool issubobj(const JSON& sup) const;
     std::map<std::string,JSON>& obj();
     const std::map<std::string,JSON>& obj() const;
     JSON& operator[](const char*);
@@ -133,6 +134,7 @@ class JSON {
     // polymorphic
     operator bool() const; // false iff (=="", ==0, isfalse() or isnull())
     size_t size() const;
+    bool equals(const JSON&) const;
     // algebraic function syntax
     const JSON operator()() const;
     template <typename... Args>

@@ -65,24 +65,10 @@ void fix() {
 
 Time time(const JSON& contest) {
   Time ans;
-  int Y = contest("start","year");
-  int M = contest("start","month");
-  int D = contest("start","day");
-  int h = contest("start","hour");
-  int m = contest("start","minute");
-  ans.begin = ::time(nullptr);
-  tm ti;
-  localtime_r(&ans.begin,&ti);
-  ti.tm_year = Y - 1900;
-  ti.tm_mon  = M - 1;
-  ti.tm_mday = D;
-  ti.tm_hour = h;
-  ti.tm_min  = m;
-  ti.tm_sec  = 0;
-  ans.begin = mktime(&ti);
-  ans.end = ans.begin + 60*int(contest("duration"));
-  ans.freeze = ans.end - 60*int(contest("freeze"));
-  ans.blind = ans.end - 60*int(contest("blind"));
+  ans.begin = begin(contest);
+  ans.end = end(contest);
+  ans.freeze = freeze(contest);
+  ans.blind = blind(contest);
   return ans;
 }
 
@@ -120,9 +106,8 @@ bool allow_problem(const JSON& problem, int user) {
   int cid;
   if (!problem("contest").read(cid)) return true;
   DB(contests);
-  JSON contest;
+  JSON contest = contests.retrieve(cid);
   return
-    !contests.retrieve(cid,contest) ||
     contest("finished") ||
     isjudge(user,contest) ||
     begin(contest) <= ::time(nullptr)
@@ -133,11 +118,8 @@ bool allow_create_attempt(JSON& attempt, const JSON& problem) {
   int cid;
   if (!problem("contest").read(cid)) return true;
   DB(contests);
-  JSON contest;
-  if (
-    !contests.retrieve(cid,contest) ||
-    contest("finished")
-  ) return true;
+  JSON contest = contests.retrieve(cid);
+  if (contest("finished")) return true;
   if (isjudge(attempt["user"],contest)) {
     attempt["contest"] = cid;
     attempt["privileged"].settrue();
@@ -172,6 +154,7 @@ JSON get_problems(int id, int user) {
 JSON get_attempts(int id, int user) {
   JSON contest = get(id);
   if (!contest) return contest;
+  // get problem info
   JSON probs = list_problems(contest,user);
   map<int,JSON> pinfo;
   int i = 0;
@@ -181,13 +164,17 @@ JSON get_attempts(int id, int user) {
     {"color", prob["color"]},
     {"idx"  , i++}
   };
+  // get attempts
   JSON ans = Attempt::page(user,0,0,id);
+  // set problem info
   for (auto& att : ans.arr()) att["problem"] = pinfo[att["problem"]["id"]];
+  // no blind filtering needed?
   if (
     contest("finished") ||
     int(contest["blind"]) == 0 ||
     isjudge(user,contest)
   ) return ans;
+  // blind filtering
   int blind = int(contest["duration"])-int(contest["blind"]);
   for (auto& att : ans.arr()) {
     if (int(att["contest_time"]) < blind) continue;
@@ -199,14 +186,7 @@ JSON get_attempts(int id, int user) {
 
 JSON page(unsigned p, unsigned ps) {
   DB(contests);
-  JSON ans(vector<JSON>{});
-  contests.retrieve_page(p,ps,[&](const Database::Document& contest) {
-    JSON tmp = contest.second;
-    tmp["id"] = contest.first;
-    ans.push_back(move(tmp));
-    return Database::null();
-  });
-  return ans;
+  return contests.retrieve_page(p,ps);
 }
 
 } // namespace Contest

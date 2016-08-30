@@ -20,6 +20,7 @@ struct JSONValue {
   virtual bool isstr() const = 0;
   virtual string& str() = 0;
   virtual bool isobj() const = 0;
+  virtual bool issubobj(const JSON&) const = 0;
   virtual map<string,JSON>& obj() = 0;
   virtual JSON& operator[](const string&) = 0;
   virtual JSON& operator[](string&&) = 0;
@@ -40,6 +41,7 @@ struct JSONValue {
     vector<JSON>::iterator
   ) = 0;
   virtual size_t size() const = 0;
+  virtual bool equals(const JSON&) const = 0;
   virtual string generate(unsigned) const = 0;
 };
 
@@ -57,6 +59,9 @@ struct String : public JSONValue {
     return v;
   }
   bool isobj() const {
+    return false;
+  }
+  bool issubobj(const JSON&) const {
     return false;
   }
   map<string,JSON>& obj() {
@@ -104,6 +109,9 @@ struct String : public JSONValue {
   size_t size() const {
     return v.size();
   }
+  bool equals(const JSON& o) const {
+    return o.isstr() && v == o.str();
+  }
   string generate(unsigned) const {
     return to_json(v);
   }
@@ -123,6 +131,19 @@ struct Object : public JSONValue {
     
   }
   bool isobj() const {
+    return true;
+  }
+  bool issubobj(const JSON& sup) const {
+    if (!sup.isobj()) return false;
+    auto& vsup = sup.obj();
+    for (auto& kv : v) {
+      auto it = vsup.find(kv.first);
+      if (it == vsup.end()) return false;
+      auto& a = kv.second;
+      auto& b = it->second;
+      if (a.isobj() && b.isobj() && a.issubobj(b)) continue;
+      if (!a.equals(b)) return false;
+    }
     return true;
   }
   map<string,JSON>& obj() {
@@ -170,6 +191,13 @@ struct Object : public JSONValue {
   size_t size() const {
     return v.size();
   }
+  bool equals(const JSON& o) const {
+    if (!o.isobj() || v.size() != o.size()) return false;
+    for (auto i = v.begin(), j = o.obj().begin(); i != v.end(); i++, j++) {
+      if (i->first != j->first || !i->second.equals(j->second)) return false;
+    }
+    return true;
+  }
   string generate(unsigned indent) const {
     string ans = "{"; if (indent) ans += "\n";
     auto cnt = v.size();
@@ -202,6 +230,9 @@ struct Array : public JSONValue {
     
   }
   bool isobj() const {
+    return false;
+  }
+  bool issubobj(const JSON&) const {
     return false;
   }
   map<string,JSON>& obj() {
@@ -252,6 +283,11 @@ struct Array : public JSONValue {
   }
   size_t size() const {
     return v.size();
+  }
+  bool equals(const JSON& o) const {
+    if (!o.isarr() || v.size() != o.size()) return false;
+    for (int i = 0; i < v.size(); i++) if (!v[i].equals(o[i])) return false;
+    return true;
   }
   string generate(unsigned indent) const {
     string ans = "["; if (indent) ans += "\n";
@@ -463,6 +499,10 @@ bool JSON::isobj() const {
   return value->isobj();
 }
 
+bool JSON::issubobj(const JSON& sup) const {
+  return value->issubobj(sup);
+}
+
 map<string,JSON>& JSON::obj() {
   return value->obj();
 }
@@ -575,6 +615,10 @@ JSON::operator bool() const {
 
 size_t JSON::size() const {
   return value->size();
+}
+
+bool JSON::equals(const JSON& o) const {
+  return value->equals(o);
 }
 
 const JSON JSON::operator()() const {
