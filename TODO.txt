@@ -1,4 +1,3 @@
-- improve navigation when under a contest page.
 - scoreboard.
 - users.
 - open API to non-users.
