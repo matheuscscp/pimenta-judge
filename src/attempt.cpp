@@ -98,7 +98,10 @@ JSON page(int user, unsigned p, unsigned ps, int contest, bool scoreboard) {
     att.erase("ip");
     att.erase("time");
     att.erase("memory");
-    if (att["status"] != "judged") att.erase("verdict");
+    if (att["status"] != "judged") {
+      if (scoreboard) continue;
+      att.erase("verdict");
+    }
     ans.push_back(move(att));
   }
   if (!ps) {

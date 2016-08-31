@@ -1,9 +1,7 @@
 - users.
 - open API to non-users.
 - convert to RESTful API.
-- web system for judges (
-    attempt privileges and hidding, manual judging and clarifications
-  ).
+- web system for judges (manual judging and clarifications).
 - web system for staff (balloons and prints).
 - implement safe computation (run untrusted code safely).
 - implement HTTPS.
