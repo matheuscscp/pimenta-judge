@@ -138,8 +138,8 @@ static int get(const string& name) {
 static bool quit = false;
 static pthread_t db;
 static void do_backup() {
-  stringstream ss("backup");
-  ss << backup;
+  stringstream ss;
+  ss << "backup" << backup;
   system(("mkdir -p database/"+ss.str()).c_str());
   system(("cp database/*.json database/"+ss.str()).c_str());
 }
