@@ -11,6 +11,8 @@
 
 using namespace std;
 
+static int backup = -1;
+
 struct Coll {
   pthread_mutex_t mutex;
   string name;
@@ -135,12 +137,21 @@ static int get(const string& name) {
 // thread
 static bool quit = false;
 static pthread_t db;
+static void do_backup() {
+  stringstream ss("backup");
+  ss << backup;
+  system(("mkdir -p database/"+ss.str()).c_str());
+  system(("cp database/*.json database/"+ss.str()).c_str());
+}
 static void update() {
   int nc;
   pthread_mutex_lock(&colls_mutex);
   nc = ncolls;
   pthread_mutex_unlock(&colls_mutex);
   for (int i = 0; i < nc; i++) collection[i].write();
+  if (backup < 0) return;
+  do_backup();
+  backup = 1-backup;
 }
 static void* thread(void*) {
   static time_t upd = 0;
@@ -203,7 +214,8 @@ bool Collection::destroy(int docid) {
   return collection[collid].destroy(docid);
 }
 
-void init() {
+void init(bool backup) {
+  if (backup) ::backup = 0;
   system("mkdir -p database");
   pthread_create(&db,nullptr,thread,nullptr);
 }

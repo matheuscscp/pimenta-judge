@@ -16,17 +16,23 @@ static bool quit = false;
 
 class pjudge {
   public:
-    pjudge() {
+    pjudge() : sudden(sudden_shutdown()) {
       key_t key = msq.key();
       FILE* fp = fopen("pjudge.bin", "wb");
       fwrite(&key,sizeof key,1,fp);
       fclose(fp);
     }
     ~pjudge() {
-      remove("pjudge.bin");
+      if (!sudden) remove("pjudge.bin");
     }
     void update() {
       msq.update();
+    }
+    static bool sudden_shutdown() {
+      FILE* fp = fopen("pjudge.bin","rb");
+      if (!fp) return false;
+      fclose(fp);
+      return true;
     }
     static key_t alive() {
       FILE* fp = fopen("pjudge.bin", "rb");
@@ -40,6 +46,7 @@ class pjudge {
       return key;
     }
   private:
+    bool sudden;
     MessageQueue msq;
 };
 
@@ -79,6 +86,14 @@ void install(const string& path) {
 
 void start() {
   offline();
+  bool sudden = pjudge::sudden_shutdown();
+  if (sudden) printf(
+    "WARNING: last pjudge[%s] execution stopped suddenly.\n"
+    "this execution will not make database backups.\n"
+    "YOU MUST: 1) check your data, 2) stop pjudge, 3) manually rollback the\n"
+    "database and 4) remove file 'pjudge.bin'. next execution will be fine.\n",
+    getcwd().c_str()
+  );
   printf("pjudge[%s] started.\n",getcwd().c_str());
   if (daemon(1,0) < 0) { // fork and redirect IO to /dev/null
     perror(stringf(
@@ -90,7 +105,7 @@ void start() {
   pjudge pj; // RAII
   signal(SIGTERM,term); // Global::shutdown();
   signal(SIGPIPE,SIG_IGN); // ignore broken pipes (tcp shit)
-  Database::init();
+  Database::init(!sudden);
   Contest::fix();
   Judge::init();
   WebServer::init();

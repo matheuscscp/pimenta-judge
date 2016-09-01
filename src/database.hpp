@@ -11,6 +11,7 @@ namespace Database {
 
 typedef std::pair<const int,JSON> Document;
 typedef std::function<bool(Document&)> Updater;
+inline Document null() { return Document(0,JSON::null()); }
 
 class Collection {
   // API
@@ -31,9 +32,8 @@ class Collection {
     int collid;
 };
 
-void init();
+void init(bool backup);
 void close();
-inline Document null() { return Document(0,JSON::null()); }
 
 } // namespace Database
 
