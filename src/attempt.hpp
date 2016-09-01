@@ -13,7 +13,8 @@ JSON page(
   unsigned page = 0,
   unsigned page_size = 0,
   int contest = 0,
-  bool scoreboard = false
+  bool scoreboard = false,
+  bool profile = false
 );
 
 } // namespace Attempt

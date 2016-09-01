@@ -72,12 +72,19 @@ JSON get(int id, int user) {
   return ans;
 }
 
-JSON page(int user, unsigned p, unsigned ps, int contest, bool scoreboard) {
+JSON page(
+  int user,
+  unsigned p,
+  unsigned ps,
+  int contest,
+  bool scoreboard,
+  bool profile
+) {
   DB(attempts);
   JSON tmp = attempts.retrieve(), ans(vector<JSON>{}), aux;
   for (auto& att : tmp.arr()) {
-    if (!scoreboard && int(att["user"]) != user) continue;
-    if (scoreboard && att("privileged")) continue;
+    if (!scoreboard && !profile && int(att["user"]) != user) continue;
+    if ((scoreboard || profile) && att("privileged")) continue;
     int cid;
     bool hasc = att("contest").read(cid);
     if (contest) {

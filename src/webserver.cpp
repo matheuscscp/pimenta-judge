@@ -109,6 +109,16 @@ route("/attempts",[=](const vector<string>& args) {
   json(Attempt::page(castsess().uid,page,page_size));
 },true);
 
+route("/users",[=](const vector<string>& args) {
+  if (args.size() < 2) { json(User::page(castsess().uid)); return; }
+  unsigned page, page_size;
+  if (!read(args[0],page) || !read(args[1],page_size)) {
+    json(User::page(castsess().uid));
+    return;
+  }
+  json(User::page(castsess().uid,page,page_size));
+},true);
+
 route("/logout",[=](const vector<string>&) {
   session(nullptr);
   location("/");
@@ -155,6 +165,18 @@ route("/attempt",[=](const vector<string>& args) {
   int id;
   if (!read(args[0],id)) { not_found(); return; }
   json(Attempt::get(id,castsess().uid));
+},true,false,1);
+
+route("/user",[=](const vector<string>& args) {
+  int id;
+  if (!read(args[0],id)) { not_found(); return; }
+  if (args.size() < 3) { json(User::profile(id,castsess().uid)); return; }
+  unsigned page, page_size;
+  if (!read(args[1],page) || !read(args[2],page_size)) {
+    json(User::profile(id,castsess().uid));
+    return;
+  }
+  json(User::profile(id,castsess().uid,page,page_size));
 },true,false,1);
 
 // =============================================================================
