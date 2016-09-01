@@ -51,18 +51,6 @@ struct Coll {
     pthread_mutex_unlock(&mutex);
     return true;
   }
-  Database::Document retrieve(const string& key, const string& value) {
-    pthread_mutex_lock(&mutex);
-    for (auto& kv : documents) {
-      if (kv.second(key) && kv.second(key).str() == value) {
-        Database::Document ans = kv;
-        pthread_mutex_unlock(&mutex);
-        return ans;
-      }
-    }
-    pthread_mutex_unlock(&mutex);
-    return Database::null();
-  }
   JSON retrieve(const JSON& filter) {
     JSON ans(vector<JSON>{});
     pthread_mutex_lock(&mutex);
@@ -188,10 +176,6 @@ JSON Collection::retrieve(int docid) {
 
 bool Collection::retrieve(int docid, JSON& document) {
   return collection[collid].retrieve(docid,document);
-}
-
-Document Collection::retrieve(const string& key, const string& value) {
-  return collection[collid].retrieve(key,value);
 }
 
 JSON Collection::retrieve(const JSON& filter) {

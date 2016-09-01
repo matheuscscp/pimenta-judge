@@ -8,9 +8,12 @@ namespace User {
 
 int login(const string& username, const string& password) {
   DB(users);
-  Database::Document user(move(users.retrieve("username",username)));
-  if (!user.first || user.second("password").str() != password) return 0;
-  return user.first;
+  JSON user = users.retrieve(map<string,JSON>{
+    {"username", username},
+    {"password", password}
+  });
+  if (user.size() == 0) return 0;
+  return user(0,"id");
 }
 
 JSON get(int id) {
