@@ -1,5 +1,4 @@
 - users.
-- open API to non-users.
 - improve DB failure recovery.
 - convert to RESTful API.
 - web system for judges (manual judging and clarifications).
