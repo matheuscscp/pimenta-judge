@@ -79,6 +79,16 @@ route("/status",[=](const vector<string>&) {
   });
 },true);
 
+route("/contests",[=](const vector<string>& args) {
+  if (args.size() < 2) { json(Contest::page()); return; }
+  unsigned page, page_size;
+  if (!read(args[0],page) || !read(args[1],page_size)) {
+    json(Contest::page());
+    return;
+  }
+  json(Contest::page(page,page_size));
+},true);
+
 route("/problems",[=](const vector<string>& args) {
   if (args.size() < 2) { json(Problem::page(castsess().uid)); return; }
   unsigned page, page_size;
@@ -99,39 +109,10 @@ route("/attempts",[=](const vector<string>& args) {
   json(Attempt::page(castsess().uid,page,page_size));
 },true);
 
-route("/contests",[=](const vector<string>& args) {
-  if (args.size() < 2) { json(Contest::page()); return; }
-  unsigned page, page_size;
-  if (!read(args[0],page) || !read(args[1],page_size)) {
-    json(Contest::page());
-    return;
-  }
-  json(Contest::page(page,page_size));
-},true);
-
 route("/logout",[=](const vector<string>&) {
   session(nullptr);
   location("/");
 },true);
-
-route("/problem",[=](const vector<string>& args) {
-  int probid;
-  if (!read(args[0],probid)) { not_found(); return; }
-  json(Problem::get(probid,castsess().uid));
-},true,false,1);
-
-route("/problem/statement",[=](const vector<string>& args) {
-  int probid;
-  if (!read(args[0],probid)) { not_found(); return; }
-  string fn = Problem::statement(probid,castsess().uid);
-  if (fn != "") file(fn);
-},true,false,1);
-
-route("/attempt",[=](const vector<string>& args) {
-  int id;
-  if (!read(args[0],id)) { not_found(); return; }
-  json(Attempt::get(id,castsess().uid));
-},true,false,1);
 
 route("/contest",[=](const vector<string>& args) {
   int cid;
@@ -157,29 +138,24 @@ route("/contest/scoreboard",[=](const vector<string>& args) {
   json(Contest::scoreboard(cid,castsess().uid));
 },true,false,1);
 
-route("/source",[=](const vector<string>& args) {//FIXME
-  /*
-  if (args.size() == 0) { not_found(); return; }
+route("/problem",[=](const vector<string>& args) {
+  int probid;
+  if (!read(args[0],probid)) { not_found(); return; }
+  json(Problem::get(probid,castsess().uid));
+},true,false,1);
+
+route("/problem/statement",[=](const vector<string>& args) {
+  int probid;
+  if (!read(args[0],probid)) { not_found(); return; }
+  string fn = Problem::statement(probid,castsess().uid);
+  if (fn != "") file(fn);
+},true,false,1);
+
+route("/attempt",[=](const vector<string>& args) {
   int id;
   if (!read(args[0],id)) { not_found(); return; }
-  Global::lock_attempts();
-  auto it = Global::attempts.find(id);
-  if (it == Global::attempts.end()) {
-    Global::unlock_attempts();
-    not_found();
-    return;
-  }
-  JSON tmp(it->second);
-  Global::unlock_attempts();
-  auto& user = tmp("username").str();
-  if (user != castsess().user.username) { not_found(); return; }
-  string fn = "attempts";
-  fn += "/"+tmp("id").str();
-  fn += "/"+tmp("problem").str();
-  fn += tmp("language").str();
-  file(fn,"text/plain");
-  */
-},true);
+  json(Attempt::get(id,castsess().uid));
+},true,false,1);
 
 // =============================================================================
 // POST
