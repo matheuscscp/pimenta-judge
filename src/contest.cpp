@@ -191,7 +191,11 @@ JSON get_attempts(int id, int user) {
 JSON scoreboard(int id, int user) {
   JSON contest = get(id,user);
   if (!contest) return contest;
-  JSON ans(map<string,JSON>{{"attempts",JSON()},{"colors",vector<JSON>{}}});
+  JSON ans(map<string,JSON>{
+    {"status"   , contest("finished") ? "final" : ""},
+    {"attempts" , JSON()},
+    {"colors"   , vector<JSON>{}}
+  });
   // get problem info
   JSON probs = list_problems(contest,user);
   map<int,int> idx;
@@ -217,6 +221,8 @@ JSON scoreboard(int id, int user) {
   int freeze = int(contest["duration"])-int(contest["freeze"]);
   int blind = int(contest["duration"])-int(contest["blind"]);
   freeze = min(freeze,blind);
+  ans["status"] = "frozen";
+  ans["freeze"] = freeze;
   JSON tmp(vector<JSON>{});
   for (auto& att : arr) if (int(att["contest_time"]) < freeze) {
     tmp.push_back(move(att));
