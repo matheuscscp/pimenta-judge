@@ -104,6 +104,7 @@ void start() {
     ).c_str());
     _exit(-1);
   }
+  freopen("/dev/null","r",stdin);
   freopen("stdout.txt","w",stdout);
   freopen("stderr.txt","w",stderr);
   pjudge pj; // RAII
