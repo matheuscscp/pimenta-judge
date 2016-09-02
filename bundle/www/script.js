@@ -135,14 +135,9 @@ function attempts() {
 
 function users() {
   $.get("users",null,function(resp) {
-    resp.sort(function(a,b) {
-      if (a.solved != b.solved) return b.solved-a.solved;
-      if (a.tried != b.tried) return b.tried-a.tried;
-      return a.id-b.id;
-    });
     $("#c1").html("<h2>Users</h2><div id=\"pages\"></div>");
     render_pages("#pages",[
-      position_header(),
+      id_header("user"),
       name_header("user"),
       {name: "Solved", field: "solved"},
       {name: "Tried", field: "tried"}
@@ -525,11 +520,9 @@ function setup_solved(atts) {
   solved = {};
   tried = {};
   for (var i = 0; i < atts.length; i++) {
+    tried[atts[i].problem.id] = {tried: true};
     if (atts[i].verdict == "AC") {
       solved[atts[i].problem.id] = {solved: true};
-    }
-    else {
-      tried[atts[i].problem.id] = {tried: true};
     }
   }
 }
@@ -608,9 +601,6 @@ function name_header(func,name) {
       return "<a href=\"#\" onclick=\""+func+"("+obj.id+")\">"+obj.name+"</a>";
     }
   };
-}
-function position_header() {
-  return {name: "#", field: "position"};
 }
 function render_page(page) {
   var cols = pages.header.length, rows = pages.data.length;
