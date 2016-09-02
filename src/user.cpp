@@ -68,11 +68,9 @@ JSON page(int user, unsigned p, unsigned ps) {
   JSON atts = Attempt::page(user,0,0,0,false,true);
   for (auto& att : atts.arr()) {
     auto& us = info[att["user"]];
+    us.tried.insert(int(att["problem"]["id"]));
     if (att["status"].str() == "judged" && verdict_toi(att["verdict"]) == AC) {
       us.solved.insert(int(att["problem"]["id"]));
-    }
-    else {
-      us.tried.insert(int(att["problem"]["id"]));
     }
   }
   DB(users);
