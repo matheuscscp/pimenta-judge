@@ -135,6 +135,9 @@ static void judge(int attid) {
     if (WEXITSTATUS(status)) { verd = WA; break; }
     status = system("diff %s %s",ofn.c_str(),sfn.c_str());
     if (WEXITSTATUS(status)) { verd = PE; break; }
+    
+    // remove correct output
+    remove(ofn.c_str());
   }
   closedir(dir);
   
