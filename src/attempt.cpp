@@ -21,6 +21,25 @@ static string source(const string& fn) {
 
 namespace Attempt {
 
+void fix() {
+  DB(attempts);
+  DB(contests);
+  JSON aux;
+  attempts.update([&](Database::Document& doc) {
+    auto& j = doc.second.obj();
+    if (
+      j.find("when") != j.end() ||
+      j.find("contest") == j.end() ||
+      j.find("contest_time") == j.end() ||
+      !contests.retrieve(doc.second["contest"],aux)
+    ) {
+      return false;
+    }
+    doc.second["when"] = 60*int(doc.second["contest_time"])+Contest::begin(aux);
+    return true;
+  });
+}
+
 string create(JSON&& att, const vector<uint8_t>& src) {
   // check stuff
   JSON problem = Problem::get_short(att["problem"],att["user"]);

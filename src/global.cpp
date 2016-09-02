@@ -9,6 +9,7 @@
 #include "judge.hpp"
 #include "webserver.hpp"
 #include "contest.hpp"
+#include "attempt.hpp"
 
 using namespace std;
 
@@ -108,6 +109,7 @@ void start() {
   signal(SIGPIPE,SIG_IGN); // ignore broken pipes (tcp shit)
   Database::init(!sudden);
   Contest::fix();
+  Attempt::fix();
   Judge::init();
   WebServer::init();
   while (!quit) {
