@@ -251,9 +251,9 @@ function contest_scoreboard(id) {
       for (var j = 0; j < n; j++) {
         var p = sc[i].problems[j];
         var tmp = (
-          sc[i].problems[j].atts > 0 ?
-          balloon(resp.colors[j])+p.atts+"/"+p.time :
-          (-p.atts)+"/-"
+          p.atts > 0 ? balloon(resp.colors[j])+p.atts+"/"+p.time : (
+            p.atts < 0 ? (-p.atts)+"/-" : ""
+          )
         );
         html +=
           "<td class=\"scoreboard-problem\">"+tmp+"</td>"
