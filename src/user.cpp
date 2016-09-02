@@ -46,7 +46,7 @@ JSON profile(int id, int user, unsigned p, unsigned ps) {
   }
   if (!ps) {
     p = 0;
-    ps = tmp.size();
+    ps = ans0.size();
   }
   JSON ans(map<string,JSON>{{"name",tmp["name"]},{"solved",vector<JSON>{}}});
   if (ans0.size() <= p*ps) return ans;
