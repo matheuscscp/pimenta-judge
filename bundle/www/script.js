@@ -63,9 +63,9 @@ function contests() {
         {name: "Start", field: function(obj) {
           return new Date(obj.start).toString();
         }},
-        {name: "Duration", field: "duration"},
-        {name: "Freeze", field: "freeze"},
-        {name: "Blind", field: "blind"}
+        {name: "Duration", field: function(obj) {return obj.duration+" (m)";}},
+        {name: "Freeze", field: function(obj) {return obj.freeze+" (m)";}},
+        {name: "Blind", field: function(obj) {return obj.blind+" (m)";}}
       ];
       if (username != "") headers.push({
         name: "Solved",
