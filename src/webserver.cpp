@@ -233,7 +233,7 @@ namespace WebServer {
 void init() {
   uint16_t default_port = 8000;
   unsigned default_nthreads = 0;
-  if (!settings.read_file("webserver.json")) settings = JSON();
+  if (!settings.read_file("httpserver.json")) settings = JSON();
   uint16_t p;
   if (!settings("port") || !settings("port").read(p)) {
     p = default_port;
