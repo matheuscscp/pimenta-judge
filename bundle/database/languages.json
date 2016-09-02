@@ -1,0 +1,47 @@
+[
+  {
+    "_id": 1,
+    "document": {
+      "compile": "gcc -std=c11 %s -o %p/%P -lm",
+      "extension": ".c",
+      "info": "gcc -std=c11 -lm",
+      "name": "C",
+      "run": "%p/%P"
+    }
+  },
+  {
+    "_id": 2,
+    "document": {
+      "compile": "g++ -std=c++1y %s -o %p/%P",
+      "extension": ".cpp",
+      "info": "g++ -std=c++1y",
+      "name": "C++",
+      "run": "%p/%P"
+    }
+  },
+  {
+    "_id": 3,
+    "document": {
+      "compile": "javac %s",
+      "extension": ".java",
+      "name": "Java",
+      "run": "java -cp %p %P"
+    }
+  },
+  {
+    "_id": 4,
+    "document": {
+      "extension": ".py",
+      "name": "Python",
+      "run": "python %s"
+    }
+  },
+  {
+    "_id": 5,
+    "document": {
+      "extension": ".py3",
+      "name": "Python 3",
+      "run": "python3 %s"
+    }
+  }
+]

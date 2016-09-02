@@ -1,0 +1,10 @@
+[
+  {
+    "_id": 1,
+    "document": {
+      "name": "Team 1 Name",
+      "password": "team1password",
+      "username": "team1username"
+    }
+  }
+]

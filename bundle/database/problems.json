@@ -1,0 +1,37 @@
+[
+  {
+    "_id": 1,
+    "document": {
+      "autojudge": true,
+      "color": "#ff0000",
+      "contest": 1,
+      "enabled": true,
+      "languages": {
+        ".java": {
+          "memlimit": 150000,
+          "timelimit": 10
+        }
+      },
+      "memlimit": 100000,
+      "name": "Problema 1",
+      "timelimit": 4
+    }
+  },
+  {
+    "_id": 2,
+    "document": {
+      "autojudge": true,
+      "color": "#00ff00",
+      "enabled": true,
+      "languages": {
+        ".java": {
+          "memlimit": 150000,
+          "timelimit": 10
+        }
+      },
+      "memlimit": 200000,
+      "name": "Problema 2",
+      "timelimit": 3
+    }
+  }
+]
