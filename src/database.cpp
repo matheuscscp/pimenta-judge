@@ -138,10 +138,12 @@ static int get(const string& name) {
 static bool quit = false;
 static pthread_t db;
 static void do_backup() {
+  if (backup < 0) return;
   stringstream ss;
   ss << "backup" << backup;
   system(("mkdir -p database/"+ss.str()).c_str());
   system(("cp database/*.json database/"+ss.str()).c_str());
+  backup = 1-backup;
 }
 static void update() {
   int nc;
@@ -149,9 +151,8 @@ static void update() {
   nc = ncolls;
   pthread_mutex_unlock(&colls_mutex);
   for (int i = 0; i < nc; i++) collection[i].write();
-  if (backup < 0) return;
   do_backup();
-  backup = 1-backup;
+  sync();
 }
 static void* thread(void*) {
   static time_t upd = 0;
