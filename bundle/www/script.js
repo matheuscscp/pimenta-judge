@@ -614,7 +614,7 @@ function position_header() {
 }
 function render_page(page) {
   var cols = pages.header.length, rows = pages.data.length;
-  var tbody = $(pages.where+" tbody");
+  var tbody = $(pages.where+" tbody").html("");
   var j = 0, zebra = 1;
   for (var i = page*psize; i < rows && j < psize; i++, j++, zebra = 1-zebra) {
     var obj = pages.data[i];
