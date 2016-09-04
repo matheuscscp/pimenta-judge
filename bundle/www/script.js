@@ -373,8 +373,9 @@ function attempt(id) {
     html +=
       "</table>"
     ;
-    $(content()).html(html)
-    .append($(
+    var tmp = $(content()).html(html);
+    if (resp.source == "") return;
+    tmp.append($(
       "<pre id=\"code\" class=\"prettyprint linenums\">"+
       "</pre>"
     ))
