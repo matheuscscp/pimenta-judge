@@ -13,6 +13,7 @@ static string source(const string& fn) {
   string ans;
   char* buf = new char[(1<<20)+1];
   FILE* fp = fopen(fn.c_str(),"rb");
+  if (!fp) return "";
   for (int sz; (sz = fread(buf,1,1<<20,fp)) > 0; buf[sz] = 0, ans += buf);
   fclose(fp);
   delete[] buf;
