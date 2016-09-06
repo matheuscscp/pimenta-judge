@@ -406,6 +406,15 @@ function user(id) {
 // POST
 // =============================================================================
 
+function keypress_login() {
+  var e = window.event;
+  var keyCode = e.keyCode || e.which;
+  if (keyCode == '13') {
+    do_login();
+    return false;
+  }
+}
+
 function do_login() {
   if (username != "") window.location = "/";
   var user = $("#user");
