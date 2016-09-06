@@ -97,7 +97,7 @@ struct Coll {
       pthread_mutex_unlock(&mutex);
       return ans;
     }
-    for (auto& kv : documents) ans = ans || upd(kv);
+    for (auto& kv : documents) ans = upd(kv) || ans;
     pthread_mutex_unlock(&mutex);
     return ans;
   }
