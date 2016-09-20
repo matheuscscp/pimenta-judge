@@ -221,7 +221,8 @@ JSON scoreboard(int id, int user) {
   int freeze = int(contest["duration"])-int(contest["freeze"]);
   int blind = int(contest["duration"])-int(contest["blind"]);
   freeze = min(freeze,blind);
-  ans["status"] = "frozen";
+  time_t frz = begin(contest) + 60*freeze;
+  if (frz <= ::time(nullptr)) ans["status"] = "frozen";
   ans["freeze"] = freeze;
   JSON tmp(vector<JSON>{});
   for (auto& att : arr) if (int(att["contest_time"]) < freeze) {
