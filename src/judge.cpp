@@ -39,13 +39,13 @@ static string command(
 }
 
 static char run(const string& cmd, int tls, int mlkB, int& mtms, int& mmkB) {
-  tls++;
   // init time
   timeval start;
   gettimeofday(&start,nullptr);
   // child
   pid_t pid = fork();
   if (!pid) {
+    tls++;
     rlimit r;
     r.rlim_cur = tls;
     r.rlim_max = tls;
