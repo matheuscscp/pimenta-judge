@@ -39,6 +39,7 @@ static string command(
 }
 
 static char run(const string& cmd, int tls, int mlkB, int& mtms, int& mmkB) {
+  tls++;
   // init time
   timeval start;
   gettimeofday(&start,nullptr);

@@ -1,3 +1,4 @@
+- change cwd when running programs.
 - convert to RESTful API.
 - web system for judges (manual judging and clarifications).
 - web system for staff (balloons and prints).
