@@ -91,8 +91,10 @@ void start() {
   if (sudden) printf(
     "WARNING: last pjudge[%s] execution stopped suddenly.\n"
     "this execution will not make database backups.\n"
-    "YOU MUST: 1) check your data; 2) stop pjudge; 3) manually rollback the\n"
-    "database if necessary; and 4) remove file 'pjudge.bin'.\n"
+    "\n"
+    "FIX: 1) check your data; 2) stop pjudge; 3) manually rollback the\n"
+    "database if necessary; 4) remove file 'pjudge.bin'.\n"
+    "\n"
     "next execution will be fine.\n",
     getcwd().c_str()
   );
