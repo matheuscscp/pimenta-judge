@@ -1,5 +1,5 @@
 # pimenta-judge
-A GNU/Linux portable online judge equipped with an ACM ICPC contest system.
+A GNU/Linux portable online judge equipped with an ACM ICPC contest system made in C++.
 
 ## Table of Contents
   * [Installation](#installation)
