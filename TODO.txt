@@ -1,5 +1,6 @@
 - change cwd when running programs.
 - convert to RESTful API.
+- notify admin when user logs with 2 ips.
 - web system for judges (manual judging and clarifications).
 - web system for staff (balloons and prints).
 - implement safe computation (run untrusted code safely).
